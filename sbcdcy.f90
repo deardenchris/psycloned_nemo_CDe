@@ -135,8 +135,9 @@ MODULE sbcdcy
     END IF
     !$ACC KERNELS
     imask_night(:, :) = 0
-    !$ACC END KERNELS
-    CALL profile_psy_data4 % PreStart('sbc_dcy', 'r4', 0, 0)
+!    !$ACC END KERNELS ! CDe commented out
+!    CALL profile_psy_data4 % PreStart('sbc_dcy', 'r4', 0, 0) ! CDe commented out
+    !$ACC LOOP INDEPENDENT COLLAPSE(2) ! CDe added
     DO jj = 1, jpj
       DO ji = 1, jpi
         ztmpm = 0._wp
@@ -176,7 +177,8 @@ MODULE sbcdcy
         END IF
       END DO
     END DO
-    CALL profile_psy_data4 % PostEnd
+    !$ACC END KERNELS ! CDe added
+!    CALL profile_psy_data4 % PostEnd ! CDe commented out
     IF (PRESENT(l_mask)) THEN
       !$ACC KERNELS
       IF (l_mask) zqsrout(:, :) = FLOAT(imask_night(:, :))

@@ -108,21 +108,31 @@ MODULE lbclnk
     ELSE
       DO jf = 1, ipf
         IF (l_Iperio) THEN
+          !$ACC KERNELS ! CDe added      
           ptab(jf) % pt2d(1, :) = ptab(jf) % pt2d(jpim1, :)
           ptab(jf) % pt2d(jpi, :) = ptab(jf) % pt2d(2, :)
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS ! CDe added     
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(1, :) = zland
           ptab(jf) % pt2d(jpi, :) = zland
+          !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
+          !$ACC KERNELS !CDe added
           ptab(jf) % pt2d(:, 1) = ptab(jf) % pt2d(:, jpjm1)
           ptab(jf) % pt2d(:, jpj) = ptab(jf) % pt2d(:, 2)
+          !$ACC END KERNELS ! CDe added
         ELSE IF (ll_nfd) THEN
+          !$ACC KERNELS ! CDe added      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(:, 1) = zland
+          !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat(:), psgn(:), ipf)
         ELSE
+          !$ACC KERNELS !CDe added
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(:, 1) = zland
           ptab(jf) % pt2d(:, jpj) = zland
+          !$ACC END KERNELS
         END IF
       END DO
     END IF
@@ -324,21 +334,31 @@ MODULE lbclnk
     ELSE
       DO jf = 1, ipf
         IF (l_Iperio) THEN
+          !$ACC KERNELS ! CDe added
           ptab(jf) % pt4d(1, :, :, :) = ptab(jf) % pt4d(jpim1, :, :, :)
           ptab(jf) % pt4d(jpi, :, :, :) = ptab(jf) % pt4d(2, :, :, :)
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS ! CDe added
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(1, :, :, :) = zland
           ptab(jf) % pt4d(jpi, :, :, :) = zland
+          !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
+          !$ACC KERNELS ! CDe added
           ptab(jf) % pt4d(:, 1, :, :) = ptab(jf) % pt4d(:, jpjm1, :, :)
           ptab(jf) % pt4d(:, jpj, :, :) = ptab(jf) % pt4d(:, 2, :, :)
+          !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
+          !$ACC KERNELS ! CDe added
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(:, 1, :, :) = zland
+          !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat(:), psgn(:), ipf)
         ELSE
+          !$ACC KERNELS ! CDe added
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(:, 1, :, :) = zland
           ptab(jf) % pt4d(:, jpj, :, :) = zland
+          !$ACC END KERNELS
         END IF
       END DO
     END IF

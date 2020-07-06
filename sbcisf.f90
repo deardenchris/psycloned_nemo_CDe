@@ -317,8 +317,8 @@ MODULE sbcisf
     END SELECT
     !$ACC KERNELS
     rhisf_tbl_0(:, :) = rhisf_tbl(:, :)
-    !$ACC END KERNELS
-    CALL profile_psy_data6 % PreStart('sbc_isf_init', 'r6', 0, 0)
+    !CALL profile_psy_data6 % PreStart('sbc_isf_init', 'r6', 0, 0)
+    !$ACC LOOP INDEPENDENT COLLAPSE(2) ! CDe - added to collapse nested do loop
     DO jj = 1, jpj
       DO ji = 1, jpi
         ikt = misfkt(ji, jj)
@@ -334,6 +334,8 @@ MODULE sbcisf
         ralpha(ji, jj) = rhisf_tbl(ji, jj) * (1._wp - zhk) / e3t_n(ji, jj, ikb)
       END DO
     END DO
+    !$ACC END KERNELS ! CDe - moved from line 320
+    CALL profile_psy_data6 % PreStart('sbc_isf_init', 'r6', 0, 0) ! CDe - moved from line 321
     IF (lwxios) THEN
       CALL iom_set_rstw_var_active('fwf_isf_b')
       CALL iom_set_rstw_var_active('isf_hc_b')
@@ -352,6 +354,7 @@ MODULE sbcisf
     REAL(KIND = wp) :: zpress
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('sbc_isf_bg03', 'r0', 0, 0)
+    !Looks like this could be put on GPU, but the issue is the CALL to eos_fzp in the IF statement...
     DO ji = 1, jpi
       DO jj = 1, jpj
         ik = misfkt(ji, jj)
@@ -390,6 +393,8 @@ MODULE sbcisf
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zfwflx, zhtflx, zhtflx_b
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('sbc_isf_cav', 'r0', 0, 0)
     IF (l_useCT) THEN
       zlamb1 = - 0.0564_wp
@@ -410,12 +415,16 @@ MODULE sbcisf
     nit = 1
     lit = .TRUE.
     !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('sbc_isf_cav', 'r1', 0, 0)
+    !CALL profile_psy_data1 % PreStart('sbc_isf_cav', 'r1', 0, 0)
     DO WHILE (lit)
       SELECT CASE (nn_isfblk)
       CASE (1)
+        CALL profile_psy_data1 % PreStart('sbc_isf_cav', 'r1', 0, 0) ! CDe added
         CALL eos_fzp(stbl(:, :), zfrz(:, :), risfdep(:, :))
         CALL sbc_isf_gammats(zgammat, zgammas, zhtflx, zfwflx)
+        CALL profile_psy_data1 % PostEnd ! CDe added
+        !$ACC KERNELS ! CDe added    
+        !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zhtflx(ji, jj) = zgammat(ji, jj) * rcp * rau0 * (ttbl(ji, jj) - zfrz(ji, jj))
@@ -424,8 +433,13 @@ MODULE sbcisf
         END DO
         qisf(:, :) = - zhtflx(:, :) * (1._wp - tmask(:, :, 1)) * ssmask(:, :)
         fwfisf(:, :) = zfwflx(:, :) * (1._wp - tmask(:, :, 1)) * ssmask(:, :)
+        !$ACC END KERNELS ! CDe added
       CASE (2)
+        CALL profile_psy_data2 % PreStart('sbc_isf_cav', 'r2', 0, 0) ! CDe added
         CALL sbc_isf_gammats(zgammat, zgammas, zhtflx, zfwflx)
+        CALL profile_psy_data2 % PostEnd ! CDe added
+        !$ACC KERNELS ! CDe added    
+        !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zeps1 = rcp * rau0 * zgammat(ji, jj)
@@ -448,7 +462,9 @@ MODULE sbcisf
         END DO
         qisf(:, :) = - zhtflx(:, :) * (1._wp - tmask(:, :, 1)) * ssmask(:, :)
         fwfisf(:, :) = zfwflx(:, :) * (1._wp - tmask(:, :, 1)) * ssmask(:, :)
+        !$ACC END KERNELS ! CDe added
       END SELECT
+      CALL profile_psy_data3 % PreStart('sbc_isf_cav', 'r3', 0, 0) ! CDe added
       IF (nn_gammablk < 2) THEN
         lit = .FALSE.
       ELSE
@@ -467,7 +483,8 @@ MODULE sbcisf
     END DO
     CALL iom_put('isfgammat', zgammat)
     CALL iom_put('isfgammas', zgammas)
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data3 % PostEnd ! CDe added
+    !CALL profile_psy_data1 % PostEnd ! CDe commented out
   END SUBROUTINE sbc_isf_cav
   SUBROUTINE sbc_isf_gammats(pgt, pgs, pqhisf, pqwisf)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType

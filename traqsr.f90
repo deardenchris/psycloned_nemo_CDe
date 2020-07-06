@@ -144,9 +144,8 @@ MODULE traqsr
           zea(ji, jj, 1) = qsr(ji, jj)
         END DO
       END DO
-      !$ACC END KERNELS
       DO jk = 2, nksr + 1
-        CALL profile_psy_data3 % PreStart('tra_qsr', 'r3', 0, 0)
+      !$ACC LOOP INDEPENDENT COLLAPSE(2) ! CDe - added to collapse nested do loop
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zchl = MIN(10., MAX(0.03, zchl3d(ji, jj, jk)))
@@ -156,8 +155,6 @@ MODULE traqsr
             zekr(ji, jj) = rkrgb(3, irgb)
           END DO
         END DO
-        CALL profile_psy_data3 % PostEnd
-        !$ACC KERNELS
         !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -172,9 +169,7 @@ MODULE traqsr
             zea(ji, jj, jk) = (zc0 + zc1 + zc2 + zc3) * wmask(ji, jj, jk)
           END DO
         END DO
-        !$ACC END KERNELS
       END DO
-      !$ACC KERNELS
       DO jk = 1, nksr
         !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = 2, jpjm1
