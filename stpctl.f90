@@ -53,14 +53,20 @@ MODULE stpctl
       REWIND(UNIT = numstp)
     END IF
     IF (ll_wd) THEN
+      !$ACC KERNELS ! CDe added
       zmax(1) = MAXVAL(ABS(sshn(:, :) + ssh_ref * tmask(:, :, 1)))
+      !$ACC END KERNELS
     ELSE
+      !$ACC KERNELS ! CDe added      
       zmax(1) = MAXVAL(ABS(sshn(:, :)))
+      !$ACC END KERNELS
     END IF
+    !$ACC KERNELS !CDe added
     zmax(2) = MAXVAL(ABS(un(:, :, :)))
     zmax(3) = MAXVAL(- tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp)
     zmax(4) = MAXVAL(tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp)
     zmax(5) = REAL(nstop, wp)
+    !$ACC END KERNELS
     IF (lk_mpp) THEN
       CALL mpp_max_multiple(zmax(:), 5)
       nstop = NINT(zmax(5))
