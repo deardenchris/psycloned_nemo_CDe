@@ -210,7 +210,9 @@ MODULE lib_fortran
   FUNCTION glob_min_2d(ptab)
     REAL(KIND = wp), INTENT(IN), DIMENSION(:, :) :: ptab
     REAL(KIND = wp) :: glob_min_2d
+    !$ACC KERNELS ! CDe added
     glob_min_2d = MINVAL(ptab(:, :) * tmask_i(:, :))
+    !$ACC END KERNELS
     IF (lk_mpp) CALL mpp_min(glob_min_2d)
   END FUNCTION glob_min_2d
   FUNCTION glob_min_3d(ptab)
@@ -219,17 +221,21 @@ MODULE lib_fortran
     INTEGER :: jk
     INTEGER :: ijpk
     ijpk = SIZE(ptab, 3)
+    !$ACC KERNELS ! CDe added
     glob_min_3d = MINVAL(ptab(:, :, 1) * tmask_i(:, :))
     DO jk = 2, ijpk
       glob_min_3d = MIN(glob_min_3d, MINVAL(ptab(:, :, jk) * tmask_i(:, :)))
     END DO
+    !$ACC END KERNELS
     IF (lk_mpp) CALL mpp_min(glob_min_3d)
   END FUNCTION glob_min_3d
   FUNCTION glob_min_2d_a(ptab1, ptab2)
     REAL(KIND = wp), INTENT(IN), DIMENSION(:, :) :: ptab1, ptab2
     REAL(KIND = wp), DIMENSION(2) :: glob_min_2d_a
+    !$ACC KERNELS ! CDe added
     glob_min_2d_a(1) = MINVAL(ptab1(:, :) * tmask_i(:, :))
     glob_min_2d_a(2) = MINVAL(ptab2(:, :) * tmask_i(:, :))
+    !$ACC END KERNELS
     IF (lk_mpp) CALL mpp_min(glob_min_2d_a, 2)
   END FUNCTION glob_min_2d_a
   FUNCTION glob_min_3d_a(ptab1, ptab2)
@@ -238,18 +244,22 @@ MODULE lib_fortran
     INTEGER :: jk
     INTEGER :: ijpk
     ijpk = SIZE(ptab1, 3)
+    !$ACC KERNELS ! CDe added
     glob_min_3d_a(1) = MINVAL(ptab1(:, :, 1) * tmask_i(:, :))
     glob_min_3d_a(2) = MINVAL(ptab2(:, :, 1) * tmask_i(:, :))
     DO jk = 2, ijpk
       glob_min_3d_a(1) = MIN(glob_min_3d_a(1), MINVAL(ptab1(:, :, jk) * tmask_i(:, :)))
       glob_min_3d_a(2) = MIN(glob_min_3d_a(2), MINVAL(ptab2(:, :, jk) * tmask_i(:, :)))
     END DO
+    !$ACC END KERNELS
     IF (lk_mpp) CALL mpp_min(glob_min_3d_a, 2)
   END FUNCTION glob_min_3d_a
   FUNCTION glob_max_2d(ptab)
     REAL(KIND = wp), INTENT(IN), DIMENSION(:, :) :: ptab
     REAL(KIND = wp) :: glob_max_2d
+    !$ACC KERNELS ! CDe added
     glob_max_2d = MAXVAL(ptab(:, :) * tmask_i(:, :))
+    !$ACC END KERNELS
     IF (lk_mpp) CALL mpp_max(glob_max_2d)
   END FUNCTION glob_max_2d
   FUNCTION glob_max_3d(ptab)
@@ -258,17 +268,21 @@ MODULE lib_fortran
     INTEGER :: jk
     INTEGER :: ijpk
     ijpk = SIZE(ptab, 3)
+    !$ACC KERNELS ! CDe added
     glob_max_3d = MAXVAL(ptab(:, :, 1) * tmask_i(:, :))
     DO jk = 2, ijpk
       glob_max_3d = MAX(glob_max_3d, MAXVAL(ptab(:, :, jk) * tmask_i(:, :)))
     END DO
+    !$ACC END KERNELS
     IF (lk_mpp) CALL mpp_max(glob_max_3d)
   END FUNCTION glob_max_3d
   FUNCTION glob_max_2d_a(ptab1, ptab2)
     REAL(KIND = wp), INTENT(IN), DIMENSION(:, :) :: ptab1, ptab2
     REAL(KIND = wp), DIMENSION(2) :: glob_max_2d_a
+    !$ACC KERNELS ! CDe added
     glob_max_2d_a(1) = MAXVAL(ptab1(:, :) * tmask_i(:, :))
     glob_max_2d_a(2) = MAXVAL(ptab2(:, :) * tmask_i(:, :))
+    !$ACC END KERNELS
     IF (lk_mpp) CALL mpp_max(glob_max_2d_a, 2)
   END FUNCTION glob_max_2d_a
   FUNCTION glob_max_3d_a(ptab1, ptab2)
@@ -277,12 +291,14 @@ MODULE lib_fortran
     INTEGER :: jk
     INTEGER :: ijpk
     ijpk = SIZE(ptab1, 3)
+    !$ACC KERNELS ! CDE added
     glob_max_3d_a(1) = MAXVAL(ptab1(:, :, 1) * tmask_i(:, :))
     glob_max_3d_a(2) = MAXVAL(ptab2(:, :, 1) * tmask_i(:, :))
     DO jk = 2, ijpk
       glob_max_3d_a(1) = MAX(glob_max_3d_a(1), MAXVAL(ptab1(:, :, jk) * tmask_i(:, :)))
       glob_max_3d_a(2) = MAX(glob_max_3d_a(2), MAXVAL(ptab2(:, :, jk) * tmask_i(:, :)))
     END DO
+    !$ACC END KERNELS
     IF (lk_mpp) CALL mpp_max(glob_max_3d_a, 2)
   END FUNCTION glob_max_3d_a
   SUBROUTINE DDPDD(ydda, yddb)
@@ -346,6 +362,7 @@ MODULE lib_fortran
   FUNCTION SIGN_ARRAY_2D_A(pa, pb)
     REAL(KIND = wp) :: pa(:, :), pb(:, :)
     REAL(KIND = wp) :: SIGN_ARRAY_2D_A(SIZE(pb, 1), SIZE(pb, 2))
+    !$ACC routine ! CDe added
     WHERE (pb >= 0.E0)
       sign_array_2d_a = abs(pa)
     ELSEWHERE
