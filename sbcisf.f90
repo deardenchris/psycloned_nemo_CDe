@@ -642,9 +642,11 @@ MODULE sbcisf
     REAL(KIND = wp) :: zhk
     REAL(KIND = wp) :: zfact
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('sbc_isf_div', 'r0', 0, 0)
+    !CALL profile_psy_data0 % PreStart('sbc_isf_div', 'r0', 0, 0)
     zfact = 0.5_wp
     IF (.NOT. ln_linssh) THEN
+      !$ACC KERNELS ! CDe added
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)  ! CDe added
       DO jj = 1, jpj
         DO ji = 1, jpi
           ikt = misfkt(ji, jj)
@@ -660,8 +662,9 @@ MODULE sbcisf
           ralpha(ji, jj) = rhisf_tbl(ji, jj) * (1._wp - zhk) / e3t_n(ji, jj, ikb)
         END DO
       END DO
+      !$ACC END KERNELS
     END IF
-    CALL profile_psy_data0 % PostEnd
+    !CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     !$ACC LOOP INDEPENDENT COLLAPSE(2)
     DO jj = 1, jpj
