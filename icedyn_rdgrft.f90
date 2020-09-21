@@ -191,22 +191,23 @@ MODULE icedyn_rdgrft
     ELSEWHERE
       zhi(1 : npti, :) = 0._wp
     END WHERE
-    !CC KERNELS
+    CALL profile_psy_data0 % PostEnd
+    !$ACC KERNELS ! CDe reinstated for testing with PGI v20.7
     !ARPDBG SUM(xx, dim=yy) causes seg fault with PGI 19.10
     zasum(1 : npti) = pato_i(1 : npti) + SUM(pa_i(1 : npti, :), dim = 2)
-    !CC END KERNELS
+    !$ACC END KERNELS
     WHERE (zasum(1 : npti) > epsi20)
       z1_asum(1 : npti) = 1._wp / zasum(1 : npti)
     ELSEWHERE
       z1_asum(1 : npti) = 0._wp
     END WHERE
-    !CC KERNELS
+    !$ACC KERNELS ! CDe reinstated for testing with PGI v20.7
     zGsum(1 : npti, - 1) = 0._wp
     zGsum(1 : npti, 0) = pato_i(1 : npti) * z1_asum(1 : npti)
     DO jl = 1, jpl
       zGsum(1 : npti, jl) = (pato_i(1 : npti) + SUM(pa_i(1 : npti, 1 : jl), dim = 2)) * z1_asum(1 : npti)
     END DO
-    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
     !$ACC KERNELS create(zaksum) copyin(zasum, z1_asum, zGsum, zhi, pa_i, pato_i, pclosing_net)
 
     IF (ln_partf_lin) THEN
