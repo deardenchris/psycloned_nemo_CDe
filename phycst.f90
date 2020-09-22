@@ -41,6 +41,7 @@ MODULE phycst
   REAL(KIND = wp), PUBLIC :: r1_rhoi
   REAL(KIND = wp), PUBLIC :: r1_rhos
   REAL(KIND = wp), PUBLIC :: r1_rcpi
+  !$ACC DECLARE CREATE(rt0) ! CDe added
   CONTAINS
   SUBROUTINE phy_cst
     rsiyea = 365.25_wp * rday * 2._wp * rpi / 6.283076_wp

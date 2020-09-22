@@ -34,4 +34,5 @@ MODULE par_oce
   INTEGER, PUBLIC, PARAMETER :: jpr2di = 0
   INTEGER, PUBLIC, PARAMETER :: jpr2dj = 0
   INTEGER, PUBLIC, PARAMETER :: nn_hls = 1
+  !$ACC DECLARE CREATE(jpi, jpj) ! CDe added
 END MODULE par_oce
