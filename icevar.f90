@@ -676,7 +676,8 @@ MODULE icevar
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: ice_var_sshdyn
     REAL(KIND = wp) :: zintn, zintb
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zsnwiceload
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    INTEGER :: ji, jj ! CDe added
+    ! TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     IF (ln_ice_embd) THEN
       !$ACC KERNELS
       zintn = REAL(nn_fsbc - 1) / REAL(nn_fsbc) * 0.5_wp
@@ -688,8 +689,15 @@ MODULE icevar
       zsnwiceload(:, :) = 0.0_wp
       !$ACC END KERNELS
     END IF
-    CALL profile_psy_data0 % PreStart('ice_var_sshdyn', 'r0', 0, 0)
-    ice_var_sshdyn(:, :) = pssh(:, :) + zsnwiceload(:, :)
-    CALL profile_psy_data0 % PostEnd
+!    CALL profile_psy_data0 % PreStart('ice_var_sshdyn', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe added
+    !$ACC LOOP INDEPENDENT COLLAPSE(2) ! CDe added
+    DO jj = 1, jpj
+      DO ji = 1, jpi
+        ice_var_sshdyn(ji, jj) = pssh(ji, jj) + zsnwiceload(ji, jj) ! CDe re-wrote with explicit do loops
+      END DO
+    END DO
+    !$ACC END KERNELS
+!    CALL profile_psy_data0 % PostEnd
   END FUNCTION ice_var_sshdyn
 END MODULE icevar
