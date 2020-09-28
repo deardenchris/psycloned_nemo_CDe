@@ -436,8 +436,7 @@ MODULE sbcblk
     Ch_atm(:, :) = Cd_ice
     Ce_atm(:, :) = Cd_ice
     wndm_ice(:, :) = 0._wp
-    !$ACC END KERNELS
-    CALL profile_psy_data0 % PreStart('blk_ice_tau', 'r0', 0, 0)
+    !$ACC LOOP COLLAPSE(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         zwndi_t = (sf(jp_wndi) % fnow(ji, jj, 1) - rn_vfac * 0.5 * (u_ice(ji - 1, jj) + u_ice(ji, jj)))
@@ -445,6 +444,8 @@ MODULE sbcblk
         wndm_ice(ji, jj) = SQRT(zwndi_t * zwndi_t + zwndj_t * zwndj_t) * tmask(ji, jj, 1)
       END DO
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data0 % PreStart('blk_ice_tau', 'r0', 0, 0)
     CALL lbc_lnk('sbcblk', wndm_ice, 'T', 1.)
     CALL profile_psy_data0 % PostEnd
     IF (ln_Cd_L12) THEN
@@ -463,8 +464,7 @@ MODULE sbcblk
     !$ACC KERNELS
     utau_ice(:, :) = 0._wp
     vtau_ice(:, :) = 0._wp
-    !$ACC END KERNELS
-    CALL profile_psy_data3 % PreStart('blk_ice_tau', 'r3', 0, 0)
+    !$ACC LOOP COLLAPSE(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         utau_ice(ji, jj) = 0.5 * zrhoa(ji, jj) * Cd_atm(ji, jj) * (wndm_ice(ji + 1, jj) + wndm_ice(ji, jj)) * (0.5 * (sf(jp_wndi) &
@@ -473,6 +473,8 @@ MODULE sbcblk
 &% fnow(ji, jj + 1, 1) + sf(jp_wndj) % fnow(ji, jj, 1)) - rn_vfac * v_ice(ji, jj))
       END DO
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data3 % PreStart('blk_ice_tau', 'r3', 0, 0)
     CALL lbc_lnk_multi('sbcblk', utau_ice, 'U', - 1., vtau_ice, 'V', - 1.)
     IF (ln_ctl) THEN
       CALL prt_ctl(tab2d_1 = utau_ice, clinfo1 = ' blk_ice: utau_ice : ', tab2d_2 = vtau_ice, clinfo2 = ' vtau_ice : ')
