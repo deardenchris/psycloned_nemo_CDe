@@ -509,7 +509,9 @@ MODULE icedyn_rdgrft
     END IF
     SELECT CASE (ismooth)
     CASE (1)
-      CALL profile_psy_data0 % PreStart('ice_strength', 'r0', 0, 0)
+      !CALL profile_psy_data0 % PreStart('ice_strength', 'r0', 0, 0)
+      !$ACC KERNELS
+      !$ACC LOOP COLLAPSE(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           IF (SUM(a_i(ji, jj, :)) > 0._wp) THEN
@@ -521,8 +523,8 @@ MODULE icedyn_rdgrft
           END IF
         END DO
       END DO
-      CALL profile_psy_data0 % PostEnd
-      !$ACC KERNELS
+      !CALL profile_psy_data0 % PostEnd
+      ! !$ACC KERNELS
       !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -537,8 +539,8 @@ MODULE icedyn_rdgrft
         zstrp1(:, :) = 0._wp
         zstrp2(:, :) = 0._wp
       END IF
-      !$ACC END KERNELS
-      CALL profile_psy_data1 % PreStart('ice_strength', 'r1', 0, 0)
+      ! !$ACC END KERNELS
+      !$ACC LOOP COLLAPSE(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           IF (SUM(a_i(ji, jj, :)) > 0._wp) THEN
@@ -552,6 +554,8 @@ MODULE icedyn_rdgrft
           END IF
         END DO
       END DO
+      !$ACC END KERNELS
+      CALL profile_psy_data1 % PreStart('ice_strength', 'r1', 0, 0)
       CALL lbc_lnk('icedyn_rdgrft', strength, 'T', 1.)
       CALL profile_psy_data1 % PostEnd
     END SELECT
