@@ -26,6 +26,7 @@ MODULE icedyn_adv
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     INTEGER, INTENT(IN) :: kt
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('ice_dyn_adv', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('icedyn_adv')
     IF (ln_icediachk) CALL ice_cons_hsm(0, 'icedyn_adv', rdiag_v, rdiag_s, rdiag_t, rdiag_fv, rdiag_fs, rdiag_ft)
@@ -40,11 +41,15 @@ MODULE icedyn_adv
     CASE (np_advPRA)
       CALL ice_dyn_adv_pra(kt, u_ice, v_ice, ato_i, v_i, v_s, sv_i, oa_i, a_i, a_ip, v_ip, e_s, e_i)
     END SELECT
+    CALL profile_psy_data0 % PostEnd
+    !$ACC KERNELS ! CDe added
     diag_trp_ei(:, :) = SUM(SUM(e_i(:, :, 1 : nlay_i, :) - e_i_b(:, :, 1 : nlay_i, :), dim = 4), dim = 3) * r1_rdtice
     diag_trp_es(:, :) = SUM(SUM(e_s(:, :, 1 : nlay_s, :) - e_s_b(:, :, 1 : nlay_s, :), dim = 4), dim = 3) * r1_rdtice
     diag_trp_sv(:, :) = SUM(sv_i(:, :, :) - sv_i_b(:, :, :), dim = 3) * r1_rdtice
     diag_trp_vi(:, :) = SUM(v_i(:, :, :) - v_i_b(:, :, :), dim = 3) * r1_rdtice
     diag_trp_vs(:, :) = SUM(v_s(:, :, :) - v_s_b(:, :, :), dim = 3) * r1_rdtice
+    !$ACC END KERNELS
+    CALL profile_psy_data0 % PreStart('ice_dyn_adv', 'r1', 0, 0)
     IF (iom_use('icemtrp')) CALL iom_put("icemtrp", diag_trp_vi * rhoi)
     IF (iom_use('snwmtrp')) CALL iom_put("snwmtrp", diag_trp_vs * rhos)
     IF (iom_use('salmtrp')) CALL iom_put("salmtrp", diag_trp_sv * rhoi * 1.E-03)
