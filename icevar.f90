@@ -441,7 +441,8 @@ MODULE icevar
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(INOUT) :: pe_s
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(INOUT) :: pe_i
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('ice_var_roundoff', 'r0', 0, 0)
+    !CALL profile_psy_data0 % PreStart('ice_var_roundoff', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe added
     WHERE (pa_i(1 : npti, :) < 0._wp .AND. pa_i(1 : npti, :) > - epsi10) pa_i(1 : npti, :) = 0._wp
     WHERE (pv_i(1 : npti, :) < 0._wp .AND. pv_i(1 : npti, :) > - epsi10) pv_i(1 : npti, :) = 0._wp
     WHERE (pv_s(1 : npti, :) < 0._wp .AND. pv_s(1 : npti, :) > - epsi10) pv_s(1 : npti, :) = 0._wp
@@ -453,7 +454,8 @@ MODULE icevar
       WHERE (pa_ip(1 : npti, :) < 0._wp .AND. pa_ip(1 : npti, :) > - epsi10) pa_ip(1 : npti, :) = 0._wp
       WHERE (pv_ip(1 : npti, :) < 0._wp .AND. pv_ip(1 : npti, :) > - epsi10) pv_ip(1 : npti, :) = 0._wp
     END IF
-    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
+    !CALL profile_psy_data0 % PostEnd
   END SUBROUTINE ice_var_roundoff
   SUBROUTINE ice_var_itd(zhti, zhts, zati, zh_i, zh_s, za_i)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
