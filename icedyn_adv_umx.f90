@@ -112,8 +112,10 @@ MODULE icedyn_adv_umx
     !$ACC END KERNELS
     CALL profile_psy_data1 % PreStart('ice_dyn_adv_umx', 'r1', 0, 0)
     CALL lbc_lnk_multi('icedyn_adv_umx', zhi_max, 'T', 1., zhs_max, 'T', 1., zhip_max, 'T', 1.)
+    !$ACC KERNELS ! CDe added
     zcflnow(1) = MAXVAL(ABS(pu_ice(:, :)) * rdt_ice * r1_e1u(:, :))
     zcflnow(1) = MAX(zcflnow(1), MAXVAL(ABS(pv_ice(:, :)) * rdt_ice * r1_e2v(:, :)))
+    !$ACC END KERNELS
     CALL mpp_delay_max('icedyn_adv_umx', 'cflice', zcflnow(:), zcflprv(:), kt == nitend - nn_fsbc + 1)
     IF (zcflprv(1) > .5) THEN
       icycle = 2
