@@ -183,7 +183,8 @@ MODULE icedyn_rdgrft
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
-    CALL profile_psy_data0 % PreStart('rdgrft_prep', 'r0', 0, 0)
+    !CALL profile_psy_data0 % PreStart('rdgrft_prep', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe added
     z1_gstar = 1._wp / rn_gstar
     z1_astar = 1._wp / rn_astar
     WHERE (pa_i(1 : npti, :) > epsi20)
@@ -191,19 +192,18 @@ MODULE icedyn_rdgrft
     ELSEWHERE
       zhi(1 : npti, :) = 0._wp
     END WHERE
-    CALL profile_psy_data0 % PostEnd
-    !$ACC KERNELS ! CDe reinstated for testing with PGI v20.7
+    !CALL profile_psy_data0 % PostEnd
     !ARPDBG SUM(xx, dim=yy) causes seg fault with PGI 19.10
+    ! CDe reinstated within kernels region for testing with PGI v20.7
     zasum(1 : npti) = pato_i(1 : npti) + SUM(pa_i(1 : npti, :), dim = 2)
-    !$ACC END KERNELS
     WHERE (zasum(1 : npti) > epsi20)
       z1_asum(1 : npti) = 1._wp / zasum(1 : npti)
     ELSEWHERE
       z1_asum(1 : npti) = 0._wp
     END WHERE
-    !$ACC KERNELS ! CDe reinstated for testing with PGI v20.7
     zGsum(1 : npti, - 1) = 0._wp
     zGsum(1 : npti, 0) = pato_i(1 : npti) * z1_asum(1 : npti)
+    ! CDe reinstated within kernels region for testing with PGI v20.7
     DO jl = 1, jpl
       zGsum(1 : npti, jl) = (pato_i(1 : npti) + SUM(pa_i(1 : npti, 1 : jl), dim = 2)) * z1_asum(1 : npti)
     END DO
