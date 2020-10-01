@@ -221,9 +221,11 @@ MODULE icevar
         END DO
       END DO
       !$ACC END KERNELS
-      CALL profile_psy_data0 % PreStart('ice_var_salprof', 'r0', 0, 0)
+      !CALL profile_psy_data0 % PreStart('ice_var_salprof', 'r0', 0, 0)
       DO jl = 1, jpl
+        !$ACC KERNELS ! CDe added
         DO jk = 1, nlay_i
+          !$ACC LOOP INDEPENDENT COLLAPSE(2) ! CDe added
           DO jj = 1, jpj
             DO ji = 1, jpi
               zs0 = z_slope_s(ji, jj, jl) * (REAL(jk, wp) - 0.5_wp) * h_i(ji, jj, jl) * r1_nlay_i
@@ -232,9 +234,10 @@ MODULE icevar
             END DO
           END DO
         END DO
+        !$ACC END KERNELS
       END DO
       DEALLOCATE(z_slope_s, zalpha)
-      CALL profile_psy_data0 % PostEnd
+      !CALL profile_psy_data0 % PostEnd
     CASE (3)
       !$ACC KERNELS
       s_i(:, :, :) = 2.30_wp
