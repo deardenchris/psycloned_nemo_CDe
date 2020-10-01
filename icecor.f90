@@ -85,9 +85,9 @@ MODULE icecor
     END IF
     SELECT CASE (kn)
     CASE (1)
-      !CALL profile_psy_data2 % PreStart('ice_cor', 'r2', 0, 0)
-      !$ACC KERNELS ! CDe added
-      !$ACC LOOP COLLAPSE(2)
+      CALL profile_psy_data2 % PreStart('ice_cor', 'r2', 0, 0)
+      ! !$ACC KERNELS ! CDe added
+      ! !$ACC LOOP COLLAPSE(2) Causes seg fault at runtime, so commenting out for now
       DO jj = 1, jpj
         DO ji = 1, jpi
           diag_heat(ji, jj) = - (SUM(e_i(ji, jj, 1 : nlay_i, :) - e_i_b(ji, jj, 1 : nlay_i, :)) + SUM(e_s(ji, jj, 1 : nlay_s, :) - &
@@ -97,7 +97,8 @@ MODULE icecor
           diag_vsnw(ji, jj) = SUM(v_s(ji, jj, :) - v_s_b(ji, jj, :)) * rhos * r1_rdtice
         END DO
       END DO
-      !CALL profile_psy_data2 % PostEnd
+      CALL profile_psy_data2 % PostEnd
+      !$ACC KERNELS
       zafx(:, :) = SUM(a_i(:, :, :) - a_i_b(:, :, :), dim = 3) * r1_rdtice
       afx_tot(:, :) = zafx(:, :)
       !$ACC END KERNELS
@@ -105,8 +106,9 @@ MODULE icecor
     CASE (2)
       !$ACC KERNELS
       oa_i(:, :, :) = oa_i(:, :, :) + a_i(:, :, :) * rdt_ice
-      !CALL profile_psy_data3 % PreStart('ice_cor', 'r3', 0, 0)
-      !$ACC LOOP COLLAPSE(2)
+      !$ACC END KERNELS
+      CALL profile_psy_data3 % PreStart('ice_cor', 'r3', 0, 0)
+      ! !$ACC LOOP COLLAPSE(2) ! SUM calls below within kernels block causes seg fault
       DO jj = 1, jpj
         DO ji = 1, jpi
           diag_heat(ji, jj) = diag_heat(ji, jj) - (SUM(e_i(ji, jj, 1 : nlay_i, :) - e_i_b(ji, jj, 1 : nlay_i, :)) + SUM(e_s(ji, &
@@ -116,7 +118,8 @@ MODULE icecor
           diag_vsnw(ji, jj) = diag_vsnw(ji, jj) + SUM(v_s(ji, jj, :) - v_s_b(ji, jj, :)) * rhos * r1_rdtice
         END DO
       END DO
-!      CALL profile_psy_data3 % PostEnd
+      CALL profile_psy_data3 % PostEnd
+      !$ACC KERNELS 
       zafx(:, :) = SUM(a_i(:, :, :) - a_i_b(:, :, :), dim = 3) * r1_rdtice
       afx_tot(:, :) = afx_tot(:, :) + zafx(:, :)
       !$ACC END KERNELS
