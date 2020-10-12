@@ -770,9 +770,7 @@ MODULE obs_fbm
       END IF
       cdltmp = fbdata % coblong(jv)
       CALL profile_psy_data1 % PostEnd
-      !$ACC KERNELS
       IF ((cdltmp(1 : 1) >= 'A') .AND. (cdltmp(1 : 1) <= 'Z')) cdltmp(1 : 1) = ACHAR(IACHAR(cdltmp(1 : 1)) + 32)
-      !$ACC END KERNELS
       CALL profile_psy_data2 % PreStart('write_obfbdata', 'r2', 0, 0)
       WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_QC'
       CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_int, incdim1, idivqc(jv)), cpname, 1332)
