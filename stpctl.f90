@@ -122,16 +122,14 @@ MODULE stpctl
         CALL mpp_maxloc('stpctl', tsn(:, :, :, jp_sal), tmask(:, :, :), zzz, is2)
         CALL profile_psy_data4 % PostEnd
       ELSE
-        !$ACC KERNELS
+        !CC KERNELS
+        CALL profile_psy_data5 % PreStart('stp_ctl', 'r5', 0, 0)
         ih(:) = MAXLOC(ABS(sshn(:, :))) + (/nimpp - 1, njmpp - 1/)
         iu(:) = MAXLOC(ABS(un(:, :, :))) + (/nimpp - 1, njmpp - 1, 0/)
-        !$ACC END KERNELS
-        CALL profile_psy_data5 % PreStart('stp_ctl', 'r5', 0, 0)
         is1(:) = MINLOC(tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp) + (/nimpp - 1, njmpp - 1, 0/)
-        CALL profile_psy_data5 % PostEnd
-        !$ACC KERNELS
         is2(:) = MAXLOC(tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp) + (/nimpp - 1, njmpp - 1, 0/)
-        !$ACC END KERNELS
+        CALL profile_psy_data5 % PostEnd
+        !CC END KERNELS
       END IF
       CALL profile_psy_data6 % PreStart('stp_ctl', 'r6', 0, 0)
       WRITE(ctmp1, FMT = *) ' stp_ctl: |ssh| > 20 m  or  |U| > 10 m/s  or  S <= 0  or  S >= 100  or  NaN encounter in the tests'
