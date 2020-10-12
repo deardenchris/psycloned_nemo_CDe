@@ -45,9 +45,11 @@ MODULE lib_fortran
     COMPLEX(KIND = wp) :: ctmp
     INTEGER :: ji
     ctmp = CMPLX(0.E0, 0.E0, wp)
+    !$ACC LOOP SEQ
     DO ji = 1, kdim
       CALL DDPDD(ptab(ji), ctmp)
     END DO
+    !$ACC END LOOP
     IF (ldcom) CALL mpp_sum(cdname, ctmp)
     glob_sum_c1d = REAL(ctmp, wp)
   END FUNCTION glob_sum_c1d
@@ -66,10 +68,12 @@ MODULE lib_fortran
     ctmp = CMPLX(0.E0, 0.E0, wp)
     DO jk = 1, ipk
       DO jj = 1, ipj
+        !$ACC LOOP SEQ
         DO ji = 1, ipi
           ztmp = ptab(ji) * 1.
           CALL DDPDD(CMPLX(ztmp, 0.E0, wp), ctmp)
         END DO
+        !$ACC END LOOP
       END DO
     END DO
     CALL mpp_sum(cdname, ctmp)
@@ -318,19 +322,19 @@ MODULE lib_fortran
     INTEGER :: ji, ji2, jj, jj2
     IF (SIZE(p2d, 1) /= jpi) CALL ctl_stop('STOP', 'wrong call of sum3x3_2d, the first dimension is not equal to jpi')
     IF (SIZE(p2d, 2) /= jpj) CALL ctl_stop('STOP', 'wrong call of sum3x3_2d, the second dimension is not equal to jpj')
+    !$ACC KERNELS
     DO jj = 1, jpj
       DO ji = 1, jpi
         IF (MOD(mig(ji), 3) == 1 .AND. MOD(mjg(jj), 3) == 1) THEN
-          !$ACC KERNELS
           ji2 = MIN(mig(ji) + 2, jpiglo) - nimpp + 1
           jj2 = MIN(mjg(jj) + 2, jpjglo) - njmpp + 1
           IF (ji2 <= jpi .AND. jj2 <= jpj) THEN
             p2d(ji : ji2, jj : jj2) = SUM(p2d(ji : ji2, jj : jj2))
           END IF
-          !$ACC END KERNELS
         END IF
       END DO
     END DO
+    !$ACC END KERNELS
     CALL lbc_lnk('lib_fortran', p2d, 'T', 1.)
     !$ACC KERNELS
     IF (nbondi /= - 1) THEN
@@ -359,21 +363,21 @@ MODULE lib_fortran
     IF (SIZE(p3d, 1) /= jpi) CALL ctl_stop('STOP', 'wrong call of sum3x3_3d, the first dimension is not equal to jpi')
     IF (SIZE(p3d, 2) /= jpj) CALL ctl_stop('STOP', 'wrong call of sum3x3_3d, the second dimension is not equal to jpj')
     ipn = SIZE(p3d, 3)
+    !$ACC KERNELS
     DO jn = 1, ipn
       DO jj = 1, jpj
         DO ji = 1, jpi
           IF (MOD(mig(ji), 3) == 1 .AND. MOD(mjg(jj), 3) == 1) THEN
-            !$ACC KERNELS
             ji2 = MIN(mig(ji) + 2, jpiglo) - nimpp + 1
             jj2 = MIN(mjg(jj) + 2, jpjglo) - njmpp + 1
             IF (ji2 <= jpi .AND. jj2 <= jpj) THEN
               p3d(ji : ji2, jj : jj2, jn) = SUM(p3d(ji : ji2, jj : jj2, jn))
             END IF
-            !$ACC END KERNELS
           END IF
         END DO
       END DO
     END DO
+    !$ACC END KERNELS
     CALL lbc_lnk('lib_fortran', p3d, 'T', 1.)
     !$ACC KERNELS
     IF (nbondi /= - 1) THEN
@@ -401,16 +405,16 @@ MODULE lib_fortran
     COMPLEX(KIND = wp), INTENT(INOUT) :: yddb
     REAL(KIND = wp) :: zerr, zt1, zt2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('ddpdd', 'r0', 0, 0)
+    !$ACC ROUTINE
     zt1 = REAL(ydda) + REAL(yddb)
     zerr = zt1 - REAL(ydda)
     zt2 = ((REAL(yddb) - zerr) + (REAL(ydda) - (zt1 - zerr))) + AIMAG(ydda) + AIMAG(yddb)
     yddb = CMPLX(zt1 + zt2, zt2 - ((zt1 + zt2) - zt1), wp)
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE DDPDD
   FUNCTION SIGN_SCALAR(pa, pb)
-    REAL(KIND = wp) :: pa, pb
-    REAL(KIND = wp) :: SIGN_SCALAR
+    REAL(KIND = wp), intent(in), value :: pa, pb
+    REAL(KIND = wp), intent(in)        :: SIGN_SCALAR
+    !$ACC ROUTINE
     IF (pb >= 0.E0) THEN
       sign_scalar = ABS(pa)
     ELSE
@@ -418,8 +422,9 @@ MODULE lib_fortran
     END IF
   END FUNCTION SIGN_SCALAR
   FUNCTION SIGN_ARRAY_1D(pa, pb)
-    REAL(KIND = wp) :: pa, pb(:)
+    REAL(KIND = wp), intent(in) :: pa, pb(:)
     REAL(KIND = wp) :: SIGN_ARRAY_1D(SIZE(pb, 1))
+    !$ACC ROUTINE
     WHERE (pb >= 0.E0)
       sign_array_1d = ABS(pa)
     ELSEWHERE
@@ -427,8 +432,9 @@ MODULE lib_fortran
     END WHERE
   END FUNCTION SIGN_ARRAY_1D
   FUNCTION SIGN_ARRAY_2D(pa, pb)
-    REAL(KIND = wp) :: pa, pb(:, :)
+    REAL(KIND = wp), intent(in)  :: pa, pb(:, :)
     REAL(KIND = wp) :: SIGN_ARRAY_2D(SIZE(pb, 1), SIZE(pb, 2))
+    !$ACC ROUTINE
     WHERE (pb >= 0.E0)
       sign_array_2d = ABS(pa)
     ELSEWHERE
@@ -436,8 +442,9 @@ MODULE lib_fortran
     END WHERE
   END FUNCTION SIGN_ARRAY_2D
   FUNCTION SIGN_ARRAY_3D(pa, pb)
-    REAL(KIND = wp) :: pa, pb(:, :, :)
+    REAL(KIND = wp), intent(in) :: pa, pb(:, :, :)
     REAL(KIND = wp) :: SIGN_ARRAY_3D(SIZE(pb, 1), SIZE(pb, 2), SIZE(pb, 3))
+    !$ACC ROUTINE
     WHERE (pb >= 0.E0)
       sign_array_3d = ABS(pa)
     ELSEWHERE
@@ -447,6 +454,7 @@ MODULE lib_fortran
   FUNCTION SIGN_ARRAY_1D_A(pa, pb)
     REAL(KIND = wp) :: pa(:), pb(:)
     REAL(KIND = wp) :: SIGN_ARRAY_1D_A(SIZE(pb, 1))
+    !$ACC ROUTINE
     WHERE (pb >= 0.E0)
       sign_array_1d_a = ABS(pa)
     ELSEWHERE
@@ -456,6 +464,7 @@ MODULE lib_fortran
   FUNCTION SIGN_ARRAY_2D_A(pa, pb)
     REAL(KIND = wp) :: pa(:, :), pb(:, :)
     REAL(KIND = wp) :: SIGN_ARRAY_2D_A(SIZE(pb, 1), SIZE(pb, 2))
+    !$ACC ROUTINE
     WHERE (pb >= 0.E0)
       sign_array_2d_a = ABS(pa)
     ELSEWHERE
@@ -465,6 +474,7 @@ MODULE lib_fortran
   FUNCTION SIGN_ARRAY_3D_A(pa, pb)
     REAL(KIND = wp) :: pa(:, :, :), pb(:, :, :)
     REAL(KIND = wp) :: SIGN_ARRAY_3D_A(SIZE(pb, 1), SIZE(pb, 2), SIZE(pb, 3))
+    !$ACC ROUTINE
     WHERE (pb >= 0.E0)
       sign_array_3d_a = ABS(pa)
     ELSEWHERE
@@ -474,6 +484,7 @@ MODULE lib_fortran
   FUNCTION SIGN_ARRAY_1D_B(pa, pb)
     REAL(KIND = wp) :: pa(:), pb
     REAL(KIND = wp) :: SIGN_ARRAY_1D_B(SIZE(pa, 1))
+    !$ACC ROUTINE
     IF (pb >= 0.E0) THEN
       sign_array_1d_b = ABS(pa)
     ELSE
@@ -483,6 +494,7 @@ MODULE lib_fortran
   FUNCTION SIGN_ARRAY_2D_B(pa, pb)
     REAL(KIND = wp) :: pa(:, :), pb
     REAL(KIND = wp) :: SIGN_ARRAY_2D_B(SIZE(pa, 1), SIZE(pa, 2))
+    !$ACC ROUTINE
     IF (pb >= 0.E0) THEN
       sign_array_2d_b = ABS(pa)
     ELSE
