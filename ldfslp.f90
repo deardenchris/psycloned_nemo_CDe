@@ -153,8 +153,9 @@ MODULE ldfslp
     CALL lbc_lnk_multi('ldfslp', zwz, 'U', - 1., zww, 'V', - 1.)
     DO jk = 2, jpkm1
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1, MAX(1, jpj - 3)
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
           uslp(ji, jj, jk) = z1_16 * (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj &
 &+ 1, jk) + 2. * (zwz(ji, jj - 1, jk) + zwz(ji - 1, jj, jk) + zwz(ji + 1, jj, jk) + zwz(ji, jj + 1, jk)) + 4. * zwz(ji, jj, jk))
@@ -209,8 +210,9 @@ MODULE ldfslp
     CALL lbc_lnk_multi('ldfslp', zwz, 'T', - 1., zww, 'T', - 1.)
     DO jk = 2, jpkm1
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1, MAX(1, jpj - 3)
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
           zcofw = wmask(ji, jj, jk) * z1_16
           wslpi(ji, jj, jk) = (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj + 1, &
