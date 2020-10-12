@@ -108,21 +108,31 @@ MODULE lbclnk
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
+          !$ACC KERNELS      
           ptab(jf) % pt2d(1, :) = ptab(jf) % pt2d(jpim1, :)
           ptab(jf) % pt2d(jpi, :) = ptab(jf) % pt2d(2, :)
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(1, :) = zland
           ptab(jf) % pt2d(jpi, :) = zland
+          !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
+          !$ACC KERNELS      
           ptab(jf) % pt2d(:, 1) = ptab(jf) % pt2d(:, jpjm1)
           ptab(jf) % pt2d(:, jpj) = ptab(jf) % pt2d(:, 2)
+          !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(:, 1) = zland
+          !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat(:), psgn(:), ipf)
         ELSE
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(:, 1) = zland
           ptab(jf) % pt2d(:, jpj) = zland
+          !$ACC END KERNELS
         END IF
       END DO
     END IF
@@ -211,21 +221,31 @@ MODULE lbclnk
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
+          !$ACC KERNELS      
           ptab(jf) % pt3d(1, :, :) = ptab(jf) % pt3d(jpim1, :, :)
           ptab(jf) % pt3d(jpi, :, :) = ptab(jf) % pt3d(2, :, :)
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(1, :, :) = zland
           ptab(jf) % pt3d(jpi, :, :) = zland
+          !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
+          !$ACC KERNELS      
           ptab(jf) % pt3d(:, 1, :) = ptab(jf) % pt3d(:, jpjm1, :)
           ptab(jf) % pt3d(:, jpj, :) = ptab(jf) % pt3d(:, 2, :)
+          !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(:, 1, :) = zland
+          !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat(:), psgn(:), ipf)
         ELSE
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(:, 1, :) = zland
           ptab(jf) % pt3d(:, jpj, :) = zland
+          !$ACC END KERNELS
         END IF
       END DO
     END IF
@@ -314,21 +334,31 @@ MODULE lbclnk
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
+          !$ACC KERNELS      
           ptab(jf) % pt4d(1, :, :, :) = ptab(jf) % pt4d(jpim1, :, :, :)
           ptab(jf) % pt4d(jpi, :, :, :) = ptab(jf) % pt4d(2, :, :, :)
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(1, :, :, :) = zland
           ptab(jf) % pt4d(jpi, :, :, :) = zland
+          !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
+          !$ACC KERNELS      
           ptab(jf) % pt4d(:, 1, :, :) = ptab(jf) % pt4d(:, jpjm1, :, :)
           ptab(jf) % pt4d(:, jpj, :, :) = ptab(jf) % pt4d(:, 2, :, :)
+          !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(:, 1, :, :) = zland
+          !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat(:), psgn(:), ipf)
         ELSE
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(:, 1, :, :) = zland
           ptab(jf) % pt4d(:, jpj, :, :) = zland
+          !$ACC END KERNELS
         END IF
       END DO
     END IF
@@ -385,16 +415,27 @@ MODULE lbclnk
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('lbc_lnk_2d_multi', 'r0', 0, 0)
     kfld = 0
-    CALL load_ptr_2d(pt1, cdna1, psgn1, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn2)) CALL load_ptr_2d(pt2, cdna2, psgn2, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn3)) CALL load_ptr_2d(pt3, cdna3, psgn3, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn4)) CALL load_ptr_2d(pt4, cdna4, psgn4, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn5)) CALL load_ptr_2d(pt5, cdna5, psgn5, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn6)) CALL load_ptr_2d(pt6, cdna6, psgn6, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn7)) CALL load_ptr_2d(pt7, cdna7, psgn7, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn8)) CALL load_ptr_2d(pt8, cdna8, psgn8, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn9)) CALL load_ptr_2d(pt9, cdna9, psgn9, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    CALL lbc_lnk_ptr(cdname, ptab_ptr, cdna_ptr, psgn_ptr, kfld, cd_mpp, pval)
+    CALL lbc_lnk_2d(cdname, pt1, cdna1, psgn1, cd_mpp, pval)
+    IF (PRESENT(psgn2)) CALL lbc_lnk_2d(cdname, pt2, cdna2, psgn2, cd_mpp, pval)
+    IF (PRESENT(psgn3)) CALL lbc_lnk_2d(cdname, pt3, cdna3, psgn3, cd_mpp, pval)
+    IF (PRESENT(psgn4)) CALL lbc_lnk_2d(cdname, pt4, cdna4, psgn4, cd_mpp, pval)
+    IF (PRESENT(psgn5)) CALL lbc_lnk_2d(cdname, pt5, cdna5, psgn5, cd_mpp, pval)
+    IF (PRESENT(psgn6)) CALL lbc_lnk_2d(cdname, pt6, cdna6, psgn6, cd_mpp, pval)
+    IF (PRESENT(psgn7)) CALL lbc_lnk_2d(cdname, pt7, cdna7, psgn7, cd_mpp, pval)
+    IF (PRESENT(psgn8)) CALL lbc_lnk_2d(cdname, pt8, cdna8, psgn8, cd_mpp, pval)
+    IF (PRESENT(psgn9)) CALL lbc_lnk_2d(cdname, pt9, cdna9, psgn9, cd_mpp, pval)
+    !ARPDBG avoid using *_ptr routine because not yet sure how to handle
+    ! list of pointers effectively
+    !CALL load_ptr_2d(pt1, cdna1, psgn1, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn2)) CALL load_ptr_2d(pt2, cdna2, psgn2, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn3)) CALL load_ptr_2d(pt3, cdna3, psgn3, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn4)) CALL load_ptr_2d(pt4, cdna4, psgn4, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn5)) CALL load_ptr_2d(pt5, cdna5, psgn5, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn6)) CALL load_ptr_2d(pt6, cdna6, psgn6, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn7)) CALL load_ptr_2d(pt7, cdna7, psgn7, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn8)) CALL load_ptr_2d(pt8, cdna8, psgn8, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn9)) CALL load_ptr_2d(pt9, cdna9, psgn9, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !CALL lbc_lnk_ptr(cdname, ptab_ptr, cdna_ptr, psgn_ptr, kfld, cd_mpp, pval)
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_lnk_2d_multi
   SUBROUTINE load_ptr_2d(ptab, cdna, psgn, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
@@ -433,16 +474,27 @@ MODULE lbclnk
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('lbc_lnk_3d_multi', 'r0', 0, 0)
     kfld = 0
-    CALL load_ptr_3d(pt1, cdna1, psgn1, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn2)) CALL load_ptr_3d(pt2, cdna2, psgn2, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn3)) CALL load_ptr_3d(pt3, cdna3, psgn3, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn4)) CALL load_ptr_3d(pt4, cdna4, psgn4, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn5)) CALL load_ptr_3d(pt5, cdna5, psgn5, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn6)) CALL load_ptr_3d(pt6, cdna6, psgn6, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn7)) CALL load_ptr_3d(pt7, cdna7, psgn7, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn8)) CALL load_ptr_3d(pt8, cdna8, psgn8, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    IF (PRESENT(psgn9)) CALL load_ptr_3d(pt9, cdna9, psgn9, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    CALL lbc_lnk_ptr(cdname, ptab_ptr, cdna_ptr, psgn_ptr, kfld, cd_mpp, pval)
+    !ARPDBG avoid using *_ptr routine because not yet sure how to handle
+    ! list of pointers effectively
+    !CALL load_ptr_3d(pt1, cdna1, psgn1, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn2)) CALL load_ptr_3d(pt2, cdna2, psgn2, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn3)) CALL load_ptr_3d(pt3, cdna3, psgn3, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn4)) CALL load_ptr_3d(pt4, cdna4, psgn4, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn5)) CALL load_ptr_3d(pt5, cdna5, psgn5, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn6)) CALL load_ptr_3d(pt6, cdna6, psgn6, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn7)) CALL load_ptr_3d(pt7, cdna7, psgn7, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn8)) CALL load_ptr_3d(pt8, cdna8, psgn8, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !IF (PRESENT(psgn9)) CALL load_ptr_3d(pt9, cdna9, psgn9, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    !CALL lbc_lnk_ptr(cdname, ptab_ptr, cdna_ptr, psgn_ptr, kfld, cd_mpp, pval)
+    CALL lbc_lnk_3d(cdname, pt1, cdna1, psgn1, cd_mpp, pval)
+    IF (PRESENT(psgn2)) CALL lbc_lnk_3d(cdname, pt2, cdna2, psgn2, cd_mpp, pval)
+    IF (PRESENT(psgn3)) CALL lbc_lnk_3d(cdname, pt3, cdna3, psgn3, cd_mpp, pval)
+    IF (PRESENT(psgn4)) CALL lbc_lnk_3d(cdname, pt4, cdna4, psgn4, cd_mpp, pval)
+    IF (PRESENT(psgn5)) CALL lbc_lnk_3d(cdname, pt5, cdna5, psgn5, cd_mpp, pval)
+    IF (PRESENT(psgn6)) CALL lbc_lnk_3d(cdname, pt6, cdna6, psgn6, cd_mpp, pval)
+    IF (PRESENT(psgn7)) CALL lbc_lnk_3d(cdname, pt7, cdna7, psgn7, cd_mpp, pval)
+    IF (PRESENT(psgn8)) CALL lbc_lnk_3d(cdname, pt8, cdna8, psgn8, cd_mpp, pval)
+    IF (PRESENT(psgn9)) CALL lbc_lnk_3d(cdname, pt9, cdna9, psgn9, cd_mpp, pval)
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_lnk_3d_multi
   SUBROUTINE load_ptr_3d(ptab, cdna, psgn, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
