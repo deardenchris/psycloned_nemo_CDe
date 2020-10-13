@@ -35,6 +35,7 @@ MODULE stpctl
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
     CALL profile_psy_data0 % PreStart('stp_ctl', 'r0', 0, 0)
     ll_wrtstp = (MOD(kt, sn_cfctl % ptimincr) == 0) .OR. (kt == nitend)
     ll_colruns = ll_wrtstp .AND. (ln_ctl .OR. sn_cfctl % l_runstat)
@@ -77,21 +78,31 @@ MODULE stpctl
       WRITE(numstp, FMT = '(1x, i8)') kt
       REWIND(UNIT = numstp)
     END IF
+    CALL profile_psy_data3 % PostEnd ! CDe added
     IF (ll_wd) THEN
+      !$ACC KERNELS ! CDe added      
       zmax(1) = MAXVAL(ABS(sshn(:, :) + ssh_ref * tmask(:, :, 1)))
+      !$ACC END KERNELS
     ELSE
+      !$ACC KERNELS ! CDe added      
       zmax(1) = MAXVAL(ABS(sshn(:, :)))
+      !$ACC END KERNELS
     END IF
+    !$ACC KERNELS ! CDe added
     zmax(2) = MAXVAL(ABS(un(:, :, :)))
     zmax(3) = MAXVAL(- tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp)
     zmax(4) = MAXVAL(tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp)
     zmax(5) = MAXVAL(- tsn(:, :, :, jp_tem), mask = tmask(:, :, :) == 1._wp)
     zmax(6) = MAXVAL(tsn(:, :, :, jp_tem), mask = tmask(:, :, :) == 1._wp)
     zmax(7) = REAL(nstop, wp)
+    !$ACC END KERNELS
     IF (ln_zad_Aimp) THEN
+      !$ACC KERNELS ! CDe added      
       zmax(8) = MAXVAL(ABS(wi(:, :, :)), mask = wmask(:, :, :) == 1._wp)
       zmax(9) = MAXVAL(Cu_adv(:, :, :), mask = tmask(:, :, :) == 1._wp)
+      !$ACC END KERNELS
     END IF
+    CALL profile_psy_data4 % PreStart('stp_ctl', 'r4', 0, 0)
     IF (ll_colruns) THEN
       CALL mpp_max("stpctl", zmax)
       nstop = NINT(zmax(7))
@@ -111,27 +122,27 @@ MODULE stpctl
       IF (MOD(kt, 100) == 0) istatus = NF90_SYNC(idrun)
       IF (kt == nitend) istatus = NF90_CLOSE(idrun)
     END IF
-    CALL profile_psy_data3 % PostEnd
+    CALL profile_psy_data4 % PostEnd
     IF ((ln_ctl .OR. lsomeoce) .AND. (zmax(1) > 20._wp .OR. zmax(2) > 10._wp .OR. zmax(3) >= 0._wp .OR. zmax(4) >= 100._wp .OR. &
 &zmax(4) < 0._wp .OR. IEEE_IS_NAN(zmax(1) + zmax(2) + zmax(3)))) THEN
       IF (lk_mpp .AND. ln_ctl) THEN
-        CALL profile_psy_data4 % PreStart('stp_ctl', 'r4', 0, 0)
+        CALL profile_psy_data5 % PreStart('stp_ctl', 'r5', 0, 0)
         CALL mpp_maxloc('stpctl', ABS(sshn), ssmask(:, :), zzz, ih)
         CALL mpp_maxloc('stpctl', ABS(un), umask(:, :, :), zzz, iu)
         CALL mpp_minloc('stpctl', tsn(:, :, :, jp_sal), tmask(:, :, :), zzz, is1)
         CALL mpp_maxloc('stpctl', tsn(:, :, :, jp_sal), tmask(:, :, :), zzz, is2)
-        CALL profile_psy_data4 % PostEnd
+        CALL profile_psy_data5 % PostEnd
       ELSE
         !CC KERNELS
-        CALL profile_psy_data5 % PreStart('stp_ctl', 'r5', 0, 0)
+        CALL profile_psy_data6 % PreStart('stp_ctl', 'r6', 0, 0)
         ih(:) = MAXLOC(ABS(sshn(:, :))) + (/nimpp - 1, njmpp - 1/)
         iu(:) = MAXLOC(ABS(un(:, :, :))) + (/nimpp - 1, njmpp - 1, 0/)
         is1(:) = MINLOC(tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp) + (/nimpp - 1, njmpp - 1, 0/)
         is2(:) = MAXLOC(tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp) + (/nimpp - 1, njmpp - 1, 0/)
-        CALL profile_psy_data5 % PostEnd
+        CALL profile_psy_data6 % PostEnd
         !CC END KERNELS
       END IF
-      CALL profile_psy_data6 % PreStart('stp_ctl', 'r6', 0, 0)
+      CALL profile_psy_data7 % PreStart('stp_ctl', 'r7', 0, 0)
       WRITE(ctmp1, FMT = *) ' stp_ctl: |ssh| > 20 m  or  |U| > 10 m/s  or  S <= 0  or  S >= 100  or  NaN encounter in the tests'
       WRITE(ctmp2, 9100) kt, zmax(1), ih(1), ih(2)
       WRITE(ctmp3, 9200) kt, zmax(2), iu(1), iu(2), iu(3)
@@ -146,14 +157,14 @@ MODULE stpctl
         CALL ctl_stop(ctmp1, ' ', ctmp2, ctmp3, ctmp4, ctmp5, ' ', ctmp6, ' ')
       END IF
       kindic = - 3
-      CALL profile_psy_data6 % PostEnd
+      CALL profile_psy_data7 % PostEnd
     END IF
-    CALL profile_psy_data7 % PreStart('stp_ctl', 'r7', 0, 0)
+    CALL profile_psy_data8 % PreStart('stp_ctl', 'r8', 0, 0)
 9100 FORMAT(' kt=', I8, '   |ssh| max: ', 1P, G11.4, ', at  i j  : ', 2I5)
 9200 FORMAT(' kt=', I8, '   |U|   max: ', 1P, G11.4, ', at  i j k: ', 3I5)
 9300 FORMAT(' kt=', I8, '   S     min: ', 1P, G11.4, ', at  i j k: ', 3I5)
 9400 FORMAT(' kt=', I8, '   S     max: ', 1P, G11.4, ', at  i j k: ', 3I5)
 9500 FORMAT(' it :', I8, '    |ssh|_max: ', D23.16, ' |U|_max: ', D23.16, ' S_min: ', D23.16, ' S_max: ', D23.16)
-    CALL profile_psy_data7 % PostEnd
+    CALL profile_psy_data8 % PostEnd
   END SUBROUTINE stp_ctl
 END MODULE stpctl
