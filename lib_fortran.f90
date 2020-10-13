@@ -93,6 +93,7 @@ MODULE lib_fortran
     ipj = SIZE(ptab, 2)
     ipk = 1
     ALLOCATE(hsum(ipj))
+    !$ACC KERNELS ! CDe added
     DO jk = 1, ipk
       DO jj = 1, ipj
         ctmp = CMPLX(0.E0, 0.E0, wp)
@@ -103,6 +104,7 @@ MODULE lib_fortran
         hsum(jj) = ctmp
       END DO
     END DO
+    !$ACC END KERNELS
     glob_sum_2d = glob_sum_c1d(hsum, ipj, .TRUE. .AND. lk_mpp, cdname)
     DEALLOCATE(hsum)
   END FUNCTION glob_sum_2d
@@ -121,6 +123,7 @@ MODULE lib_fortran
     ipk = 1
     ALLOCATE(hsum(ipj))
     DO jk = 1, ipk
+      !$ACC KERNELS ! CDe added
       DO jj = 1, ipj
         ctmp = CMPLX(0.E0, 0.E0, wp)
         DO ji = 1, ipi
@@ -129,6 +132,7 @@ MODULE lib_fortran
         END DO
         hsum(jj) = ctmp
       END DO
+      !$ACC END KERNELS
     END DO
     glob_sum_full_2d = glob_sum_c1d(hsum, ipj, .TRUE. .AND. lk_mpp, cdname)
     DEALLOCATE(hsum)
@@ -147,6 +151,7 @@ MODULE lib_fortran
     ipj = SIZE(ptab, 2)
     ipk = SIZE(ptab, 3)
     ALLOCATE(hsum(ipk))
+    !$ACC KERNELS ! CDe added
     DO jk = 1, ipk
       ctmp = CMPLX(0.E0, 0.E0, wp)
       DO jj = 1, ipj
@@ -157,6 +162,7 @@ MODULE lib_fortran
       END DO
       hsum(jk) = ctmp
     END DO
+    !$ACC END KERNELS
     glob_sum_3d = glob_sum_c1d(hsum, ipk, .TRUE. .AND. lk_mpp, cdname)
     DEALLOCATE(hsum)
   END FUNCTION glob_sum_3d
@@ -174,6 +180,7 @@ MODULE lib_fortran
     ipj = SIZE(ptab, 2)
     ipk = SIZE(ptab, 3)
     ALLOCATE(hsum(ipk))
+    !$ACC KERNELS ! CDe added
     DO jk = 1, ipk
       ctmp = CMPLX(0.E0, 0.E0, wp)
       DO jj = 1, ipj
@@ -184,6 +191,7 @@ MODULE lib_fortran
       END DO
       hsum(jk) = ctmp
     END DO
+    !$ACC END KERNELS
     glob_sum_full_3d = glob_sum_c1d(hsum, ipk, .TRUE. .AND. lk_mpp, cdname)
     DEALLOCATE(hsum)
   END FUNCTION glob_sum_full_3d
@@ -200,7 +208,9 @@ MODULE lib_fortran
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('glob_min_2d', 'r0', 0, 0)
     ipk = 1
+    !$ACC KERNELS ! CDe Unary operator support for MINVAL required?
     ztmp = MINVAL(ptab(:, :) * tmask_i(:, :))
+    !$ACC END KERNELS
     CALL mpp_min(cdname, ztmp)
     glob_min_2d = ztmp
     CALL profile_psy_data0 % PostEnd
@@ -218,7 +228,9 @@ MODULE lib_fortran
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('glob_max_2d', 'r0', 0, 0)
     ipk = 1
+    !$ACC KERNELS ! CDe Unary operator support for MAXVAL required?
     ztmp = MAXVAL(ptab(:, :) * tmask_i(:, :))
+    !$ACC END KERNELS
     CALL mpp_max(cdname, ztmp)
     glob_max_2d = ztmp
     CALL profile_psy_data0 % PostEnd
