@@ -220,29 +220,46 @@ MODULE sbcblk
     zst(:, :) = pst(:, :) + rt0
     zwnd_i(:, :) = 0._wp
     zwnd_j(:, :) = 0._wp
-    !$ACC END KERNELS
-    CALL profile_psy_data0 % PreStart('blk_oce', 'r0', 0, 0)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         zwnd_i(ji, jj) = (sf(jp_wndi) % fnow(ji, jj, 1) - rn_vfac * 0.5 * (pu(ji - 1, jj) + pu(ji, jj)))
         zwnd_j(ji, jj) = (sf(jp_wndj) % fnow(ji, jj, 1) - rn_vfac * 0.5 * (pv(ji, jj - 1) + pv(ji, jj)))
       END DO
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data0 % PreStart('blk_oce', 'r0', 0, 0)
     CALL lbc_lnk_multi('sbcblk', zwnd_i, 'T', - 1., zwnd_j, 'T', - 1.)
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     wndm(:, :) = SQRT(zwnd_i(:, :) * zwnd_i(:, :) + zwnd_j(:, :) * zwnd_j(:, :)) * tmask(:, :, 1)
     zztmp = 1. - albo
     !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('blk_oce', 'r1', 0, 0)
+    !CALL profile_psy_data1 % PreStart('blk_oce', 'r1', 0, 0)
     IF (ln_dm2dc) THEN
-      qsr(:, :) = zztmp * sbc_dcy(sf(jp_qsr) % fnow(:, :, 1)) * tmask(:, :, 1)
+    !  qsr(:, :) = zztmp * sbc_dcy(sf(jp_qsr) % fnow(:, :, 1)) * tmask(:, :, 1)
+    qsr(:, :) = sbc_dcy(sf(jp_qsr) % fnow(:, :, 1))
+    !$ACC KERNELS ! CDe
+    qsr(:, :) = zztmp * qsr(:,:)  * tmask(:, :, 1)
+    !$ACC END KERNELS
     ELSE
+      !$ACC KERNELS ! CDe      
       qsr(:, :) = zztmp * sf(jp_qsr) % fnow(:, :, 1) * tmask(:, :, 1)
+      !$ACC END KERNELS
     END IF
+    !$ACC KERNELS ! CDe
     zqlw(:, :) = (sf(jp_qlw) % fnow(:, :, 1) - Stef * zst(:, :) * zst(:, :) * zst(:, :) * zst(:, :)) * tmask(:, :, 1)
-    zsq(:, :) = 0.98 * q_sat(zst(:, :), sf(jp_slp) % fnow(:, :, 1))
-    ztpot = sf(jp_tair) % fnow(:, :, 1) + gamma_moist(sf(jp_tair) % fnow(:, :, 1), sf(jp_humi) % fnow(:, :, 1)) * rn_zqt
+!    zsq(:, :) = 0.98 * q_sat(zst(:, :), sf(jp_slp) % fnow(:, :, 1))
+!    ztpot = sf(jp_tair) % fnow(:, :, 1) + gamma_moist(sf(jp_tair) % fnow(:, :, 1), sf(jp_humi) % fnow(:, :, 1)) * rn_zqt
+    !$ACC END KERNELS
+    zsq(:, :) = q_sat(zst(:, :), sf(jp_slp) % fnow(:, :, 1))
+    !$ACC KERNELS ! CDe added
+    zsq(:, :) = 0.98 * zsq(:,:)
+    !$ACC END KERNELS
+    ztpot(:,:) = gamma_moist(sf(jp_tair) % fnow(:, :, 1), sf(jp_humi) % fnow(:, :, 1))
+    !$ACC KERNELS ! CDe added
+    ztpot(:,:) = sf(jp_tair) % fnow(:, :, 1) + ztpot(:,:) * rn_zqt
+    !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('blk_oce', 'r1', 0, 0)
     SELECT CASE (nblk)
     CASE (np_ncar)
       CALL turb_ncar(rn_zqt, rn_zu, zst, ztpot, zsq, sf(jp_humi) % fnow, wndm, cd_atm, ch_atm, ce_atm, t_zu, q_zu, zu_zu, cdn_oce, &
@@ -276,8 +293,10 @@ MODULE sbcblk
       END DO
     END DO
     !$ACC END KERNELS
-    CALL profile_psy_data2 % PreStart('blk_oce', 'r2', 0, 0)
+    !$ACC KERNELS ! CDe
     IF (lhftau) taum(:, :) = taum(:, :) + sf(jp_tdif) % fnow(:, :, 1)
+    !$ACC END KERNELS
+    CALL profile_psy_data2 % PreStart('blk_oce', 'r2', 0, 0)
     CALL iom_put("taum_oce", taum)
     CALL profile_psy_data2 % PostEnd
     !$ACC KERNELS
@@ -296,20 +315,35 @@ MODULE sbcblk
     zqla(:, :) = zrhoa(:, :) * zU_zu(:, :) * tmask(:, :, 1)
     !$ACC END KERNELS
     IF (ABS(rn_zu - rn_zqt) < 0.01_wp) THEN
-      CALL profile_psy_data3 % PreStart('blk_oce', 'r3', 0, 0)
+      !$ACC KERNELS ! CDe
       zevap(:, :) = rn_efac * MAX(0._wp, zqla(:, :) * Ce_atm(:, :) * (zsq(:, :) - sf(jp_humi) % fnow(:, :, 1)))
-      zqsb(:, :) = cp_air(sf(jp_humi) % fnow(:, :, 1)) * zqla(:, :) * Ch_atm(:, :) * (zst(:, :) - ztpot(:, :))
-      CALL profile_psy_data3 % PostEnd
+      !CALL profile_psy_data3 % PreStart('blk_oce', 'r3', 0, 0)
+      !$ACC END KERNELS
+      !zqsb(:, :) = cp_air(sf(jp_humi) % fnow(:, :, 1)) * zqla(:, :) * Ch_atm(:, :) * (zst(:, :) - ztpot(:, :))
+      !CALL profile_psy_data3 % PostEnd
+      zqsb(:, :) = cp_air(sf(jp_humi) % fnow(:, :, 1))
+      !$ACC KERNELS ! CDe added
+      zqsb(:, :) = zqsb(:,:) * zqla(:, :) * Ch_atm(:, :) * (zst(:, :) - ztpot(:, :))
+      !$ACC END KERNELS
+      !CALL profile_psy_data3 % PostEnd
     ELSE
       !$ACC KERNELS
       zevap(:, :) = rn_efac * MAX(0._wp, zqla(:, :) * Ce_atm(:, :) * (zsq(:, :) - q_zu(:, :)))
       !$ACC END KERNELS
-      CALL profile_psy_data4 % PreStart('blk_oce', 'r4', 0, 0)
-      zqsb(:, :) = cp_air(sf(jp_humi) % fnow(:, :, 1)) * zqla(:, :) * Ch_atm(:, :) * (zst(:, :) - t_zu(:, :))
-      CALL profile_psy_data4 % PostEnd
+      !CALL profile_psy_data4 % PreStart('blk_oce', 'r4', 0, 0)
+      zqsb(:, :) = cp_air(sf(jp_humi) % fnow(:, :, 1))
+      !$ACC KERNELS ! CDe added
+      zqsb(:, :) = zqsb(:,:) * zqla(:, :) * Ch_atm(:, :) * (zst(:, :) - t_zu(:, :))
+      !$ACC END KERNELS
+      !CALL profile_psy_data4 % PostEnd
     END IF
+    !CALL profile_psy_data5 % PreStart('blk_oce', 'r5', 0, 0)
+    zqla(:, :) = L_vap(zst(:, :))
+    !$ACC KERNELS ! CDe added
+    zqla(:, :) = zqla(:,:) * zevap(:, :)
+    !$ACC END KERNELS
     CALL profile_psy_data5 % PreStart('blk_oce', 'r5', 0, 0)
-    zqla(:, :) = L_vap(zst(:, :)) * zevap(:, :)
+    !zqla(:, :) = L_vap(zst(:, :)) * zevap(:, :)
     IF (ln_ctl) THEN
       CALL prt_ctl(tab2d_1 = zqla, clinfo1 = ' blk_oce: zqla   : ', tab2d_2 = Ce_atm, clinfo2 = ' Ce_oce  : ')
       CALL prt_ctl(tab2d_1 = zqsb, clinfo1 = ' blk_oce: zqsb   : ', tab2d_2 = Ch_atm, clinfo2 = ' Ch_oce  : ')
@@ -320,12 +354,12 @@ MODULE sbcblk
       CALL prt_ctl(tab2d_1 = wndm, clinfo1 = ' blk_oce: wndm   : ')
       CALL prt_ctl(tab2d_1 = zst, clinfo1 = ' blk_oce: zst    : ')
     END IF
+    CALL profile_psy_data5 % PostEnd
+    !$ACC KERNELS ! CDe added
     emp(:, :) = (zevap(:, :) - sf(jp_prec) % fnow(:, :, 1) * rn_pfac) * tmask(:, :, 1)
     qns(:, :) = zqlw(:, :) - zqsb(:, :) - zqla(:, :) - sf(jp_snow) % fnow(:, :, 1) * rn_pfac * rLfus - zevap(:, :) * pst(:, :) * &
 &rcp + (sf(jp_prec) % fnow(:, :, 1) - sf(jp_snow) % fnow(:, :, 1)) * rn_pfac * (sf(jp_tair) % fnow(:, :, 1) - rt0) * rcp + &
 &sf(jp_snow) % fnow(:, :, 1) * rn_pfac * (MIN(sf(jp_tair) % fnow(:, :, 1), rt0) - rt0) * rcpi
-    CALL profile_psy_data5 % PostEnd
-    !$ACC KERNELS
     qns(:, :) = qns(:, :) * tmask(:, :, 1)
     !$ACC END KERNELS
     CALL profile_psy_data6 % PreStart('blk_oce', 'r6', 0, 0)
@@ -357,19 +391,23 @@ MODULE sbcblk
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: pqa
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: pslp
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: rho_air
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('rho_air', 'r0', 0, 0)
+    !TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    !CALL profile_psy_data0 % PreStart('rho_air', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe
     rho_air = pslp / (R_dry * ptak * (1._wp + rctv0 * pqa))
-    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
+    !CALL profile_psy_data0 % PostEnd
   END FUNCTION rho_air
   FUNCTION cp_air(pqa)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: pqa
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: cp_air
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('cp_air', 'r0', 0, 0)
+    !TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    !CALL profile_psy_data0 % PreStart('cp_air', 'r0', 0, 0)
+    !$ACC KERNELS
     Cp_air = Cp_dry + Cp_vap * pqa
-    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
+    !CALL profile_psy_data0 % PostEnd
   END FUNCTION cp_air
   FUNCTION q_sat(ptak, pslp)
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: ptak
@@ -410,9 +448,11 @@ MODULE sbcblk
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: L_vap
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: psst
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('l_vap', 'r0', 0, 0)
+    !TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    !CALL profile_psy_data0 % PreStart('l_vap', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe
     L_vap = (2.501 - 0.00237 * (psst(:, :) - rt0)) * 1.E6
-    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
+    !CALL profile_psy_data0 % PostEnd
   END FUNCTION L_vap
 END MODULE sbcblk
