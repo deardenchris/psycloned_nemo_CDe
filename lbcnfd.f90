@@ -158,6 +158,7 @@ MODULE lbcnfd
       CASE (3, 4)
         SELECT CASE (cd_nat(jf))
         CASE ('T', 'W')
+          !$ACC KERNELS ! CDe      
           DO ji = 2, jpiglo
             ijt = jpiglo - ji + 2
             ptab(jf) % pt2d(ji, ipj) = psgn(jf) * ptab(jf) % pt2d(ijt, ipj - 2)
@@ -167,7 +168,9 @@ MODULE lbcnfd
             ijt = jpiglo - ji + 2
             ptab(jf) % pt2d(ji, ipjm1) = psgn(jf) * ptab(jf) % pt2d(ijt, ipjm1)
           END DO
+          !$ACC END KERNELS
         CASE ('U')
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo - 1
             iju = jpiglo - ji + 1
             ptab(jf) % pt2d(ji, ipj) = psgn(jf) * ptab(jf) % pt2d(iju, ipj - 2)
@@ -178,14 +181,18 @@ MODULE lbcnfd
             iju = jpiglo - ji + 1
             ptab(jf) % pt2d(ji, ipjm1) = psgn(jf) * ptab(jf) % pt2d(iju, ipjm1)
           END DO
+          !$ACC END KERNELS
         CASE ('V')
+          !$ACC KERNELS ! CDe      
           DO ji = 2, jpiglo
             ijt = jpiglo - ji + 2
             ptab(jf) % pt2d(ji, ipj - 1) = psgn(jf) * ptab(jf) % pt2d(ijt, ipj - 2)
             ptab(jf) % pt2d(ji, ipj) = psgn(jf) * ptab(jf) % pt2d(ijt, ipj - 3)
           END DO
           ptab(jf) % pt2d(1, ipj) = psgn(jf) * ptab(jf) % pt2d(3, ipj - 3)
+          !$ACC END KERNELS
         CASE ('F')
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo - 1
             iju = jpiglo - ji + 1
             ptab(jf) % pt2d(ji, ipj - 1) = psgn(jf) * ptab(jf) % pt2d(iju, ipj - 2)
@@ -193,21 +200,27 @@ MODULE lbcnfd
           END DO
           ptab(jf) % pt2d(1, ipj) = psgn(jf) * ptab(jf) % pt2d(2, ipj - 3)
           ptab(jf) % pt2d(jpiglo, ipj) = psgn(jf) * ptab(jf) % pt2d(jpiglo - 1, ipj - 3)
+          !$ACC END KERNELS
         END SELECT
       CASE (5, 6)
         SELECT CASE (cd_nat(jf))
         CASE ('T', 'W')
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo
             ijt = jpiglo - ji + 1
             ptab(jf) % pt2d(ji, ipj) = psgn(jf) * ptab(jf) % pt2d(ijt, ipj - 1)
           END DO
+          !$ACC END KERNELS
         CASE ('U')
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo - 1
             iju = jpiglo - ji
             ptab(jf) % pt2d(ji, ipj) = psgn(jf) * ptab(jf) % pt2d(iju, ipj - 1)
           END DO
           ptab(jf) % pt2d(jpiglo, ipj) = psgn(jf) * ptab(jf) % pt2d(jpiglo - 2, ipj - 1)
+          !$ACC END KERNELS
         CASE ('V')
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo
             ijt = jpiglo - ji + 1
             ptab(jf) % pt2d(ji, ipj) = psgn(jf) * ptab(jf) % pt2d(ijt, ipj - 2)
@@ -216,7 +229,9 @@ MODULE lbcnfd
             ijt = jpiglo - ji + 1
             ptab(jf) % pt2d(ji, ipjm1) = psgn(jf) * ptab(jf) % pt2d(ijt, ipjm1)
           END DO
+          !$ACC END KERNELS
         CASE ('F')
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo - 1
             iju = jpiglo - ji
             ptab(jf) % pt2d(ji, ipj) = psgn(jf) * ptab(jf) % pt2d(iju, ipj - 2)
@@ -226,14 +241,19 @@ MODULE lbcnfd
             iju = jpiglo - ji
             ptab(jf) % pt2d(ji, ipjm1) = psgn(jf) * ptab(jf) % pt2d(iju, ipjm1)
           END DO
+          !$ACC END KERNELS
         END SELECT
       CASE DEFAULT
         SELECT CASE (cd_nat(jf))
         CASE ('T', 'U', 'V', 'W')
+          !$ACC KERNELS ! CDe      
           ptab(jf) % pt2d(:, 1) = 0._wp
           ptab(jf) % pt2d(:, ipj) = 0._wp
+          !$ACC END KERNELS
         CASE ('F')
+          !$ACC KERNELS ! CDe      
           ptab(jf) % pt2d(:, ipj) = 0._wp
+          !$ACC END KERNELS
         END SELECT
       END SELECT
     END DO
@@ -492,6 +512,7 @@ MODULE lbcnfd
       CASE (3, 4)
         SELECT CASE (cd_nat(jf))
         CASE ('T', 'W')
+          !$ACC KERNELS ! CDe added      
           DO ji = 2, jpiglo
             ijt = jpiglo - ji + 2
             ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipj - 2, :)
@@ -501,7 +522,9 @@ MODULE lbcnfd
             ijt = jpiglo - ji + 2
             ptab(jf) % pt3d(ji, ipjm1, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipjm1, :)
           END DO
+          !$ACC END KERNELS
         CASE ('U')
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo - 1
             iju = jpiglo - ji + 1
             ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(iju, ipj - 2, :)
@@ -512,14 +535,18 @@ MODULE lbcnfd
             iju = jpiglo - ji + 1
             ptab(jf) % pt3d(ji, ipjm1, :) = psgn(jf) * ptab(jf) % pt3d(iju, ipjm1, :)
           END DO
+          !$ACC END KERNELS
         CASE ('V')
+          !$ACC KERNELS ! CDe      
           DO ji = 2, jpiglo
             ijt = jpiglo - ji + 2
             ptab(jf) % pt3d(ji, ipj - 1, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipj - 2, :)
             ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipj - 3, :)
           END DO
           ptab(jf) % pt3d(1, ipj, :) = psgn(jf) * ptab(jf) % pt3d(3, ipj - 3, :)
+          !$ACC END KERNELS
         CASE ('F')
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo - 1
             iju = jpiglo - ji + 1
             ptab(jf) % pt3d(ji, ipj - 1, :) = psgn(jf) * ptab(jf) % pt3d(iju, ipj - 2, :)
@@ -527,21 +554,27 @@ MODULE lbcnfd
           END DO
           ptab(jf) % pt3d(1, ipj, :) = psgn(jf) * ptab(jf) % pt3d(2, ipj - 3, :)
           ptab(jf) % pt3d(jpiglo, ipj, :) = psgn(jf) * ptab(jf) % pt3d(jpiglo - 1, ipj - 3, :)
+          !$ACC END KERNELS
         END SELECT
       CASE (5, 6)
         SELECT CASE (cd_nat(jf))
         CASE ('T', 'W')
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo
             ijt = jpiglo - ji + 1
             ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipj - 1, :)
           END DO
+          !$ACC END KERNELS
         CASE ('U')
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo - 1
             iju = jpiglo - ji
             ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(iju, ipj - 1, :)
           END DO
           ptab(jf) % pt3d(jpiglo, ipj, :) = psgn(jf) * ptab(jf) % pt3d(jpiglo - 2, ipj - 1, :)
+          !$ACC END KERNELS
         CASE ('V')
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo
             ijt = jpiglo - ji + 1
             ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipj - 2, :)
@@ -550,7 +583,9 @@ MODULE lbcnfd
             ijt = jpiglo - ji + 1
             ptab(jf) % pt3d(ji, ipjm1, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipjm1, :)
           END DO
+          !$ACC END KERNELS
         CASE ('F')
+          !$ACC KERNELS      
           DO ji = 1, jpiglo - 1
             iju = jpiglo - ji
             ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(iju, ipj - 2, :)
@@ -560,14 +595,19 @@ MODULE lbcnfd
             iju = jpiglo - ji
             ptab(jf) % pt3d(ji, ipjm1, :) = psgn(jf) * ptab(jf) % pt3d(iju, ipjm1, :)
           END DO
+          !$ACC END KERNELS
         END SELECT
       CASE DEFAULT
         SELECT CASE (cd_nat(jf))
         CASE ('T', 'U', 'V', 'W')
+          !$ACC KERNELS      
           ptab(jf) % pt3d(:, 1, :) = 0._wp
           ptab(jf) % pt3d(:, ipj, :) = 0._wp
+          !$ACC END KERNELS
         CASE ('F')
+          !$ACC KERNELS      
           ptab(jf) % pt3d(:, ipj, :) = 0._wp
+          !$ACC END KERNELS
         END SELECT
       END SELECT
     END DO
