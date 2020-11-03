@@ -16,8 +16,8 @@ MODULE traldf_iso
   PUBLIC :: tra_ldf_iso
   LOGICAL :: l_ptr
   LOGICAL :: l_hst
-  REAL(KIND = wp), DIMENSION(:, :), ALLOCATABLE :: zdkt, zdk1t, z2d
-  REAL(KIND = wp), DIMENSION(:, :, :), ALLOCATABLE :: zdit, zdjt, zftu, zftv, ztfw
+  !REAL(KIND = wp), DIMENSION(:, :), ALLOCATABLE :: zdkt, zdk1t, z2d ! CDe moved to tra_ldf_iso and made static 
+  !REAL(KIND = wp), DIMENSION(:, :, :), ALLOCATABLE :: zdit, zdjt, zftu, zftv, ztfw ! CDe as above
   CONTAINS
   SUBROUTINE tra_ldf_iso(kt, kit000, cdtype, pahu, pahv, pgu, pgv, pgui, pgvi, ptb, ptbb, pta, kjpt, kpass)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -38,10 +38,12 @@ MODULE traldf_iso
     REAL(KIND = wp) :: zmsku, zahu_w, zabe1, zcof1, zcoef3
     REAL(KIND = wp) :: zmskv, zahv_w, zabe2, zcof2, zcoef4
     REAL(KIND = wp) :: zcoef0, ze3w_2, zsign, z2dt, z1_2dt
+    REAL(KIND = wp), DIMENSION(jpi, jpj) :: zdkt, zdk1t, z2d ! CDe
+    REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zdit, zdjt, zftu, zftv, ztfw ! CDe
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+!    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     IF (kpass == 1 .AND. kt == kit000) THEN
       CALL profile_psy_data0 % PreStart('tra_ldf_iso', 'r0', 0, 0)
       IF (lwp) WRITE(numout, FMT = *)
@@ -52,12 +54,12 @@ MODULE traldf_iso
       akz(:, :, :) = 0._wp
       ah_wslp2(:, :, :) = 0._wp
       !$ACC END KERNELS
-      CALL profile_psy_data1 % PreStart('tra_ldf_iso', 'r1', 0, 0)
-      ALLOCATE(zdit(jpi, jpj, jpk), zdjt(jpi, jpj, jpk), zftu(jpi, jpj, jpk), zftv(jpi, jpj, jpk), ztfw(jpi, jpj, jpk))
-      ALLOCATE(zdkt(jpi, jpj), zdk1t(jpi, jpj), z2d(jpi, jpj))
-      CALL profile_psy_data1 % PostEnd
+!      CALL profile_psy_data1 % PreStart('tra_ldf_iso', 'r1', 0, 0)
+!      ALLOCATE(zdit(jpi, jpj, jpk), zdjt(jpi, jpj, jpk), zftu(jpi, jpj, jpk), zftv(jpi, jpj, jpk), ztfw(jpi, jpj, jpk))
+!      ALLOCATE(zdkt(jpi, jpj), zdk1t(jpi, jpj), z2d(jpi, jpj))
+!      CALL profile_psy_data1 % PostEnd
     END IF
-    CALL profile_psy_data2 % PreStart('tra_ldf_iso', 'r2', 0, 0)
+    CALL profile_psy_data1 % PreStart('tra_ldf_iso', 'r1', 0, 0)
     l_hst = .FALSE.
     l_ptr = .FALSE.
     IF (cdtype == 'TRA' .AND. ln_diaptr) l_ptr = .TRUE.
@@ -74,7 +76,7 @@ MODULE traldf_iso
     ELSE
       zsign = - 1._wp
     END IF
-    CALL profile_psy_data2 % PostEnd
+    CALL profile_psy_data1 % PostEnd
     IF (kpass == 1) THEN
       !$ACC KERNELS
       DO jk = 2, jpkm1
@@ -279,12 +281,12 @@ MODULE traldf_iso
         END DO
       END DO
       !$ACC END KERNELS
-      CALL profile_psy_data3 % PreStart('tra_ldf_iso', 'r3', 0, 0)
+      CALL profile_psy_data2 % PreStart('tra_ldf_iso', 'r2', 0, 0)
       IF ((kpass == 1 .AND. ln_traldf_lap) .OR. (kpass == 2 .AND. ln_traldf_blp)) THEN
         IF (l_ptr) CALL dia_ptr_hst(jn, 'ldf', - zftv(:, :, :))
         IF (l_hst) CALL dia_ar5_hst(jn, 'ldf', - zftu(:, :, :), - zftv(:, :, :))
       END IF
-      CALL profile_psy_data3 % PostEnd
+      CALL profile_psy_data2 % PostEnd
     END DO
   END SUBROUTINE tra_ldf_iso
 END MODULE traldf_iso
