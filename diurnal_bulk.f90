@@ -162,9 +162,12 @@ MODULE diurnal_bulk
     CHARACTER(LEN = 200) :: warn_string
     LOGICAL :: lwarn
     INTEGER :: ji, jj
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('t_imp', 'r0', 0, 0)
+    !TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    !CALL profile_psy_data0 % PreStart('t_imp', 'r0', 0, 0)
     lwarn = .FALSE.
+    !ARPDBG - not done by PSyclone because of CYCLE?
+    !$ACC KERNELS
+    !$ACC LOOP COLLAPSE(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         IF (tmask(ji, jj, 1) /= 1._wp) THEN
@@ -194,11 +197,12 @@ MODULE diurnal_bulk
         t_imp(ji, jj) = (p_dsst(ji, jj) + p_rdt * z_term1) / (1._wp - p_rdt * z_term2)
       END DO
     END DO
+    !$ACC END KERNELS
     IF (lwarn) THEN
       WRITE(warn_string, FMT = *) "diurnal_sst_takaya step: " // "friction velocity < minimum\n" // "Setting friction velocity =", &
 &pp_min_fvel
       CALL ctl_warn(warn_string)
     END IF
-    CALL profile_psy_data0 % PostEnd
+    !CALL profile_psy_data0 % PostEnd
   END FUNCTION t_imp
 END MODULE diurnal_bulk
