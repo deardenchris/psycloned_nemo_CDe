@@ -30,7 +30,8 @@ MODULE icb_oce
     REAL(KIND = wp) :: mass_scaling
     TYPE(point), POINTER :: current_point => NULL()
   END TYPE iceberg
-  TYPE(icebergs_gridded), POINTER :: berg_grid
+  !TYPE(icebergs_gridded), POINTER :: berg_grid
+  TYPE(icebergs_gridded) :: berg_grid ! CDe remove POINTER
   TYPE(iceberg), POINTER :: first_berg => NULL()
   REAL(KIND = wp) :: berg_dt
   REAL(KIND = wp), DIMENSION(:), ALLOCATABLE :: first_width, first_length
@@ -87,8 +88,8 @@ MODULE icb_oce
   INTEGER FUNCTION icb_alloc()
     INTEGER :: ill
     icb_alloc = 0
-    ALLOCATE(berg_grid, STAT = ill)
-    icb_alloc = icb_alloc + ill
+    !ALLOCATE(berg_grid, STAT = ill) ! CDe
+    !icb_alloc = icb_alloc + ill ! CDe
     ALLOCATE(berg_grid % calving(jpi, jpj), berg_grid % calving_hflx(jpi, jpj), berg_grid % stored_heat(jpi, jpj), berg_grid % &
 &floating_melt(jpi, jpj), berg_grid % maxclass(jpi, jpj), berg_grid % stored_ice(jpi, jpj, nclasses), berg_grid % tmp(jpi, jpj), &
 &STAT = ill)

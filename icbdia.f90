@@ -140,6 +140,7 @@ MODULE icbdia
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     IF (.NOT. ln_bergdia) RETURN
     CALL profile_psy_data0 % PreStart('icb_dia', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe
     zunused_calving = SUM(berg_grid % calving(:, :))
     ztmpsum = SUM(berg_grid % floating_melt(:, :) * e1e2t(:, :) * tmask_i(:, :))
     melt_net = melt_net + ztmpsum * berg_dt
@@ -154,6 +155,7 @@ MODULE icbdia
     calving_ret_net = calving_ret_net + ztmpsum * berg_dt
     ztmpsum = SUM(berg_grid % calving_hflx(:, :) * e1e2t(:, :) * tmask_i(:, :))
     calving_out_heat_net = calving_out_heat_net + ztmpsum * berg_dt
+    !$ACC END KERNELS
     IF (ld_budge) THEN
       stored_end = SUM(berg_grid % stored_ice(:, :, :))
       stored_heat_end = SUM(berg_grid % stored_heat(:, :))
@@ -294,6 +296,7 @@ MODULE icbdia
   END SUBROUTINE icb_dia
   SUBROUTINE icb_dia_step
     IF (.NOT. ln_bergdia) RETURN
+    !$ACC KERNELS ! CDe
     berg_melt(:, :) = 0._wp
     berg_melt_hcflx(:, :) = 0._wp
     berg_melt_qlat(:, :) = 0._wp
@@ -306,6 +309,7 @@ MODULE icbdia
     berg_mass(:, :) = 0._wp
     virtual_area(:, :) = 0._wp
     real_calving(:, :, :) = 0._wp
+    !$ACC END KERNELS
   END SUBROUTINE icb_dia_step
   SUBROUTINE icb_dia_put
     IF (.NOT. ln_bergdia) RETURN
@@ -346,20 +350,26 @@ MODULE icbdia
     IF (.NOT. ln_bergdia) RETURN
     CALL profile_psy_data0 % PreStart('icb_dia_income', 'r0', 0, 0)
     IF (kt == nit000) THEN
+      !$ACC KERNELS ! CDe      
       stored_start = SUM(berg_grid % stored_ice(:, :, :))
+      !$ACC END KERNELS
       CALL mpp_sum('icbdia', stored_start)
+      !$ACC KERNELS ! CDe
       stored_heat_start = SUM(berg_grid % stored_heat(:, :))
+      !$ACC END KERNELS
       CALL mpp_sum('icbdia', stored_heat_start)
       IF (nn_verbose_level > 0) THEN
         WRITE(numicb, FMT = '(a,es13.6,a)') 'icb_dia_income: initial stored mass=', stored_start, ' kg'
         WRITE(numicb, FMT = '(a,es13.6,a)') 'icb_dia_income: initial stored heat=', stored_heat_start, ' J'
       END IF
     END IF
+    !$ACC KERNELS ! CDe
     calving_rcv_net = calving_rcv_net + SUM(berg_grid % calving(:, :)) * berg_dt
     calving_src_net = calving_rcv_net
     calving_src_heat_net = calving_src_heat_net + SUM(berg_grid % calving_hflx(:, :) * e1e2t(:, :)) * berg_dt
     calving_used_net = calving_used_net + pcalving_used * berg_dt
     calving_src_heat_used_net = calving_src_heat_used_net + SUM(pheat_used(:, :))
+    !$ACC END KERNELS
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_dia_income
   SUBROUTINE icb_dia_size(ki, kj, pWn, pLn, pAbits, pmass_scale, pMnew, pnMbits, pz1_e1e2)

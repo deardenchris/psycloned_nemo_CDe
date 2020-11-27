@@ -33,10 +33,14 @@ MODULE icbstp
     nktberg = kt
     IF (nn_test_icebergs < 0 .OR. ln_use_calving) THEN
       CALL fld_read(kt, 1, sf_icb)
+      !$ACC KERNELS
       src_calving(:, :) = sf_icb(1) % fnow(:, :, 1)
       src_calving_hflx(:, :) = 0._wp
+      !$ACC END KERNELS
     END IF
+    !$ACC KERNELS ! CDe
     berg_grid % floating_melt(:, :) = 0._wp
+    !$ACC END KERNELS
     CALL icb_dia_step
     ll_verbose = .FALSE.
     IF (nn_verbose_write > 0 .AND. MOD(kt - 1, nn_verbose_write) == 0) ll_verbose = (nn_verbose_level >= 0)
