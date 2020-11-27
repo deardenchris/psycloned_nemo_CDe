@@ -88,7 +88,9 @@ MODULE sbcisf
         CALL profile_psy_data1 % PreStart('sbc_isf', 'r1', 0, 0)
         IF (.NOT. l_isfcpl) THEN
           CALL fld_read(kt, nn_fsbc, sf_rnfisf)
+          !$ACC KERNELS ! CDe
           fwfisf(:, :) = - sf_rnfisf(1) % fnow(:, :, 1)
+          !$ACC END KERNELS
         END IF
         CALL profile_psy_data1 % PostEnd
         !$ACC KERNELS
