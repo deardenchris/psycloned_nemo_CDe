@@ -25,6 +25,7 @@ MODULE icbutl
   PUBLIC :: icb_utl_heat
   CONTAINS
   SUBROUTINE icb_utl_copy
+    !$ACC KERNELS ! CDe added      
     uo_e(1 : jpi, 1 : jpj) = ssu_m(:, :) * umask(:, :, 1)
     vo_e(1 : jpi, 1 : jpj) = ssv_m(:, :) * vmask(:, :, 1)
     ff_e(1 : jpi, 1 : jpj) = ff_f(:, :)
@@ -32,6 +33,7 @@ MODULE icbutl
     fr_e(1 : jpi, 1 : jpj) = fr_i(:, :)
     ua_e(1 : jpi, 1 : jpj) = utau(:, :) * umask(:, :, 1)
     va_e(1 : jpi, 1 : jpj) = vtau(:, :) * vmask(:, :, 1)
+    !$ACC END KERNELS
     CALL lbc_lnk_icb('icbutl', uo_e, 'U', - 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', vo_e, 'V', - 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', ff_e, 'F', + 1._wp, 1, 1)
@@ -39,7 +41,9 @@ MODULE icbutl
     CALL lbc_lnk_icb('icbutl', va_e, 'V', - 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', fr_e, 'T', + 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', tt_e, 'T', + 1._wp, 1, 1)
+    !$ACC KERNELS
     ssh_e(1 : jpi, 1 : jpj) = ssh_m(:, :) * tmask(:, :, 1)
+    !$ACC END KERNELS
     CALL lbc_lnk_icb('icbutl', ssh_e, 'T', + 1._wp, 1, 1)
   END SUBROUTINE icb_utl_copy
   SUBROUTINE icb_utl_interp(pi, pe1, puo, pui, pua, pssh_i, pj, pe2, pvo, pvi, pva, pssh_j, psst, pcn, phi, pff)
