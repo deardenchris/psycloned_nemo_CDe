@@ -22,9 +22,8 @@ MODULE traadv_fct
   REAL(KIND = wp) :: r1_6 = 1._wp / 6._wp
   INTEGER, PARAMETER :: np_NH = 0
   INTEGER, PARAMETER :: np_CEN2 = 1
-  !REAL(KIND = wp), DIMENSION(:, :, :), ALLOCATABLE :: zbetup, zbetdo, zbup, zbdo ! CDe changed to static and declared in nonosc
-  !REAL(KIND = wp), DIMENSION(:, :, :), ALLOCATABLE :: zwi, zwx, zwy, zwz, ztu, ztv, zltu, zltv, ztw ! CDe changed to static and
-                                                                                                     ! declared in tra_adv_fct
+  REAL(KIND = wp), DIMENSION(:, :, :), ALLOCATABLE :: zbetup, zbetdo, zbup, zbdo
+  REAL(KIND = wp), DIMENSION(:, :, :), ALLOCATABLE :: zwi, zwx, zwy, zwz, ztu, ztv, zltu, zltv, ztw
   CONTAINS
   SUBROUTINE tra_adv_fct(kt, kit000, cdtype, p2dt, pun, pvn, pwn, ptb, ptn, pta, kjpt, kn_fct_h, kn_fct_v)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -42,7 +41,6 @@ MODULE traadv_fct
     REAL(KIND = wp) :: ztra
     REAL(KIND = wp) :: zfp_ui, zfp_vj, zfp_wk, zC2t_u, zC4t_u
     REAL(KIND = wp) :: zfm_ui, zfm_vj, zfm_wk, zC2t_v, zC4t_v
-    REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zwi, zwx, zwy, zwz, ztu, ztv, zltu, zltv, ztw ! CDe
     REAL(KIND = wp), DIMENSION(:, :, :), ALLOCATABLE :: ztrdx, ztrdy, ztrdz, zptry
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
@@ -53,9 +51,9 @@ MODULE traadv_fct
       IF (lwp) WRITE(numout, FMT = *)
       IF (lwp) WRITE(numout, FMT = *) 'tra_adv_fct : FCT advection scheme on ', cdtype
       IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~'
-      !ALLOCATE(zbetup(jpi, jpj, jpk), zbetdo(jpi, jpj, jpk), zbup(jpi, jpj, jpk), zbdo(jpi, jpj, jpk))
-      !ALLOCATE(zwi(jpi, jpj, jpk), zwx(jpi, jpj, jpk), zwy(jpi, jpj, jpk), zwz(jpi, jpj, jpk), ztu(jpi, jpj, jpk), ztv(jpi, jpj, &
-!&jpk), zltu(jpi, jpj, jpk), zltv(jpi, jpj, jpk), ztw(jpi, jpj, jpk))
+      ALLOCATE(zbetup(jpi, jpj, jpk), zbetdo(jpi, jpj, jpk), zbup(jpi, jpj, jpk), zbdo(jpi, jpj, jpk))
+      ALLOCATE(zwi(jpi, jpj, jpk), zwx(jpi, jpj, jpk), zwy(jpi, jpj, jpk), zwz(jpi, jpj, jpk), ztu(jpi, jpj, jpk), ztv(jpi, jpj, &
+&jpk), zltu(jpi, jpj, jpk), zltv(jpi, jpj, jpk), ztw(jpi, jpj, jpk))
     END IF
     l_trd = .FALSE.
     l_hst = .FALSE.
@@ -313,7 +311,6 @@ MODULE traadv_fct
     INTEGER :: ikm1
     REAL(KIND = wp) :: zpos, zneg, zbt, za, zb, zc, zbig, zrtrn
     REAL(KIND = wp) :: zau, zbu, zcu, zav, zbv, zcv, zup, zdo
-    REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zbetup, zbetdo, zbup, zbdo ! CDe
     !$ACC KERNELS
     zbig = 1.E+40_wp
     zrtrn = 1.E-15_wp
