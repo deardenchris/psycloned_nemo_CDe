@@ -625,7 +625,9 @@ MODULE eosbn2
       ptf(:, :) = (- 0.0575_wp + 1.710523E-3_wp * SQRT(psal(:, :)) - 2.154996E-4_wp * psal(:, :)) * psal(:, :)
       !$ACC END KERNELS
       CALL profile_psy_data1 % PreStart('eos_fzp_2d', 'r1', 0, 0)
+      !$ACC KERNELS ! CDe
       IF (PRESENT(pdep)) ptf(:, :) = ptf(:, :) - 7.53E-4 * pdep(:, :)
+      !$ACC END KERNELS
       CALL profile_psy_data1 % PostEnd
     CASE DEFAULT
       CALL profile_psy_data2 % PreStart('eos_fzp_2d', 'r2', 0, 0)
