@@ -225,6 +225,7 @@ MODULE lbcnfd
             ijt = jpiglo - ji + 1
             ptab(jf) % pt2d(ji, ipj) = psgn(jf) * ptab(jf) % pt2d(ijt, ipj - 2)
           END DO
+          !$ACC LOOP INDEPENDENT ! CDe forces parallelism
           DO ji = jpiglo / 2 + 1, jpiglo
             ijt = jpiglo - ji + 1
             ptab(jf) % pt2d(ji, ipjm1) = psgn(jf) * ptab(jf) % pt2d(ijt, ipjm1)
@@ -560,25 +561,31 @@ MODULE lbcnfd
         SELECT CASE (cd_nat(jf))
         CASE ('T', 'W')
           !$ACC KERNELS ! CDe      
+          !$ACC LOOP INDEPENDENT ! CDe This runs OK and verifies
           DO ji = 1, jpiglo
             ijt = jpiglo - ji + 1
             ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipj - 1, :)
           END DO
           !$ACC END KERNELS
         CASE ('U')
-          !$ACC KERNELS ! CDe      
+          !$ACC KERNELS ! CDe
+          !$ACC LOOP INDEPENDENT ! CDe verifies
           DO ji = 1, jpiglo - 1
             iju = jpiglo - ji
             ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(iju, ipj - 1, :)
           END DO
+          !$ACC END KERNELS
+          !$ACC KERNELS ! CDe need to start a new kernels block here otherwise get an 'Invalid value' error at runtime 
           ptab(jf) % pt3d(jpiglo, ipj, :) = psgn(jf) * ptab(jf) % pt3d(jpiglo - 2, ipj - 1, :)
           !$ACC END KERNELS
         CASE ('V')
-          !$ACC KERNELS ! CDe      
+          !$ACC KERNELS ! CDe
+          !$ACC LOOP INDEPENDENT ! CDe verifies
           DO ji = 1, jpiglo
             ijt = jpiglo - ji + 1
             ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipj - 2, :)
           END DO
+          !$ACC LOOP INDEPENDENT ! CDe verifies
           DO ji = jpiglo / 2 + 1, jpiglo
             ijt = jpiglo - ji + 1
             ptab(jf) % pt3d(ji, ipjm1, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipjm1, :)
