@@ -415,27 +415,29 @@ MODULE lbclnk
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('lbc_lnk_2d_multi', 'r0', 0, 0)
     kfld = 0
-    CALL lbc_lnk_2d(cdname, pt1, cdna1, psgn1, cd_mpp, pval)
-    IF (PRESENT(psgn2)) CALL lbc_lnk_2d(cdname, pt2, cdna2, psgn2, cd_mpp, pval)
-    IF (PRESENT(psgn3)) CALL lbc_lnk_2d(cdname, pt3, cdna3, psgn3, cd_mpp, pval)
-    IF (PRESENT(psgn4)) CALL lbc_lnk_2d(cdname, pt4, cdna4, psgn4, cd_mpp, pval)
-    IF (PRESENT(psgn5)) CALL lbc_lnk_2d(cdname, pt5, cdna5, psgn5, cd_mpp, pval)
-    IF (PRESENT(psgn6)) CALL lbc_lnk_2d(cdname, pt6, cdna6, psgn6, cd_mpp, pval)
-    IF (PRESENT(psgn7)) CALL lbc_lnk_2d(cdname, pt7, cdna7, psgn7, cd_mpp, pval)
-    IF (PRESENT(psgn8)) CALL lbc_lnk_2d(cdname, pt8, cdna8, psgn8, cd_mpp, pval)
-    IF (PRESENT(psgn9)) CALL lbc_lnk_2d(cdname, pt9, cdna9, psgn9, cd_mpp, pval)
-    !ARPDBG avoid using *_ptr routine because not yet sure how to handle
-    ! list of pointers effectively
-    !CALL load_ptr_2d(pt1, cdna1, psgn1, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn2)) CALL load_ptr_2d(pt2, cdna2, psgn2, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn3)) CALL load_ptr_2d(pt3, cdna3, psgn3, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn4)) CALL load_ptr_2d(pt4, cdna4, psgn4, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn5)) CALL load_ptr_2d(pt5, cdna5, psgn5, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn6)) CALL load_ptr_2d(pt6, cdna6, psgn6, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn7)) CALL load_ptr_2d(pt7, cdna7, psgn7, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn8)) CALL load_ptr_2d(pt8, cdna8, psgn8, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn9)) CALL load_ptr_2d(pt9, cdna9, psgn9, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !CALL lbc_lnk_ptr(cdname, ptab_ptr, cdna_ptr, psgn_ptr, kfld, cd_mpp, pval)
+    !CALL lbc_lnk_2d(cdname, pt1, cdna1, psgn1, cd_mpp, pval)
+    !IF (PRESENT(psgn2)) CALL lbc_lnk_2d(cdname, pt2, cdna2, psgn2, cd_mpp, pval)
+    !IF (PRESENT(psgn3)) CALL lbc_lnk_2d(cdname, pt3, cdna3, psgn3, cd_mpp, pval)
+    !IF (PRESENT(psgn4)) CALL lbc_lnk_2d(cdname, pt4, cdna4, psgn4, cd_mpp, pval)
+    !IF (PRESENT(psgn5)) CALL lbc_lnk_2d(cdname, pt5, cdna5, psgn5, cd_mpp, pval)
+    !IF (PRESENT(psgn6)) CALL lbc_lnk_2d(cdname, pt6, cdna6, psgn6, cd_mpp, pval)
+    !IF (PRESENT(psgn7)) CALL lbc_lnk_2d(cdname, pt7, cdna7, psgn7, cd_mpp, pval)
+    !IF (PRESENT(psgn8)) CALL lbc_lnk_2d(cdname, pt8, cdna8, psgn8, cd_mpp, pval)
+    !IF (PRESENT(psgn9)) CALL lbc_lnk_2d(cdname, pt9, cdna9, psgn9, cd_mpp, pval)
+    CALL load_ptr_2d(pt1, cdna1, psgn1, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn2)) CALL load_ptr_2d(pt2, cdna2, psgn2, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn3)) CALL load_ptr_2d(pt3, cdna3, psgn3, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn4)) CALL load_ptr_2d(pt4, cdna4, psgn4, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn5)) CALL load_ptr_2d(pt5, cdna5, psgn5, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn6)) CALL load_ptr_2d(pt6, cdna6, psgn6, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn7)) CALL load_ptr_2d(pt7, cdna7, psgn7, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn8)) CALL load_ptr_2d(pt8, cdna8, psgn8, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn9)) CALL load_ptr_2d(pt9, cdna9, psgn9, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    ! CDe introduce data region to help reduce data movements associated with calls to _ptr routine
+    !$ACC DATA COPY(ptab_ptr) &
+    !$ACC COPYIN(psgn_ptr, cdna_ptr)
+    CALL lbc_lnk_ptr(cdname, ptab_ptr, cdna_ptr, psgn_ptr, kfld, cd_mpp, pval)
+    !$ACC END DATA
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_lnk_2d_multi
   SUBROUTINE load_ptr_2d(ptab, cdna, psgn, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
@@ -474,27 +476,29 @@ MODULE lbclnk
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('lbc_lnk_3d_multi', 'r0', 0, 0)
     kfld = 0
-    !ARPDBG avoid using *_ptr routine because not yet sure how to handle
-    ! list of pointers effectively
-    !CALL load_ptr_3d(pt1, cdna1, psgn1, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn2)) CALL load_ptr_3d(pt2, cdna2, psgn2, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn3)) CALL load_ptr_3d(pt3, cdna3, psgn3, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn4)) CALL load_ptr_3d(pt4, cdna4, psgn4, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn5)) CALL load_ptr_3d(pt5, cdna5, psgn5, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn6)) CALL load_ptr_3d(pt6, cdna6, psgn6, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn7)) CALL load_ptr_3d(pt7, cdna7, psgn7, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn8)) CALL load_ptr_3d(pt8, cdna8, psgn8, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !IF (PRESENT(psgn9)) CALL load_ptr_3d(pt9, cdna9, psgn9, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    !CALL lbc_lnk_ptr(cdname, ptab_ptr, cdna_ptr, psgn_ptr, kfld, cd_mpp, pval)
-    CALL lbc_lnk_3d(cdname, pt1, cdna1, psgn1, cd_mpp, pval)
-    IF (PRESENT(psgn2)) CALL lbc_lnk_3d(cdname, pt2, cdna2, psgn2, cd_mpp, pval)
-    IF (PRESENT(psgn3)) CALL lbc_lnk_3d(cdname, pt3, cdna3, psgn3, cd_mpp, pval)
-    IF (PRESENT(psgn4)) CALL lbc_lnk_3d(cdname, pt4, cdna4, psgn4, cd_mpp, pval)
-    IF (PRESENT(psgn5)) CALL lbc_lnk_3d(cdname, pt5, cdna5, psgn5, cd_mpp, pval)
-    IF (PRESENT(psgn6)) CALL lbc_lnk_3d(cdname, pt6, cdna6, psgn6, cd_mpp, pval)
-    IF (PRESENT(psgn7)) CALL lbc_lnk_3d(cdname, pt7, cdna7, psgn7, cd_mpp, pval)
-    IF (PRESENT(psgn8)) CALL lbc_lnk_3d(cdname, pt8, cdna8, psgn8, cd_mpp, pval)
-    IF (PRESENT(psgn9)) CALL lbc_lnk_3d(cdname, pt9, cdna9, psgn9, cd_mpp, pval)
+    CALL load_ptr_3d(pt1, cdna1, psgn1, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn2)) CALL load_ptr_3d(pt2, cdna2, psgn2, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn3)) CALL load_ptr_3d(pt3, cdna3, psgn3, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn4)) CALL load_ptr_3d(pt4, cdna4, psgn4, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn5)) CALL load_ptr_3d(pt5, cdna5, psgn5, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn6)) CALL load_ptr_3d(pt6, cdna6, psgn6, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn7)) CALL load_ptr_3d(pt7, cdna7, psgn7, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn8)) CALL load_ptr_3d(pt8, cdna8, psgn8, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    IF (PRESENT(psgn9)) CALL load_ptr_3d(pt9, cdna9, psgn9, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
+    ! CDe introduce data region to help reduce data movements associated with calls to _ptr routine
+    !$ACC DATA COPY(ptab_ptr) &
+    !$ACC COPYIN(psgn_ptr, cdna_ptr)
+    CALL lbc_lnk_ptr(cdname, ptab_ptr, cdna_ptr, psgn_ptr, kfld, cd_mpp, pval)
+    !$ACC END DATA
+    !CALL lbc_lnk_3d(cdname, pt1, cdna1, psgn1, cd_mpp, pval)
+    !IF (PRESENT(psgn2)) CALL lbc_lnk_3d(cdname, pt2, cdna2, psgn2, cd_mpp, pval)
+    !IF (PRESENT(psgn3)) CALL lbc_lnk_3d(cdname, pt3, cdna3, psgn3, cd_mpp, pval)
+    !IF (PRESENT(psgn4)) CALL lbc_lnk_3d(cdname, pt4, cdna4, psgn4, cd_mpp, pval)
+    !IF (PRESENT(psgn5)) CALL lbc_lnk_3d(cdname, pt5, cdna5, psgn5, cd_mpp, pval)
+    !IF (PRESENT(psgn6)) CALL lbc_lnk_3d(cdname, pt6, cdna6, psgn6, cd_mpp, pval)
+    !IF (PRESENT(psgn7)) CALL lbc_lnk_3d(cdname, pt7, cdna7, psgn7, cd_mpp, pval)
+    !IF (PRESENT(psgn8)) CALL lbc_lnk_3d(cdname, pt8, cdna8, psgn8, cd_mpp, pval)
+    !IF (PRESENT(psgn9)) CALL lbc_lnk_3d(cdname, pt9, cdna9, psgn9, cd_mpp, pval)
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_lnk_3d_multi
   SUBROUTINE load_ptr_3d(ptab, cdna, psgn, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
