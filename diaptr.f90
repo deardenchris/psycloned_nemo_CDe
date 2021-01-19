@@ -616,6 +616,7 @@ MODULE diaptr
       END DO
       !$ACC END KERNELS
     END IF
+    CALL mpp_sum('diaptr', p_fval, ijpj, ncomm_znl)
   END FUNCTION ptr_sj_3d
   FUNCTION ptr_sj_2d(pva, pmsk) RESULT(p_fval)
     REAL(KIND = wp), INTENT(IN), DIMENSION(jpi, jpj) :: pva
@@ -647,13 +648,20 @@ MODULE diaptr
       END DO
       !$ACC END KERNELS
     END IF
+    CALL mpp_sum('diaptr', p_fval, ijpj, ncomm_znl)
   END FUNCTION ptr_sj_2d
   FUNCTION ptr_sjk(pta, pmsk) RESULT(p_fval)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     IMPLICIT NONE
     REAL(KIND = wp), INTENT(IN), DIMENSION(jpi, jpj, jpk) :: pta
     REAL(KIND = wp), INTENT(IN), DIMENSION(jpi, jpj), OPTIONAL :: pmsk
     INTEGER :: ji, jj, jk
     REAL(KIND = wp), POINTER, DIMENSION(:, :) :: p_fval
+    INTEGER, DIMENSION(1) :: ish
+    INTEGER, DIMENSION(2) :: ish2
+    INTEGER :: ijpjjpk
+    REAL(KIND = wp), DIMENSION(jpj * jpk) :: zwork
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     p_fval => p_fval2d
     !$ACC KERNELS
     p_fval(:, :) = 0._wp
@@ -681,5 +689,14 @@ MODULE diaptr
       END DO
       !$ACC END KERNELS
     END IF
+    CALL profile_psy_data0 % PreStart('ptr_sjk', 'r0', 0, 0)
+    ijpjjpk = jpj * jpk
+    ish(1) = ijpjjpk
+    ish2(1) = jpj
+    ish2(2) = jpk
+    zwork(1 : ijpjjpk) = RESHAPE(p_fval, ish)
+    CALL mpp_sum('diaptr', zwork, ijpjjpk, ncomm_znl)
+    p_fval(:, :) = RESHAPE(zwork, ish2)
+    CALL profile_psy_data0 % PostEnd
   END FUNCTION ptr_sjk
 END MODULE diaptr

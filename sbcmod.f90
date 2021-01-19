@@ -56,6 +56,7 @@ MODULE sbcmod
     READ(numnam_cfg, namsbc, IOSTAT = ios, ERR = 902)
 902 IF (ios > 0) CALL ctl_nam(ios, 'namsbc in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namsbc)
+    ncom_fsbc = nn_fsbc
     IF (lk_si3) nn_ice = 2
     IF (lk_cice) nn_ice = 3
     IF (lwp) THEN
