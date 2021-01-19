@@ -518,18 +518,28 @@ MODULE lib_mpp
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
+          !$ACC KERNELS     
           ptab(jf) % pt2d(1, :) = ptab(jf) % pt2d(jpim1, :)
           ptab(jf) % pt2d(jpi, :) = ptab(jf) % pt2d(2, :)
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(1 : nn_hls, :) = zland
           ptab(jf) % pt2d(nlci - nn_hls + 1 : jpi, :) = zland
+          !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
+          !$ACC KERNELS
           ptab(jf) % pt2d(:, 1) = ptab(jf) % pt2d(:, jpjm1)
           ptab(jf) % pt2d(:, jpj) = ptab(jf) % pt2d(:, 2)
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(:, 1 : nn_hls) = zland
+          !$ACC END KERNELS
+          !$ACC KERNELS
           ptab(jf) % pt2d(:, nlcj - nn_hls + 1 : jpj) = zland
+          !$ACC END KERNELS
         END IF
       END DO
     END IF
@@ -537,37 +547,53 @@ MODULE lib_mpp
     IF (nbondi == 0) ALLOCATE(zt3ew(jpj, nn_hls, ipk, ipl, ipf, 2), zt3we(jpj, nn_hls, ipk, ipl, ipf, 2))
     SELECT CASE (nbondi)
     CASE (- 1)
+      !$ACC KERNELS
       iihom = nlci - nreci
+      !$ACC LOOP GANG VECTOR COLLAPSE(5)
       DO jf = 1, ipf
         DO jl = 1, ipl
           DO jk = 1, ipk
             DO jh = 1, nn_hls
-              zt3we(:, jh, jk, jl, jf, 1) = ptab(jf) % pt2d(iihom + jh, :)
+              DO jj = 1, jpj
+                zt3we(jj, jh, jk, jl, jf, 1) = ptab(jf) % pt2d(iihom + jh, jj)
+              END DO
             END DO
           END DO
         END DO
       END DO
+      !$ACC END KERNELS
     CASE (0)
+      !$ACC KERNELS
       iihom = nlci - nreci
-      DO jf = 1, ipf
-        DO jl = 1, ipl
-          DO jk = 1, ipk
-            DO jh = 1, nn_hls
-              zt3ew(:, jh, jk, jl, jf, 1) = ptab(jf) % pt2d(nn_hls + jh, :)
-              zt3we(:, jh, jk, jl, jf, 1) = ptab(jf) % pt2d(iihom + jh, :)
+      !$ACC LOOP SEQ
+      DO jf = 1, ipf ! 2-8
+        !$ACC LOOP SEQ
+        DO jl = 1, ipl ! 1
+          !$ACC LOOP SEQ
+          DO jk = 1, ipk ! 1
+            !$ACC LOOP SEQ
+            DO jh = 1, nn_hls ! 1
+              !$ACC LOOP GANG VECTOR
+              DO jj = 1, jpj
+                zt3ew(jj, jh, jk, jl, jf, 1) = ptab(jf) % pt2d(nn_hls + jh, jj)
+                zt3we(jj, jh, jk, jl, jf, 1) = ptab(jf) % pt2d(iihom + jh, jj)
+              END DO
             END DO
           END DO
         END DO
       END DO
+      !$ACC END KERNELS
     CASE (1)
       iihom = nlci - nreci
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               zt3ew(:, jh, jk, jl, jf, 1) = ptab(jf) % pt2d(nn_hls + jh, :)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     END SELECT
@@ -596,32 +622,45 @@ MODULE lib_mpp
     CASE (- 1)
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               ptab(jf) % pt2d(iihom + jh, :) = zt3ew(:, jh, jk, jl, jf, 1)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (0)
+      !$ACC KERNELS
+      !$ACC LOOP SEQ
       DO jf = 1, ipf
+        !$ACC LOOP SEQ
         DO jl = 1, ipl
+          !$ACC LOOP SEQ
           DO jk = 1, ipk
+            !$ACC LOOP SEQ
             DO jh = 1, nn_hls
-              ptab(jf) % pt2d(jh, :) = zt3we(:, jh, jk, jl, jf, 2)
-              ptab(jf) % pt2d(iihom + jh, :) = zt3ew(:, jh, jk, jl, jf, 2)
+              !$ACC LOOP GANG VECTOR INDEPENDENT
+              DO jj = 1, jpj
+                ptab(jf) % pt2d(jh, jj) = zt3we(jj, jh, jk, jl, jf, 2)
+                ptab(jf) % pt2d(iihom + jh, jj) = zt3ew(jj, jh, jk, jl, jf, 2)
+              END DO
             END DO
           END DO
         END DO
       END DO
+      !$ACC END KERNELS
     CASE (1)
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               ptab(jf) % pt2d(jh, :) = zt3we(:, jh, jk, jl, jf, 1)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     END SELECT
@@ -641,34 +680,40 @@ MODULE lib_mpp
       ijhom = nlcj - nrecj
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               zt3sn(:, jh, jk, jl, jf, 1) = ptab(jf) % pt2d(:, ijhom + jh)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (0)
       ijhom = nlcj - nrecj
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               zt3sn(:, jh, jk, jl, jf, 1) = ptab(jf) % pt2d(:, ijhom + jh)
               zt3ns(:, jh, jk, jl, jf, 1) = ptab(jf) % pt2d(:, nn_hls + jh)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (1)
       ijhom = nlcj - nrecj
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               zt3ns(:, jh, jk, jl, jf, 1) = ptab(jf) % pt2d(:, nn_hls + jh)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     END SELECT
@@ -697,32 +742,38 @@ MODULE lib_mpp
     CASE (- 1)
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               ptab(jf) % pt2d(:, ijhom + jh) = zt3ns(:, jh, jk, jl, jf, 1)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (0)
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               ptab(jf) % pt2d(:, jh) = zt3sn(:, jh, jk, jl, jf, 2)
               ptab(jf) % pt2d(:, ijhom + jh) = zt3ns(:, jh, jk, jl, jf, 2)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (1)
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               ptab(jf) % pt2d(:, jh) = zt3sn(:, jh, jk, jl, jf, 1)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     END SELECT
@@ -1027,18 +1078,26 @@ MODULE lib_mpp
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
+          !$ACC KERNELS
           ptab(jf) % pt3d(1, :, :) = ptab(jf) % pt3d(jpim1, :, :)
           ptab(jf) % pt3d(jpi, :, :) = ptab(jf) % pt3d(2, :, :)
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(1 : nn_hls, :, :) = zland
           ptab(jf) % pt3d(nlci - nn_hls + 1 : jpi, :, :) = zland
+          !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
+          !$ACC KERNELS      
           ptab(jf) % pt3d(:, 1, :) = ptab(jf) % pt3d(:, jpjm1, :)
           ptab(jf) % pt3d(:, jpj, :) = ptab(jf) % pt3d(:, 2, :)
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(:, 1 : nn_hls, :) = zland
           ptab(jf) % pt3d(:, nlcj - nn_hls + 1 : jpj, :) = zland
+          !$ACC END KERNELS
         END IF
       END DO
     END IF
@@ -1049,34 +1108,43 @@ MODULE lib_mpp
       iihom = nlci - nreci
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               zt3we(:, jh, jk, jl, jf, 1) = ptab(jf) % pt3d(iihom + jh, :, jk)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (0)
       iihom = nlci - nreci
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
-              zt3ew(:, jh, jk, jl, jf, 1) = ptab(jf) % pt3d(nn_hls + jh, :, jk)
-              zt3we(:, jh, jk, jl, jf, 1) = ptab(jf) % pt3d(iihom + jh, :, jk)
+              !$ACC LOOP VECTOR
+              DO jj = 1, jpj
+                zt3ew(jj, jh, jk, jl, jf, 1) = ptab(jf) % pt3d(nn_hls + jh, jj, jk) ! Invoked ? Gang vector? Or collapse all loops with explicit syntax
+                zt3we(jj, jh, jk, jl, jf, 1) = ptab(jf) % pt3d(iihom + jh, jj, jk)  ! Invoked ! But bad read stride
+              END DO
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (1)
       iihom = nlci - nreci
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               zt3ew(:, jh, jk, jl, jf, 1) = ptab(jf) % pt3d(nn_hls + jh, :, jk)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     END SELECT
@@ -1105,32 +1173,46 @@ MODULE lib_mpp
     CASE (- 1)
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               ptab(jf) % pt3d(iihom + jh, :, jk) = zt3ew(:, jh, jk, jl, jf, 1)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (0)
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
+          !$ACC LOOP GANG INDEPENDENT
           DO jk = 1, ipk
+          !$ACC LOOP SEQ
             DO jh = 1, nn_hls
-              ptab(jf) % pt3d(jh, :, jk) = zt3we(:, jh, jk, jl, jf, 2)
-              ptab(jf) % pt3d(iihom + jh, :, jk) = zt3ew(:, jh, jk, jl, jf, 2)
+              !$ACC LOOP VECTOR INDEPENDENT
+              DO jj = 1, jpj
+                ptab(jf) % pt3d(jh, jj, jk) = zt3we(jj, jh, jk, jl, jf, 2)
+              END DO
+              !$ACC LOOP VECTOR INDEPENDENT
+              DO jj = 1, jpj
+                ptab(jf) % pt3d(iihom + jh, jj, jk) = zt3ew(jj, jh, jk, jl, jf, 2)
+              END DO
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (1)
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               ptab(jf) % pt3d(jh, :, jk) = zt3we(:, jh, jk, jl, jf, 1)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     END SELECT
@@ -1150,34 +1232,40 @@ MODULE lib_mpp
       ijhom = nlcj - nrecj
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               zt3sn(:, jh, jk, jl, jf, 1) = ptab(jf) % pt3d(:, ijhom + jh, jk)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (0)
       ijhom = nlcj - nrecj
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               zt3sn(:, jh, jk, jl, jf, 1) = ptab(jf) % pt3d(:, ijhom + jh, jk)
               zt3ns(:, jh, jk, jl, jf, 1) = ptab(jf) % pt3d(:, nn_hls + jh, jk)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (1)
       ijhom = nlcj - nrecj
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               zt3ns(:, jh, jk, jl, jf, 1) = ptab(jf) % pt3d(:, nn_hls + jh, jk)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     END SELECT
@@ -1206,32 +1294,38 @@ MODULE lib_mpp
     CASE (- 1)
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               ptab(jf) % pt3d(:, ijhom + jh, jk) = zt3ns(:, jh, jk, jl, jf, 1)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (0)
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               ptab(jf) % pt3d(:, jh, jk) = zt3sn(:, jh, jk, jl, jf, 2)
               ptab(jf) % pt3d(:, ijhom + jh, jk) = zt3ns(:, jh, jk, jl, jf, 2)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     CASE (1)
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
               ptab(jf) % pt3d(:, jh, jk) = zt3sn(:, jh, jk, jl, jf, 1)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
     END SELECT
@@ -1802,8 +1896,8 @@ MODULE lib_mpp
           END SELECT
         END SELECT
       END DO
-      ipf_j = SUM(ipj_s(:))
       !$ACC END KERNELS
+      ipf_j = SUM(ipj_s(:))
       ALLOCATE(znorthloc(jpimax, ipf_j, ipk, ipl, 1))
       js = 0
       DO jf = 1, ipf
@@ -2023,9 +2117,11 @@ MODULE lib_mpp
         DO jj = 1, ipj_s(jf)
           js = js + 1
           DO jl = 1, ipl
+            !$ACC KERNELS
             DO jk = 1, ipk
               znorthloc(1 : jpi, js, jk, jl, 1) = ptab(jf) % pt2d(1 : jpi, jj_s(jf, jj))
             END DO
+            !$ACC END KERNELS
           END DO
         END DO
       END DO
@@ -2073,11 +2169,13 @@ MODULE lib_mpp
           DO jf = 1, ipf
             DO jj = 1, ipj_s(jf)
               DO jl = 1, ipl
+                 !$ACC KERNELS
                 DO jk = 1, ipk
                   DO ji = ildi, ilei
                     ztabr(iilb + ji, jj, jk, jl, jf) = ptab(jf) % pt2d(ji, jj_s(jf, jj))
                   END DO
                 END DO
+                !$ACC END KERNELS
               END DO
             END DO
           END DO
@@ -2103,12 +2201,14 @@ MODULE lib_mpp
       ALLOCATE(znorthloc(jpimax, ipj, ipk, ipl, ipf))
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jj = nlcj - ipj + 1, nlcj
               ij = jj - nlcj + ipj
               znorthloc(1 : jpi, ij, jk, jl, jf) = ptab(jf) % pt2d(1 : jpi, jj)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
       ibuffsize = jpimax * ipj * ipk * ipl * ipf
@@ -2149,6 +2249,7 @@ MODULE lib_mpp
       END DO
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jj = nlcj - ipj + 1, nlcj
               ij = jj - nlcj + ipj
@@ -2157,6 +2258,7 @@ MODULE lib_mpp
               END DO
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
       DEALLOCATE(ztab)
@@ -2220,8 +2322,8 @@ MODULE lib_mpp
           END SELECT
         END SELECT
       END DO
-      ipf_j = SUM(ipj_s(:))
       !$ACC END KERNELS
+      ipf_j = SUM(ipj_s(:))
       ALLOCATE(znorthloc(jpimax, ipf_j, ipk, ipl, 1))
       js = 0
       DO jf = 1, ipf
@@ -2441,9 +2543,11 @@ MODULE lib_mpp
         DO jj = 1, ipj_s(jf)
           js = js + 1
           DO jl = 1, ipl
+            !$ACC KERNELS
             DO jk = 1, ipk
               znorthloc(1 : jpi, js, jk, jl, 1) = ptab(jf) % pt3d(1 : jpi, jj_s(jf, jj), jk)
             END DO
+            !$ACC END KERNELS
           END DO
         END DO
       END DO
@@ -2491,11 +2595,13 @@ MODULE lib_mpp
           DO jf = 1, ipf
             DO jj = 1, ipj_s(jf)
               DO jl = 1, ipl
+                !$ACC KERNELS
                 DO jk = 1, ipk
                   DO ji = ildi, ilei
                     ztabr(iilb + ji, jj, jk, jl, jf) = ptab(jf) % pt3d(ji, jj_s(jf, jj), jk)
                   END DO
                 END DO
+                !$ACC END KERNELS
               END DO
             END DO
           END DO
@@ -2521,12 +2627,14 @@ MODULE lib_mpp
       ALLOCATE(znorthloc(jpimax, ipj, ipk, ipl, ipf))
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jj = nlcj - ipj + 1, nlcj
               ij = jj - nlcj + ipj
               znorthloc(1 : jpi, ij, jk, jl, jf) = ptab(jf) % pt3d(1 : jpi, jj, jk)
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
       ibuffsize = jpimax * ipj * ipk * ipl * ipf
@@ -2567,6 +2675,7 @@ MODULE lib_mpp
       END DO
       DO jf = 1, ipf
         DO jl = 1, ipl
+          !$ACC KERNELS
           DO jk = 1, ipk
             DO jj = nlcj - ipj + 1, nlcj
               ij = jj - nlcj + ipj
@@ -2575,6 +2684,7 @@ MODULE lib_mpp
               END DO
             END DO
           END DO
+          !$ACC END KERNELS
         END DO
       END DO
       DEALLOCATE(ztab)
@@ -2638,8 +2748,8 @@ MODULE lib_mpp
           END SELECT
         END SELECT
       END DO
-      ipf_j = SUM(ipj_s(:))
       !$ACC END KERNELS
+      ipf_j = SUM(ipj_s(:))
       ALLOCATE(znorthloc(jpimax, ipf_j, ipk, ipl, 1))
       js = 0
       DO jf = 1, ipf

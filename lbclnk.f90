@@ -35,10 +35,13 @@ MODULE lbclnk
     CHARACTER(LEN = 3), OPTIONAL, INTENT(IN) :: cd_mpp
     REAL(KIND = wp), OPTIONAL, INTENT(IN) :: pval
     INTEGER :: kfld
-    TYPE(PTR_2D), DIMENSION(9) :: ptab_ptr
-    CHARACTER(LEN = 1), DIMENSION(9) :: cdna_ptr
-    REAL(KIND = wp), DIMENSION(9) :: psgn_ptr
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(PTR_2D), ALLOCATABLE, DIMENSION(:) :: ptab_ptr
+    CHARACTER(LEN = 1), ALLOCATABLE, DIMENSION(:) :: cdna_ptr
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:) :: psgn_ptr
+    ALLOCATE(ptab_ptr(9))
+    ALLOCATE(cdna_ptr(9))
+    ALLOCATE(psgn_ptr(9))
     CALL profile_psy_data0 % PreStart('lbc_lnk_2d_multi', 'r0', 0, 0)
     kfld = 0
     CALL load_ptr_2d(pt1, cdna1, psgn1, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
@@ -83,10 +86,13 @@ MODULE lbclnk
     CHARACTER(LEN = 3), OPTIONAL, INTENT(IN) :: cd_mpp
     REAL(KIND = wp), OPTIONAL, INTENT(IN) :: pval
     INTEGER :: kfld
-    TYPE(PTR_3D), DIMENSION(9) :: ptab_ptr
-    CHARACTER(LEN = 1), DIMENSION(9) :: cdna_ptr
-    REAL(KIND = wp), DIMENSION(9) :: psgn_ptr
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(PTR_3D), ALLOCATABLE, DIMENSION(:) :: ptab_ptr
+    CHARACTER(LEN = 1), ALLOCATABLE, DIMENSION(:) :: cdna_ptr
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:) :: psgn_ptr
+    ALLOCATE(ptab_ptr(9))
+    ALLOCATE(cdna_ptr(9))
+    ALLOCATE(psgn_ptr(9))
     CALL profile_psy_data0 % PreStart('lbc_lnk_3d_multi', 'r0', 0, 0)
     kfld = 0
     CALL load_ptr_3d(pt1, cdna1, psgn1, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
