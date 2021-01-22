@@ -409,10 +409,16 @@ MODULE lbclnk
     CHARACTER(LEN = 3), OPTIONAL, INTENT(IN) :: cd_mpp
     REAL(KIND = wp), OPTIONAL, INTENT(IN) :: pval
     INTEGER :: kfld
-    TYPE(PTR_2D), DIMENSION(9) :: ptab_ptr
-    CHARACTER(LEN = 1), DIMENSION(9) :: cdna_ptr
-    REAL(KIND = wp), DIMENSION(9) :: psgn_ptr
+    !TYPE(PTR_2D), DIMENSION(9) :: ptab_ptr
+    !CHARACTER(LEN = 1), DIMENSION(9) :: cdna_ptr
+    !REAL(KIND = wp), DIMENSION(9) :: psgn_ptr
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(PTR_2D), ALLOCATABLE, DIMENSION(:) :: ptab_ptr
+    CHARACTER(LEN = 1), ALLOCATABLE, DIMENSION(:) :: cdna_ptr
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:) :: psgn_ptr
+    ALLOCATE(ptab_ptr(9))
+    ALLOCATE(cdna_ptr(9))
+    ALLOCATE(psgn_ptr(9))
     CALL profile_psy_data0 % PreStart('lbc_lnk_2d_multi', 'r0', 0, 0)
     kfld = 0
     !CALL lbc_lnk_2d(cdname, pt1, cdna1, psgn1, cd_mpp, pval)
@@ -433,11 +439,7 @@ MODULE lbclnk
     IF (PRESENT(psgn7)) CALL load_ptr_2d(pt7, cdna7, psgn7, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
     IF (PRESENT(psgn8)) CALL load_ptr_2d(pt8, cdna8, psgn8, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
     IF (PRESENT(psgn9)) CALL load_ptr_2d(pt9, cdna9, psgn9, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    ! CDe introduce data region to help reduce data movements associated with calls to _ptr routine
-    !$ACC DATA COPY(ptab_ptr) &
-    !$ACC COPYIN(psgn_ptr, cdna_ptr)
     CALL lbc_lnk_ptr(cdname, ptab_ptr, cdna_ptr, psgn_ptr, kfld, cd_mpp, pval)
-    !$ACC END DATA
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_lnk_2d_multi
   SUBROUTINE load_ptr_2d(ptab, cdna, psgn, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
@@ -470,10 +472,16 @@ MODULE lbclnk
     CHARACTER(LEN = 3), OPTIONAL, INTENT(IN) :: cd_mpp
     REAL(KIND = wp), OPTIONAL, INTENT(IN) :: pval
     INTEGER :: kfld
-    TYPE(PTR_3D), DIMENSION(9) :: ptab_ptr
-    CHARACTER(LEN = 1), DIMENSION(9) :: cdna_ptr
-    REAL(KIND = wp), DIMENSION(9) :: psgn_ptr
+    !TYPE(PTR_3D), DIMENSION(9) :: ptab_ptr
+    !CHARACTER(LEN = 1), DIMENSION(9) :: cdna_ptr
+    !REAL(KIND = wp), DIMENSION(9) :: psgn_ptr
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(PTR_3D), ALLOCATABLE, DIMENSION(:) :: ptab_ptr
+    CHARACTER(LEN = 1), ALLOCATABLE, DIMENSION(:) :: cdna_ptr
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:) :: psgn_ptr
+    ALLOCATE(ptab_ptr(9))
+    ALLOCATE(cdna_ptr(9))
+    ALLOCATE(psgn_ptr(9))
     CALL profile_psy_data0 % PreStart('lbc_lnk_3d_multi', 'r0', 0, 0)
     kfld = 0
     CALL load_ptr_3d(pt1, cdna1, psgn1, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
@@ -485,11 +493,7 @@ MODULE lbclnk
     IF (PRESENT(psgn7)) CALL load_ptr_3d(pt7, cdna7, psgn7, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
     IF (PRESENT(psgn8)) CALL load_ptr_3d(pt8, cdna8, psgn8, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
     IF (PRESENT(psgn9)) CALL load_ptr_3d(pt9, cdna9, psgn9, ptab_ptr, cdna_ptr, psgn_ptr, kfld)
-    ! CDe introduce data region to help reduce data movements associated with calls to _ptr routine
-    !$ACC DATA COPY(ptab_ptr) &
-    !$ACC COPYIN(psgn_ptr, cdna_ptr)
     CALL lbc_lnk_ptr(cdname, ptab_ptr, cdna_ptr, psgn_ptr, kfld, cd_mpp, pval)
-    !$ACC END DATA
     !CALL lbc_lnk_3d(cdname, pt1, cdna1, psgn1, cd_mpp, pval)
     !IF (PRESENT(psgn2)) CALL lbc_lnk_3d(cdname, pt2, cdna2, psgn2, cd_mpp, pval)
     !IF (PRESENT(psgn3)) CALL lbc_lnk_3d(cdname, pt3, cdna3, psgn3, cd_mpp, pval)
