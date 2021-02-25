@@ -95,15 +95,15 @@ MODULE domain
     ht_0(:, :) = 0._wp
     hu_0(:, :) = 0._wp
     hv_0(:, :) = 0._wp
-    !$OMP parallel default(shared), private(jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(jk) ! CDe race condition??
+    ! !$OMP do schedule(static)
     DO jk = 1, jpk
       ht_0(:, :) = ht_0(:, :) + e3t_0(:, :, jk) * tmask(:, :, jk)
       hu_0(:, :) = hu_0(:, :) + e3u_0(:, :, jk) * umask(:, :, jk)
       hv_0(:, :) = hv_0(:, :) + e3v_0(:, :, jk) * vmask(:, :, jk)
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     IF (ln_linssh) THEN
       gdept_b = gdept_0
       gdept_n = gdept_0

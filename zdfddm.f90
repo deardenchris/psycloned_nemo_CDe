@@ -23,8 +23,8 @@ MODULE zdfddm
     REAL(KIND = wp) :: zavft, zavfs
     REAL(KIND = wp) :: zavdt, zavds
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zrau, zmsks, zmskf, zmskd1, zmskd2, zmskd3
-    !$OMP parallel default(shared), private(ji,jj,jk,zavds,zavdt,zavfs,zavft,zaw,zbw,zds,zdt,zinr,zrr,zrw)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk,zavds,zavdt,zavfs,zavft,zaw,zbw,zds,zdt,zinr,zrr,zrw) ! CDe causes a runtime crash
+    ! !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 1, jpj
         DO ji = 1, jpi
@@ -84,8 +84,8 @@ MODULE zdfddm
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     IF (ln_ctl) THEN
       CALL prt_ctl(tab3d_1 = avt, clinfo1 = ' ddm  - t: ', tab3d_2 = avs, clinfo2 = ' s: ', kdim = jpk)
     END IF

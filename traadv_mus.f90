@@ -93,6 +93,7 @@ MODULE traadv_mus
         END DO
       END DO
       !$OMP end do
+      !$OMP barrier ! CDe
       !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 2, jpj
@@ -165,6 +166,7 @@ MODULE traadv_mus
         END DO
       END DO
       !$OMP end do
+      !$OMP barrier ! CDe
       !$OMP do schedule(static)
       DO jk = 2, jpkm1
         DO jj = 1, jpj

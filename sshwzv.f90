@@ -41,13 +41,13 @@ MODULE sshwzv
     END IF
     CALL div_hor(kt)
     zhdiv(:, :) = 0._wp
-    !$OMP parallel default(shared), private(jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(jk) ! CDe race condition?
+    ! !$OMP do schedule(static)
     DO jk = 1, jpkm1
       zhdiv(:, :) = zhdiv(:, :) + e3t_n(:, :, jk) * hdivn(:, :, jk)
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     ssha(:, :) = (sshb(:, :) - z2dt * (zcoef * (emp_b(:, :) + emp(:, :)) + zhdiv(:, :))) * ssmask(:, :)
     IF (.NOT. ln_dynspg_ts) THEN
       IF (ln_bdy) THEN

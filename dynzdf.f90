@@ -224,8 +224,8 @@ MODULE dynzdf
         END DO
       END IF
     END IF
-    !$OMP parallel default(shared), private(ji,jj,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk) ! CDe race condition on zwd?
+    ! !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -233,16 +233,16 @@ MODULE dynzdf
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         ze3ua = (1._wp - r_vvl) * e3u_n(ji, jj, 1) + r_vvl * e3u_a(ji, jj, 1)
         ua(ji, jj, 1) = ua(ji, jj, 1) + r2dt * 0.5_wp * (utau_b(ji, jj) + utau(ji, jj)) / (ze3ua * rau0) * umask(ji, jj, 1)
       END DO
     END DO
-    !$OMP parallel default(shared), private(ji,jj,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk) ! CDe race condition on ua?
+    ! !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -250,15 +250,15 @@ MODULE dynzdf
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         ua(ji, jj, jpkm1) = ua(ji, jj, jpkm1) / zwd(ji, jj, jpkm1)
       END DO
     END DO
-    !$OMP parallel default(shared), private(ji,jj,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk) ! CDe race condition on ua?
+    ! !$OMP do schedule(static)
     DO jk = jpk - 2, 1, - 1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -266,8 +266,8 @@ MODULE dynzdf
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     zdt = r2dt * 0.5
     IF (ln_zad_Aimp) THEN
       SELECT CASE (nldf_dyn)
@@ -388,8 +388,8 @@ MODULE dynzdf
         END DO
       END IF
     END IF
-    !$OMP parallel default(shared), private(ji,jj,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk) ! CDe race condition on zwd
+    ! !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -397,16 +397,16 @@ MODULE dynzdf
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         ze3va = (1._wp - r_vvl) * e3v_n(ji, jj, 1) + r_vvl * e3v_a(ji, jj, 1)
         va(ji, jj, 1) = va(ji, jj, 1) + r2dt * 0.5_wp * (vtau_b(ji, jj) + vtau(ji, jj)) / (ze3va * rau0) * vmask(ji, jj, 1)
       END DO
     END DO
-    !$OMP parallel default(shared), private(ji,jj,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk) ! CDe race condition on va
+    ! !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -414,15 +414,15 @@ MODULE dynzdf
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         va(ji, jj, jpkm1) = va(ji, jj, jpkm1) / zwd(ji, jj, jpkm1)
       END DO
     END DO
-    !$OMP parallel default(shared), private(ji,jj,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk) ! CDe race condition on va
+    ! !$OMP do schedule(static)
     DO jk = jpk - 2, 1, - 1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -430,8 +430,8 @@ MODULE dynzdf
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     IF (l_trddyn) THEN
       ztrdu(:, :, :) = (ua(:, :, :) - ub(:, :, :)) / r2dt - ztrdu(:, :, :)
       ztrdv(:, :, :) = (va(:, :, :) - vb(:, :, :)) / r2dt - ztrdv(:, :, :)

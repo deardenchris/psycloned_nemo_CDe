@@ -159,8 +159,9 @@ MODULE traldf_iso
           END DO
         END IF
       END IF
-      !$OMP parallel default(shared), private(ji,jj,jk,zabe1,zabe2,zcof1,zcof2,zmsku,zmskv)
-      !$OMP do schedule(static)
+      ! !$OMP parallel default(shared), private(ji,jj,jk,zabe1,zabe2,zcof1,zcof2,zmsku,zmskv)
+      !  CDe possible race condition wth zdk1t and zdkt being shared??
+      ! !$OMP do schedule(static)
       DO jk = 1, jpkm1
         zdk1t(:, :) = (ptb(:, :, jk, jn) - ptb(:, :, jk + 1, jn)) * wmask(:, :, jk + 1)
         IF (jk == 1) THEN
@@ -189,8 +190,8 @@ MODULE traldf_iso
           END DO
         END DO
       END DO
-      !$OMP end do
-      !$OMP end parallel
+      ! !$OMP end do
+      ! !$OMP end parallel
       ztfw(1, :, :) = 0._wp
       ztfw(jpi, :, :) = 0._wp
       ztfw(:, :, 1) = 0._wp

@@ -61,18 +61,18 @@ MODULE icevar
       tm_i(:, :) = 0._wp
       tm_s(:, :) = 0._wp
       DO jl = 1, jpl
-        !$OMP parallel default(shared), private(jk)
-        !$OMP do schedule(static)
+        ! !$OMP parallel default(shared), private(jk) ! CDe race condition??
+        ! !$OMP do schedule(static)
         DO jk = 1, nlay_i
           tm_i(:, :) = tm_i(:, :) + r1_nlay_i * t_i(:, :, jk, jl) * v_i(:, :, jl) * z1_vt_i(:, :)
         END DO
-        !$OMP end do
-        !$OMP do schedule(static)
+        ! !$OMP end do
+        ! !$OMP do schedule(static)
         DO jk = 1, nlay_s
           tm_s(:, :) = tm_s(:, :) + r1_nlay_s * t_s(:, :, jk, jl) * v_s(:, :, jl) * z1_vt_s(:, :)
         END DO
-        !$OMP end do
-        !$OMP end parallel
+        ! !$OMP end do
+        ! !$OMP end parallel
       END DO
       WHERE (at_i(:, :) <= epsi20)
         tm_su(:, :) = rt0

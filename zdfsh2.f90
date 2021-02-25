@@ -12,7 +12,7 @@ MODULE zdfsh2
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(OUT) :: p_sh2
     INTEGER :: ji, jj, jk
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zsh2u, zsh2v
-    !$OMP parallel default(shared), private(ji,jj,jk)
+    !$OMP parallel default(shared), private(ji,jj,jk,zsh2u,zsh2v) ! CDe added zsh2 vars as private to avoid race condition
     !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 1, jpjm1

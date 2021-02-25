@@ -29,14 +29,14 @@ MODULE bdydyn
     END DO
     pua2d(:, :) = 0._wp
     pva2d(:, :) = 0._wp
-    !$OMP parallel default(shared), private(jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(jk) ! CDe race condition??
+    ! !$OMP do schedule(static)
     DO jk = 1, jpkm1
       pua2d(:, :) = pua2d(:, :) + e3u_a(:, :, jk) * ua(:, :, jk) * umask(:, :, jk)
       pva2d(:, :) = pva2d(:, :) + e3v_a(:, :, jk) * va(:, :, jk) * vmask(:, :, jk)
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     pua2d(:, :) = pua2d(:, :) * r1_hu_a(:, :)
     pva2d(:, :) = pva2d(:, :) * r1_hv_a(:, :)
     !$OMP parallel default(shared), private(jk)

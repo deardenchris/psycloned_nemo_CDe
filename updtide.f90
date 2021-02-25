@@ -27,13 +27,13 @@ MODULE updtide
     END IF
     zwt(:) = omega_tide(:) * zt
     pot_astro(:, :) = 0._wp
-    !$OMP parallel default(shared), private(jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(jk) ! CDe race condition?
+    ! !$OMP do schedule(static)
     DO jk = 1, nb_harmo
       pot_astro(:, :) = pot_astro(:, :) + amp_pot(:, :, jk) * COS(zwt(jk) + phi_pot(:, :, jk))
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     IF (ln_tide_ramp) THEN
       zt = (kt - nit000) * rdt
       IF (PRESENT(kit)) zt = zt + (kit + joffset - 1) * rdt / REAL(nn_baro, wp)

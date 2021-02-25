@@ -68,8 +68,8 @@ MODULE istate
     vn_b(:, :) = 0._wp
     ub_b(:, :) = 0._wp
     vb_b(:, :) = 0._wp
-    !$OMP parallel default(shared), private(ji,jj,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk) ! CDe race condition??
+    ! !$OMP do schedule(static)
     DO jk = 1, jpkm1
       DO jj = 1, jpj
         DO ji = 1, jpi
@@ -80,8 +80,8 @@ MODULE istate
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     un_b(:, :) = un_b(:, :) * r1_hu_n(:, :)
     vn_b(:, :) = vn_b(:, :) * r1_hv_n(:, :)
     ub_b(:, :) = ub_b(:, :) * r1_hu_b(:, :)

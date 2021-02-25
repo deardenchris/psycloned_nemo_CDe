@@ -96,7 +96,8 @@ MODULE icethd_dh
       END DO
     END DO
     !$OMP end do
-    !$OMP do schedule(static)
+    !$OMP end parallel
+    ! !$OMP do schedule(static) ! CDe race condition??
     DO jk = 1, nlay_s
       DO ji = 1, npti
         IF (t_s_1d(ji, jk) > rt0) THEN
@@ -110,8 +111,8 @@ MODULE icethd_dh
         END IF
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     CALL ice_thd_snwblow(1. - at_i_1d(1 : npti), zsnw(1 : npti))
     zdeltah(1 : npti, :) = 0._wp
     DO ji = 1, npti
@@ -145,8 +146,8 @@ MODULE icethd_dh
     !$OMP end parallel
     zdeltah(1 : npti, :) = 0._wp
     zdh_s_mel(1 : npti) = 0._wp
-    !$OMP parallel default(shared), private(ji,jk,rswitch)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jk,rswitch) ! CDe race condition??
+    ! !$OMP do schedule(static)
     DO jk = 1, nlay_s
       DO ji = 1, npti
         IF (zh_s(ji, jk) > 0._wp .AND. zq_top(ji) > 0._wp) THEN
@@ -163,8 +164,8 @@ MODULE icethd_dh
         END IF
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     zdeltah(1 : npti, :) = 0._wp
     DO ji = 1, npti
       IF (evap_ice_1d(ji) > 0._wp) THEN
@@ -197,8 +198,8 @@ MODULE icethd_dh
     !$OMP end do
     !$OMP end parallel
     zdeltah(1 : npti, :) = 0._wp
-    !$OMP parallel default(shared), private(ji,jk,rswitch,zde,zdum,zei,zew,zfmdt,ztmelts)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jk,rswitch,zde,zdum,zei,zew,zfmdt,ztmelts) ! CDe race condition??
+    ! !$OMP do schedule(static)
     DO jk = 1, nlay_i
       DO ji = 1, npti
         ztmelts = - rTmlt * sz_i_1d(ji, jk)
@@ -242,8 +243,8 @@ MODULE icethd_dh
         h_i_old(ji, jk) = h_i_old(ji, jk) + zdeltah(ji, jk)
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO ji = 1, npti
       h_i_1d(ji) = MAX(0._wp, h_i_1d(ji) + dh_i_sum(ji) + dh_i_itm(ji) + dh_i_sub(ji))
     END DO
@@ -279,8 +280,8 @@ MODULE icethd_dh
       END IF
     END DO
     zdeltah(1 : npti, :) = 0._wp
-    !$OMP parallel default(shared), private(ji,jk,zde,zei,zew,zfmdt,ztmelts)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jk,zde,zei,zew,zfmdt,ztmelts) ! CDe race condition??
+    ! !$OMP do schedule(static)
     DO jk = nlay_i, 1, - 1
       DO ji = 1, npti
         IF (zf_tt(ji) > 0._wp .AND. jk > icount(ji, jk)) THEN
@@ -317,8 +318,8 @@ MODULE icethd_dh
         END IF
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO ji = 1, npti
       h_i_1d(ji) = MAX(0._wp, h_i_1d(ji) + dh_i_bog(ji) + dh_i_bom(ji))
     END DO
@@ -361,8 +362,8 @@ MODULE icethd_dh
       rswitch = 1._wp - MAX(0._wp, SIGN(1._wp, - h_i_1d(ji)))
       t_su_1d(ji) = rswitch * t_su_1d(ji) + (1._wp - rswitch) * rt0
     END DO
-    !$OMP parallel default(shared), private(ji,jk,rswitch)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jk,rswitch) ! CDe race condition??
+    ! !$OMP do schedule(static)
     DO jk = 1, nlay_s
       DO ji = 1, npti
         rswitch = (1._wp - MAX(0._wp, SIGN(1._wp, - h_s_1d(ji)))) * (1._wp - MAX(0._wp, SIGN(1._wp, - h_i_1d(ji))))
@@ -372,8 +373,8 @@ MODULE icethd_dh
         t_s_1d(ji, jk) = rt0 + rswitch * (- e_s_1d(ji, jk) * r1_rhos * r1_rcpi + rLfus * r1_rcpi)
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     WHERE (h_i_1d(1 : npti) == 0._wp)
       a_i_1d(1 : npti) = 0._wp
       h_s_1d(1 : npti) = 0._wp

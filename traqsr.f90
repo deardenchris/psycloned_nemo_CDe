@@ -126,8 +126,9 @@ MODULE traqsr
           zea(ji, jj, 1) = qsr(ji, jj)
         END DO
       END DO
-      !$OMP parallel default(shared), private(irgb,ji,jj,jk,zc0,zc1,zc2,zc3,zchl)
-      !$OMP do schedule(static)
+      ! !$OMP parallel default(shared), private(irgb,ji,jj,jk,zc0,zc1,zc2,zc3,zchl)
+      ! CDe - race condition on ze0, ze1 etc?
+      ! !$OMP do schedule(static)
       DO jk = 2, nksr + 1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -152,8 +153,9 @@ MODULE traqsr
           END DO
         END DO
       END DO
-      !$OMP end do
-      !$OMP do schedule(static)
+      ! !$OMP end do
+      ! !$OMP barrier ! CDe
+      ! !$OMP do schedule(static)
       DO jk = 1, nksr
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -161,8 +163,8 @@ MODULE traqsr
           END DO
         END DO
       END DO
-      !$OMP end do
-      !$OMP end parallel
+      ! !$OMP end do
+      ! !$OMP end parallel
       DEALLOCATE(zekb, zekg, zekr, ze0, ze1, ze2, ze3, zea, zchl3d)
     CASE (np_2BD)
       zz0 = rn_abs * r1_rau0_rcp
@@ -205,13 +207,13 @@ MODULE traqsr
     IF (iom_use('qsr3d')) THEN
       ALLOCATE(zetot(jpi, jpj, jpk))
       zetot(:, :, nksr + 1 : jpk) = 0._wp
-      !$OMP parallel default(shared), private(jk)
-      !$OMP do schedule(static)
+      ! !$OMP parallel default(shared), private(jk) ! CDe race condition?
+      ! !$OMP do schedule(static)
       DO jk = nksr, 1, - 1
         zetot(:, :, jk) = zetot(:, :, jk + 1) + qsr_hc(:, :, jk) * rau0_rcp
       END DO
-      !$OMP end do
-      !$OMP end parallel
+      ! !$OMP end do
+      ! !$OMP end parallel
       CALL iom_put('qsr3d', zetot)
       DEALLOCATE(zetot)
     END IF

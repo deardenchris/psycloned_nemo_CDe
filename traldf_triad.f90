@@ -105,8 +105,8 @@ MODULE traldf_triad
       END DO
       DO jp = 0, 1
         DO kp = 0, 1
-          !$OMP parallel default(shared), private(ji,jj,jk,zah,zbv,ze3wr,zslope2,zslope_skew)
-          !$OMP do schedule(static)
+          ! !$OMP parallel default(shared), private(ji,jj,jk,zah,zbv,ze3wr,zslope2,zslope_skew) ! CDe test
+          ! !$OMP do schedule(static)
           DO jk = 1, jpkm1
             DO jj = 1, jpjm1
               DO ji = 1, jpim1
@@ -125,8 +125,8 @@ MODULE traldf_triad
               END DO
             END DO
           END DO
-          !$OMP end do
-          !$OMP end parallel
+          ! !$OMP end do
+          ! !$OMP end parallel
         END DO
       END DO
       IF (ln_traldf_msc) THEN
@@ -195,9 +195,10 @@ MODULE traldf_triad
           END DO
         END IF
       END IF
-      !$OMP parallel default(shared),  &
-!$omp& private(ip,ji,jj,jk,jp,kp,zaei_slp,zah,zah_slp,zbu,zbv,zdxt,zdyt,zdzt,ze1ur,ze2vr,ze3wr,zslope_iso,zslope_skew)
-      !$OMP do schedule(static)
+      ! !$OMP parallel default(shared),  &
+! !$omp& private(ip,ji,jj,jk,jp,kp,zaei_slp,zah,zah_slp,zbu,zbv,zdxt,zdyt,zdzt,ze1ur,ze2vr,ze3wr,zslope_iso,zslope_skew)
+      ! !$OMP do schedule(static)
+      ! CDe - race condition because zdft3d is currently shared??
       DO jk = 1, jpkm1
         zdkt3d(:, :, 1) = (ptb(:, :, jk, jn) - ptb(:, :, jk + 1, jn)) * tmask(:, :, jk + 1)
         IF (jk == 1) THEN
@@ -296,8 +297,8 @@ MODULE traldf_triad
           END DO
         END DO
       END DO
-      !$OMP end do
-      !$OMP end parallel
+      ! !$OMP end do
+      ! !$OMP end parallel
       IF (ln_traldf_lap) THEN
         !$OMP parallel default(shared), private(ji,jj,jk)
         !$OMP do schedule(static)

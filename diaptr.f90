@@ -50,13 +50,13 @@ MODULE diaptr
     IF (PRESENT(pvtr)) THEN
       IF (iom_use("zomsfglo")) THEN
         z3d(1, :, :) = ptr_sjk(pvtr(:, :, :))
-        !$OMP parallel default(shared), private(jk)
-        !$OMP do schedule(static)
+        ! !$OMP parallel default(shared), private(jk) ! CDe race condition?
+        ! !$OMP do schedule(static)
         DO jk = 2, jpkm1
           z3d(1, :, jk) = z3d(1, :, jk - 1) + z3d(1, :, jk)
         END DO
-        !$OMP end do
-        !$OMP end parallel
+        ! !$OMP end do
+        ! !$OMP end parallel
         DO ji = 1, jpi
           z3d(ji, :, :) = z3d(1, :, :)
         END DO
@@ -64,13 +64,13 @@ MODULE diaptr
         CALL iom_put(cl1, z3d * rc_sv)
         DO jn = 2, nptr
           z3d(1, :, :) = ptr_sjk(pvtr(:, :, :), btmsk(:, :, jn) * btm30(:, :))
-          !$OMP parallel default(shared), private(jk)
-          !$OMP do schedule(static)
+          ! !$OMP parallel default(shared), private(jk) ! CDe race condition?
+          ! !$OMP do schedule(static)
           DO jk = 2, jpkm1
             z3d(1, :, jk) = z3d(1, :, jk - 1) + z3d(1, :, jk)
           END DO
-          !$OMP end do
-          !$OMP end parallel
+          ! !$OMP end do
+          ! !$OMP end parallel
           DO ji = 1, jpi
             z3d(ji, :, :) = z3d(1, :, :)
           END DO

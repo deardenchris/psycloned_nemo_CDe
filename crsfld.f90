@@ -144,13 +144,13 @@ MODULE crsfld
       CALL crs_dom_ope(wn, 'SUM', 'W', tmask, wn_crs, p_e12 = e1e2t, p_surf_crs = e1e2w_msk, psgn = 1.0)
     ELSE
       wn_crs(:, :, jpk) = 0._wp
-      !$OMP parallel default(shared), private(jk)
-      !$OMP do schedule(static)
+      ! !$OMP parallel default(shared), private(jk) ! CDe race condition here?
+      ! !$OMP do schedule(static)
       DO jk = jpkm1, 1, - 1
         wn_crs(:, :, jk) = wn_crs(:, :, jk + 1) - e3t_crs(:, :, jk) * hdivn_crs(:, :, jk)
       END DO
-      !$OMP end do
-      !$OMP end parallel
+      ! !$OMP end do
+      ! !$OMP end parallel
     END IF
     CALL iom_put("woce", wn_crs)
     SELECT CASE (nn_crs_kz)

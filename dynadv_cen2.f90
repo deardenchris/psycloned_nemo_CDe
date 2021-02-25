@@ -24,8 +24,8 @@ MODULE dynadv_cen2
       zfu_uw(:, :, :) = ua(:, :, :)
       zfv_vw(:, :, :) = va(:, :, :)
     END IF
-    !$OMP parallel default(shared), private(ji,jj,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk) ! CDe causes runtime crash
+    ! !$OMP do schedule(static)
     DO jk = 1, jpkm1
       zfu(:, :, jk) = 0.25_wp * e2u(:, :) * e3u_n(:, :, jk) * un(:, :, jk)
       zfv(:, :, jk) = 0.25_wp * e1v(:, :) * e3v_n(:, :, jk) * vn(:, :, jk)
@@ -46,8 +46,8 @@ MODULE dynadv_cen2
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     IF (l_trddyn) THEN
       zfu_uw(:, :, :) = ua(:, :, :) - zfu_uw(:, :, :)
       zfv_vw(:, :, :) = va(:, :, :) - zfv_vw(:, :, :)
@@ -71,8 +71,8 @@ MODULE dynadv_cen2
         END DO
       END DO
     END IF
-    !$OMP parallel default(shared), private(ji,jj,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk) ! CDe
+    ! !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 2, jpj
         DO ji = 2, jpi
@@ -86,8 +86,8 @@ MODULE dynadv_cen2
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP do schedule(static)
+    ! !$OMP end do
+    ! !$OMP do schedule(static)
     DO jk = 1, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -96,8 +96,8 @@ MODULE dynadv_cen2
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     IF (l_trddyn) THEN
       zfu_t(:, :, :) = ua(:, :, :) - zfu_t(:, :, :)
       zfv_t(:, :, :) = va(:, :, :) - zfv_t(:, :, :)

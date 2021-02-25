@@ -315,15 +315,15 @@ MODULE iceistate
         gdept_n(:, :, 1) = 0.5_wp * e3w_n(:, :, 1)
         gdepw_n(:, :, 1) = 0.0_wp
         gde3w_n(:, :, 1) = gdept_n(:, :, 1) - sshn(:, :)
-        !$OMP parallel default(shared), private(jk)
-        !$OMP do schedule(static)
+        ! !$OMP parallel default(shared), private(jk) ! CDe race condition?
+        ! !$OMP do schedule(static)
         DO jk = 2, jpk
           gdept_n(:, :, jk) = gdept_n(:, :, jk - 1) + e3w_n(:, :, jk)
           gdepw_n(:, :, jk) = gdepw_n(:, :, jk - 1) + e3t_n(:, :, jk - 1)
           gde3w_n(:, :, jk) = gdept_n(:, :, jk) - sshn(:, :)
         END DO
-        !$OMP end do
-        !$OMP end parallel
+        ! !$OMP end do
+        ! !$OMP end parallel
       END IF
     END IF
     a_i_b(:, :, :) = a_i(:, :, :)

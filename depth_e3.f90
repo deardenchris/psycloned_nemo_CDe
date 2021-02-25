@@ -21,14 +21,14 @@ MODULE depth_e3
     REAL(KIND = wp), DIMENSION(:), INTENT(OUT) :: pe3t_1d, pe3w_1d
     INTEGER :: jk
     pe3w_1d(1) = 2._wp * (pdept_1d(1) - pdepw_1d(1))
-    !$OMP parallel default(shared), private(jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(jk) ! CDe
+    ! !$OMP do schedule(static)
     DO jk = 1, jpkm1
       pe3w_1d(jk + 1) = pdept_1d(jk + 1) - pdept_1d(jk)
       pe3t_1d(jk) = pdepw_1d(jk + 1) - pdepw_1d(jk)
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     pe3t_1d(jpk) = 2._wp * (pdept_1d(jpk) - pdepw_1d(jpk))
   END SUBROUTINE depth_to_e3_1d
   SUBROUTINE depth_to_e3_3d(pdept_3d, pdepw_3d, pe3t_3d, pe3w_3d)

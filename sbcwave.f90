@@ -176,13 +176,13 @@ MODULE sbcwave
     ELSE
       ik = 2
     END IF
-    !$OMP parallel default(shared), private(jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(jk) ! CDe race condition?
+    ! !$OMP do schedule(static)
     DO jk = jpkm1, ik, - 1
       wsd(:, :, jk) = wsd(:, :, jk + 1) - ze3divh(:, :, jk)
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     IF (ln_bdy) THEN
       !$OMP parallel default(shared), private(jk)
       !$OMP do schedule(static)
@@ -193,13 +193,13 @@ MODULE sbcwave
       !$OMP end parallel
     END IF
     div_sd(:, :) = 0._wp
-    !$OMP parallel default(shared), private(jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(jk) ! CDe race condition??
+    ! !$OMP do schedule(static)
     DO jk = 1, jpkm1
       div_sd(:, :) = div_sd(:, :) + ze3divh(:, :, jk)
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     CALL iom_put("ustokes", usd)
     CALL iom_put("vstokes", vsd)
     CALL iom_put("wstokes", wsd)

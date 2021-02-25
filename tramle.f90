@@ -42,8 +42,8 @@ MODULE tramle
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zpsi_uw, zpsi_vw
     inml_mle(:, :) = mbkt(:, :) + 1
     IF (nla10 > 0) THEN
-      !$OMP parallel default(shared), private(ji,jj,jk)
-      !$OMP do schedule(static)
+      ! !$OMP parallel default(shared), private(ji,jj,jk) ! CDe possible race condition on IF statement?
+      ! !$OMP do schedule(static)
       DO jk = jpkm1, nlb10, - 1
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -51,15 +51,15 @@ MODULE tramle
           END DO
         END DO
       END DO
-      !$OMP end do
-      !$OMP end parallel
+      ! !$OMP end do
+      ! !$OMP end parallel
     END IF
     ikmax = MIN(MAXVAL(inml_mle(:, :)), jpkm1)
     zmld(:, :) = 0._wp
     zbm(:, :) = 0._wp
     zn2(:, :) = 0._wp
-    !$OMP parallel default(shared), private(ji,jj,jk,zc)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk,zc) ! CDe race condition??
+    ! !$OMP do schedule(static)
     DO jk = 1, ikmax
       DO jj = 1, jpj
         DO ji = 1, jpi
@@ -70,8 +70,8 @@ MODULE tramle
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     SELECT CASE (nn_mld_uv)
     CASE (0)
       DO jj = 1, jpjm1
@@ -148,6 +148,7 @@ MODULE tramle
       END DO
     END DO
     !$OMP end do
+    !$OMP barrier ! CDe added
     !$OMP do schedule(static)
     DO jk = 1, ikmax
       DO jj = 1, jpjm1

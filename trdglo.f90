@@ -40,8 +40,8 @@ MODULE trdglo
     IF (MOD(kt, nn_trd) == 0 .OR. kt == nit000 .OR. kt == nitend) THEN
       SELECT CASE (ctype)
       CASE ('TRA')
-        !$OMP parallel default(shared), private(ji,jj,jk,zvm,zvs,zvt)
-        !$OMP do schedule(static)
+        ! !$OMP parallel default(shared), private(ji,jj,jk,zvm,zvs,zvt) ! CDe race condition??
+        ! !$OMP do schedule(static)
         DO jk = 1, jpkm1
           DO jj = 1, jpj
             DO ji = 1, jpi
@@ -55,8 +55,8 @@ MODULE trdglo
             END DO
           END DO
         END DO
-        !$OMP end do
-        !$OMP end parallel
+        ! !$OMP end do
+        ! !$OMP end parallel
         IF (ln_linssh .AND. ktrd == jptra_zad) THEN
           tmo(jptra_sad) = SUM(wn(:, :, 1) * tsn(:, :, 1, jp_tem) * e1e2t(:, :) * tmask_i(:, :))
           smo(jptra_sad) = SUM(wn(:, :, 1) * tsn(:, :, 1, jp_sal) * e1e2t(:, :) * tmask_i(:, :))
@@ -71,8 +71,8 @@ MODULE trdglo
           s2(:) = 0._wp
         END IF
       CASE ('DYN')
-        !$OMP parallel default(shared), private(ji,jj,jk,zvs,zvt)
-        !$OMP do schedule(static)
+        ! !$OMP parallel default(shared), private(ji,jj,jk,zvs,zvt) ! CDe race condition??
+        ! !$OMP do schedule(static)
         DO jk = 1, jpkm1
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
@@ -86,8 +86,8 @@ MODULE trdglo
             END DO
           END DO
         END DO
-        !$OMP end do
-        !$OMP end parallel
+        ! !$OMP end do
+        ! !$OMP end parallel
         IF (ktrd == jpdyn_zdf) THEN
           z1_2rau0 = 0.5_wp / rau0
           DO jj = 1, jpjm1

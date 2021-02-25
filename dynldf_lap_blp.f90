@@ -34,8 +34,8 @@ MODULE dynldf_lap_blp
     ELSE
       zsign = - 1._wp
     END IF
-    !$OMP parallel default(shared), private(ji,jj,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jj,jk) ! CDe causes runtime crash
+    ! !$OMP do schedule(static)
     DO jk = 1, jpkm1
       DO jj = 2, jpj
         DO ji = 2, jpi
@@ -56,8 +56,8 @@ MODULE dynldf_lap_blp
         END DO
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
   END SUBROUTINE dyn_ldf_lap
   SUBROUTINE dyn_ldf_blp(kt, pub, pvb, pua, pva)
     INTEGER, INTENT(IN) :: kt
