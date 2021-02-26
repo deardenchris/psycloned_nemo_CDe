@@ -36,13 +36,13 @@ MODULE domzgr
 &e3v_0, e3f_0, e3w_0, e3uw_0, e3vw_0, k_top, k_bot)
     END IF
     gde3w_0(:, :, 1) = 0.5_wp * e3w_0(:, :, 1)
-    !$OMP parallel default(shared), private(jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(jk) ! CDe race condition on gde3w_0
+    ! !$OMP do schedule(static)
     DO jk = 2, jpk
       gde3w_0(:, :, jk) = gde3w_0(:, :, jk - 1) + e3w_0(:, :, jk)
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     IF (.NOT. ln_closea) CALL clo_bat(k_top, k_bot)
     IF (lwp) THEN
       WRITE(numout, FMT = *)

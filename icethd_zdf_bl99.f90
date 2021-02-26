@@ -95,27 +95,27 @@ MODULE icethd_zdf_BL99
     ztsold(1 : npti, :) = t_s_1d(1 : npti, :)
     ztiold(1 : npti, :) = t_i_1d(1 : npti, :)
     zradtr_s(1 : npti, 0) = qtr_ice_top_1d(1 : npti)
-    !$OMP parallel default(shared), private(ji,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jk) ! CDe race condition??
+    ! !$OMP do schedule(static)
     DO jk = 1, nlay_s
       DO ji = 1, npti
         zradtr_s(ji, jk) = zradtr_s(ji, 0) * EXP(- zraext_s * h_s_1d(ji) * r1_nlay_s * REAL(jk))
         zradab_s(ji, jk) = zradtr_s(ji, jk - 1) - zradtr_s(ji, jk)
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     zradtr_i(1 : npti, 0) = zradtr_s(1 : npti, nlay_s) * isnow(1 : npti) + qtr_ice_top_1d(1 : npti) * (1._wp - isnow(1 : npti))
-    !$OMP parallel default(shared), private(ji,jk)
-    !$OMP do schedule(static)
+    ! !$OMP parallel default(shared), private(ji,jk) ! CDe race condition??
+    ! !$OMP do schedule(static)
     DO jk = 1, nlay_i
       DO ji = 1, npti
         zradtr_i(ji, jk) = zradtr_i(ji, 0) * EXP(- rn_kappa_i * zh_i(ji) * REAL(jk))
         zradab_i(ji, jk) = zradtr_i(ji, jk - 1) - zradtr_i(ji, jk)
       END DO
     END DO
-    !$OMP end do
-    !$OMP end parallel
+    ! !$OMP end do
+    ! !$OMP end parallel
     qtr_ice_bot_1d(1 : npti) = zradtr_i(1 : npti, nlay_i)
     iconv = 0
     l_T_converged(:) = .FALSE.
