@@ -94,8 +94,8 @@ MODULE lbclnk
     INTEGER :: ipi, ipj, ipk, ipl, ipf
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('lbc_lnk_2d_ptr', 'r0', 0, 0)
+    !TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    !CALL profile_psy_data0 % PreStart('lbc_lnk_2d_ptr', 'r0', 0, 0)
     ipk = 1
     ipl = 1
     ipf = kfld
@@ -108,25 +108,37 @@ MODULE lbclnk
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
-          !$ACC KERNELS      
-          ptab(jf) % pt2d(1, :) = ptab(jf) % pt2d(jpim1, :)
-          ptab(jf) % pt2d(jpi, :) = ptab(jf) % pt2d(2, :)
+          !$ACC KERNELS     
+          DO jj = 1, jpj ! CDe re-writing as explicit loops
+            ptab(jf) % pt2d(1, jj) = ptab(jf) % pt2d(jpim1, jj)
+            ptab(jf) % pt2d(jpi, jj) = ptab(jf) % pt2d(2, jj)
+          END DO
           !$ACC END KERNELS
         ELSE
           !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(1, :) = zland
-          ptab(jf) % pt2d(jpi, :) = zland
+          DO jj = 1, jpj
+            ptab(jf) % pt2d(jpi, jj) = zland
+          END DO
           !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
-          !$ACC KERNELS      
-          ptab(jf) % pt2d(:, 1) = ptab(jf) % pt2d(:, jpjm1)
-          ptab(jf) % pt2d(:, jpj) = ptab(jf) % pt2d(:, 2)
+          !$ACC KERNELS
+          DO ji = 1, jpi      
+            ptab(jf) % pt2d(ji, 1) = ptab(jf) % pt2d(ji, jpjm1)
+          END DO
+          DO ji = 1, jpi
+            ptab(jf) % pt2d(ji, jpj) = ptab(jf) % pt2d(ji, 2)
+          END DO
           !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
-          !$ACC KERNELS      
-          IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(:, 1) = zland
-          !$ACC END KERNELS
+          IF (.NOT. cd_nat(jf) == 'F') THEN
+             !$ACC KERNELS     
+             DO ji = 1, jpi      
+               ptab(jf) % pt2d(ji, 1) = zland
+             END DO
+             !$ACC END KERNELS
+          END IF
           CALL lbc_nfd(ptab, cd_nat(:), psgn(:), ipf)
         ELSE
           !$ACC KERNELS      
@@ -136,7 +148,7 @@ MODULE lbclnk
         END IF
       END DO
     END IF
-    CALL profile_psy_data0 % PostEnd
+    !CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_lnk_2d_ptr
   SUBROUTINE lbc_lnk_3d(cdname, ptab, cd_nat, psgn, cd_mpp, pval)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -221,30 +233,54 @@ MODULE lbclnk
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
-          !$ACC KERNELS      
-          ptab(jf) % pt3d(1, :, :) = ptab(jf) % pt3d(jpim1, :, :)
-          ptab(jf) % pt3d(jpi, :, :) = ptab(jf) % pt3d(2, :, :)
+          !$ACC KERNELS
+          DO jk = 1, jpk
+            DO jj = 1, jpj
+               ptab(jf) % pt3d(1, jj, jk) = ptab(jf) % pt3d(jpim1, jj, jk)
+               ptab(jf) % pt3d(jpi, jj, jk) = ptab(jf) % pt3d(2, jj, jk)
+            END DO
+          END DO
           !$ACC END KERNELS
         ELSE
           !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(1, :, :) = zland
-          ptab(jf) % pt3d(jpi, :, :) = zland
+          DO jk = 1, jpk
+            DO jj = 1, jpj
+              ptab(jf) % pt3d(jpi, jj, jk) = zland
+            END DO
+          END DO
           !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
-          !$ACC KERNELS      
-          ptab(jf) % pt3d(:, 1, :) = ptab(jf) % pt3d(:, jpjm1, :)
-          ptab(jf) % pt3d(:, jpj, :) = ptab(jf) % pt3d(:, 2, :)
+          !$ACC KERNELS
+          DO jk = 1, jpk
+            DO ji = 1, jpi
+              ptab(jf) % pt3d(ji, 1, jk) = ptab(jf) % pt3d(ji, jpjm1, jk)
+              ptab(jf) % pt3d(ji, jpj, jk) = ptab(jf) % pt3d(ji, 2, jk)
+            END DO
+          END DO
           !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
-          !$ACC KERNELS      
-          IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(:, 1, :) = zland
-          !$ACC END KERNELS
+          ! !$ACC KERNELS      
+          IF (.NOT. cd_nat(jf) == 'F') THEN
+            !$ACC KERNELS
+            DO jk = 1, jpk
+              DO ji = 1, jpi
+                ptab(jf) % pt3d(ji, 1, jk) = zland
+              END DO
+            END DO
+            !$ACC END KERNELS
+          END IF
+          ! !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat(:), psgn(:), ipf)
         ELSE
           !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(:, 1, :) = zland
-          ptab(jf) % pt3d(:, jpj, :) = zland
+          DO jk = 1, jpk
+            DO ji = 1, jpi
+              ptab(jf) % pt3d(ji, jpj, jk) = zland
+            END DO
+          END DO
           !$ACC END KERNELS
         END IF
       END DO
