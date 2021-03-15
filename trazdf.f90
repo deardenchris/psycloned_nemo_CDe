@@ -86,12 +86,17 @@ MODULE trazdf
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zwi, zwt, zwd, zws
     DO jn = 1, kjpt
       IF ((cdtype == 'TRA' .AND. (jn == jp_tem .OR. (jn == jp_sal .AND. ln_zdfddm))) .OR. (cdtype == 'TRC' .AND. jn == 1)) THEN
-        !$ACC KERNELS
+        ! !$ACC KERNELS ! CDe move to avoid implicit transfer of 'cdtype'
         IF (cdtype == 'TRA' .AND. jn == jp_tem) THEN
+          !$ACC KERNELS ! CDe      
           zwt(:, :, 2 : jpk) = avt(:, :, 2 : jpk)
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS ! CDe
           zwt(:, :, 2 : jpk) = avs(:, :, 2 : jpk)
+          !$ACC END KERNELS
         END IF
+        !$ACC KERNELS ! CDe
         zwt(:, :, 1) = 0._wp
         !$ACC END KERNELS
         IF (l_ldfslp) THEN
