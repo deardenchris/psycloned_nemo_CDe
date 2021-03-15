@@ -172,7 +172,8 @@ MODULE lib_fortran
     REAL(KIND = wp) :: glob_sum_full_3d
     REAL(KIND = wp) :: FUNCTION_GLOB_OP
     COMPLEX(KIND = wp) :: ctmp
-    REAL(KIND = wp) :: ztmp
+    !REAL(KIND = wp) :: ztmp
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:,:,:) :: ztmp ! CDe changed to alloc 3-D array
     INTEGER :: ji, jj, jk
     INTEGER :: ipi, ipj, ipk
     COMPLEX(KIND = wp), ALLOCATABLE :: hsum(:)
@@ -180,16 +181,19 @@ MODULE lib_fortran
     ipj = SIZE(ptab, 2)
     ipk = SIZE(ptab, 3)
     ALLOCATE(hsum(ipk))
+    ALLOCATE(ztmp(ipi,ipj,ipk)) ! CDe
     !$ACC KERNELS ! CDe added
     DO jk = 1, ipk
-      ctmp = CMPLX(0.E0, 0.E0, wp)
+      !ctmp = CMPLX(0.E0, 0.E0, wp)
       DO jj = 1, ipj
         DO ji = 1, ipi
-          ztmp = ptab(ji, jj, jk) * tmask_h(ji, jj)
-          CALL DDPDD(CMPLX(ztmp, 0.E0, wp), ctmp)
+          !ztmp = ptab(ji, jj, jk) * tmask_h(ji, jj)
+          !CALL DDPDD(CMPLX(ztmp, 0.E0, wp), ctmp)
+          ztmp(ji,jj,jk) = ptab(ji, jj, jk) * tmask_h(ji, jj) ! CDe
         END DO
       END DO
-      hsum(jk) = ctmp
+      !hsum(jk) = ctmp
+      hsum(jk)=sum(ztmp(:,:,jk)) ! CDe
     END DO
     !$ACC END KERNELS
     glob_sum_full_3d = glob_sum_c1d(hsum, ipk, .TRUE. .AND. lk_mpp, cdname)
