@@ -34,7 +34,8 @@ MODULE traqsr
   INTEGER :: nqsr
   REAL(KIND = wp) :: xsi0r
   REAL(KIND = wp) :: xsi1r
-  REAL(KIND = wp), DIMENSION(3, 61) :: rkrgb
+  !REAL(KIND = wp), DIMENSION(3, 61) :: rkrgb
+  REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: rkrgb ! CDe allocate in tra_qsr_ini
   TYPE(FLD), ALLOCATABLE, DIMENSION(:) :: sf_chl
   CONTAINS
   SUBROUTINE tra_qsr(kt)
@@ -300,6 +301,7 @@ MODULE traqsr
     SELECT CASE (nqsr)
     CASE (np_RGB, np_RGBc)
       IF (lwp) WRITE(numout, FMT = *) '   ==>>>   R-G-B   light penetration '
+      ALLOCATE(rkrgb(3, 61)) ! CDe
       CALL trc_oce_rgb(rkrgb)
       nksr = trc_oce_ext_lev(r_si2, 33._wp)
       IF (lwp) WRITE(numout, FMT = *) '        level of light extinction = ', nksr, ' ref depth = ', gdepw_1d(nksr + 1), ' m'
