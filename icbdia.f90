@@ -141,8 +141,8 @@ MODULE icbdia
     IF (.NOT. ln_bergdia) RETURN
     CALL profile_psy_data0 % PreStart('icb_dia', 'r0', 0, 0)
     !$ACC KERNELS ! CDe
-    zunused_calving = SUM(berg_grid % calving(:, :))
-    ztmpsum = SUM(berg_grid % floating_melt(:, :) * e1e2t(:, :) * tmask_i(:, :))
+    zunused_calving = SUM(berg_grid(1) % calving(:, :))
+    ztmpsum = SUM(berg_grid(1) % floating_melt(:, :) * e1e2t(:, :) * tmask_i(:, :))
     melt_net = melt_net + ztmpsum * berg_dt
     calving_out_net = calving_out_net + (zunused_calving + ztmpsum) * berg_dt
     ztmpsum = SUM(berg_melt(:, :) * e1e2t(:, :) * tmask_i(:, :))
@@ -153,12 +153,12 @@ MODULE icbdia
     bits_melt_net = bits_melt_net + ztmpsum * berg_dt
     ztmpsum = SUM(src_calving(:, :) * tmask_i(:, :))
     calving_ret_net = calving_ret_net + ztmpsum * berg_dt
-    ztmpsum = SUM(berg_grid % calving_hflx(:, :) * e1e2t(:, :) * tmask_i(:, :))
+    ztmpsum = SUM(berg_grid(1) % calving_hflx(:, :) * e1e2t(:, :) * tmask_i(:, :))
     calving_out_heat_net = calving_out_heat_net + ztmpsum * berg_dt
     !$ACC END KERNELS
     IF (ld_budge) THEN
-      stored_end = SUM(berg_grid % stored_ice(:, :, :))
-      stored_heat_end = SUM(berg_grid % stored_heat(:, :))
+      stored_end = SUM(berg_grid(1) % stored_ice(:, :, :))
+      stored_heat_end = SUM(berg_grid(1) % stored_heat(:, :))
       floating_mass_end = icb_utl_mass(first_berg)
       bergs_mass_end = icb_utl_mass(first_berg, justbergs = .TRUE.)
       bits_mass_end = icb_utl_mass(first_berg, justbits = .TRUE.)
@@ -351,11 +351,11 @@ MODULE icbdia
     CALL profile_psy_data0 % PreStart('icb_dia_income', 'r0', 0, 0)
     IF (kt == nit000) THEN
       !$ACC KERNELS ! CDe      
-      stored_start = SUM(berg_grid % stored_ice(:, :, :))
+      stored_start = SUM(berg_grid(1) % stored_ice(:, :, :))
       !$ACC END KERNELS
       CALL mpp_sum('icbdia', stored_start)
       !$ACC KERNELS ! CDe
-      stored_heat_start = SUM(berg_grid % stored_heat(:, :))
+      stored_heat_start = SUM(berg_grid(1) % stored_heat(:, :))
       !$ACC END KERNELS
       CALL mpp_sum('icbdia', stored_heat_start)
       IF (nn_verbose_level > 0) THEN
@@ -364,9 +364,9 @@ MODULE icbdia
       END IF
     END IF
     !$ACC KERNELS ! CDe
-    calving_rcv_net = calving_rcv_net + SUM(berg_grid % calving(:, :)) * berg_dt
+    calving_rcv_net = calving_rcv_net + SUM(berg_grid(1) % calving(:, :)) * berg_dt
     calving_src_net = calving_rcv_net
-    calving_src_heat_net = calving_src_heat_net + SUM(berg_grid % calving_hflx(:, :) * e1e2t(:, :)) * berg_dt
+    calving_src_heat_net = calving_src_heat_net + SUM(berg_grid(1) % calving_hflx(:, :) * e1e2t(:, :)) * berg_dt
     calving_used_net = calving_used_net + pcalving_used * berg_dt
     calving_src_heat_used_net = calving_src_heat_used_net + SUM(pheat_used(:, :))
     !$ACC END KERNELS

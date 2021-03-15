@@ -29,8 +29,8 @@ MODULE icbthm
     z1_12 = 1._wp / 12._wp
     zdt = berg_dt
     z1_dt = 1._wp / zdt
-    berg_grid % floating_melt(:, :) = 0._wp
-    berg_grid % calving_hflx(:, :) = 0._wp
+    berg_grid(1) % floating_melt(:, :) = 0._wp
+    berg_grid(1) % calving_hflx(:, :) = 0._wp
     this => first_berg
     DO WHILE (ASSOCIATED(this))
       pt => this % current_point
@@ -107,10 +107,10 @@ MODULE icbthm
         z1_e1e2 = r1_e1e2t(ii, ij) * this % mass_scaling
         z1_dt_e1e2 = z1_dt * z1_e1e2
         zmelt = (zdM - (zdMbitsE - zdMbitsM)) * z1_dt
-        berg_grid % floating_melt(ii, ij) = berg_grid % floating_melt(ii, ij) + zmelt * z1_e1e2
+        berg_grid(1) % floating_melt(ii, ij) = berg_grid(1) % floating_melt(ii, ij) + zmelt * z1_e1e2
         zheat_hcflux = zmelt * pt % heat_density
         zheat_latent = - zmelt * rLfus
-        berg_grid % calving_hflx(ii, ij) = berg_grid % calving_hflx(ii, ij) + (zheat_hcflux + zheat_latent) * z1_e1e2
+        berg_grid(1) % calving_hflx(ii, ij) = berg_grid(1) % calving_hflx(ii, ij) + (zheat_hcflux + zheat_latent) * z1_e1e2
         CALL icb_dia_melt(ii, ij, zMnew, zheat_hcflux, zheat_latent, this % mass_scaling, zdM, zdMbitsE, zdMbitsM, zdMb, zdMe, &
 &zdMv, z1_dt_e1e2)
       ELSE
@@ -140,8 +140,8 @@ MODULE icbthm
       this => next
     END DO
     IF (.NOT. ln_passive_mode) THEN
-      emp(:, :) = emp(:, :) - berg_grid % floating_melt(:, :)
-      qns(:, :) = qns(:, :) + berg_grid % calving_hflx(:, :)
+      emp(:, :) = emp(:, :) - berg_grid(1) % floating_melt(:, :)
+      qns(:, :) = qns(:, :) + berg_grid(1) % calving_hflx(:, :)
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_thm

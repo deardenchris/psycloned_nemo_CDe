@@ -70,8 +70,8 @@ MODULE icbrst
     END IF
     CALL iom_get(ncid, jpdom_autoglo, 'calving', src_calving)
     CALL iom_get(ncid, jpdom_autoglo, 'calving_hflx', src_calving_hflx)
-    CALL iom_get(ncid, jpdom_autoglo, 'stored_heat', berg_grid % stored_heat)
-    CALL iom_get(ncid, jpdom_autoglo_xy, 'stored_ice', berg_grid % stored_ice, kstart = (/1, 1, 1/), kcount = (/1, 1, nclasses/))
+    CALL iom_get(ncid, jpdom_autoglo, 'stored_heat', berg_grid(1) % stored_heat)
+    CALL iom_get(ncid, jpdom_autoglo_xy, 'stored_ice', berg_grid(1) % stored_ice, kstart = (/1, 1, 1/), kcount = (/1, 1, nclasses/))
     CALL iom_get(ncid, jpdom_unknown, 'kount', zdata(:))
     num_bergs(:) = INT(zdata(:))
     CALL iom_close(ncid)
@@ -232,7 +232,7 @@ MODULE icbrst
       nlngth3(2) = jpj
       nlngth3(3) = 1
       DO jn = 1, nclasses
-        griddata(:, :, 1) = berg_grid % stored_ice(:, :, jn)
+        griddata(:, :, 1) = berg_grid(1) % stored_ice(:, :, jn)
         nstrt3(3) = jn
         nret = NF90_PUT_VAR(ncid, nsiceid, griddata, nstrt3, nlngth3)
         IF (nret .NE. NF90_NOERR) THEN
@@ -243,7 +243,7 @@ MODULE icbrst
       IF (lwp) WRITE(numout, FMT = *) 'file: ', TRIM(cl_path) // TRIM(cl_filename), ' var: stored_ice  written'
       nret = NF90_PUT_VAR(ncid, nkountid, num_bergs(:))
       IF (nret .NE. NF90_NOERR) CALL ctl_stop('icebergs, write_restart: nf_put_var kount failed')
-      nret = NF90_PUT_VAR(ncid, nsheatid, berg_grid % stored_heat(:, :))
+      nret = NF90_PUT_VAR(ncid, nsheatid, berg_grid(1) % stored_heat(:, :))
       IF (nret .NE. NF90_NOERR) CALL ctl_stop('icebergs, write_restart: nf_put_var stored_heat failed')
       IF (lwp) WRITE(numout, FMT = *) 'file: ', TRIM(cl_path) // TRIM(cl_filename), ' var: stored_heat written'
       nret = NF90_PUT_VAR(ncid, ncalvid, src_calving(:, :))
