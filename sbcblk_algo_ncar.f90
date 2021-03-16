@@ -37,7 +37,7 @@ MODULE sbcblk_algo_ncar
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: sqrt_Cd_n10
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zeta_u
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zpsi_h_u
-    REAL(KIND = wp), DIMENSION(jpi, jpj) :: ztmp0, ztmp1, ztmp2
+    REAL(KIND = wp), DIMENSION(jpi, jpj) :: ztmp, ztmp0, ztmp1, ztmp2 ! CDe added ztmp  
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: stab
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
@@ -150,10 +150,12 @@ MODULE sbcblk_algo_ncar
       ELSE
         !CALL profile_psy_data5 % PreStart('turb_ncar', 'r5', 0, 0)
         !$ACC KERNELS ! CDe added
-        ztmp0 = MAX(0.25, U_blk / (1. + sqrt_Cd_n10 / vkarmn * (LOG(zu / 10.) - ztmp2)))
+        !ztmp0 = MAX(0.25, U_blk / (1. + sqrt_Cd_n10 / vkarmn * (LOG(zu / 10.) - ztmp2)))
+        ztmp = MAX(0.25, U_blk / (1. + sqrt_Cd_n10 / vkarmn * (LOG(zu / 10.) - ztmp2)))
         !$ACC END KERNELS
         CALL profile_psy_data4 % PreStart('turb_ncar', 'r4', 0, 0)
-        ztmp0 = cd_neutral_10m(ztmp0)
+        !ztmp0 = cd_neutral_10m(ztmp0)
+        ztmp0 = cd_neutral_10m(ztmp)  ! CDe
         CALL profile_psy_data4 % PostEnd
         !$ACC KERNELS
         Cdn(:, :) = ztmp0
@@ -185,7 +187,7 @@ MODULE sbcblk_algo_ncar
   FUNCTION cd_neutral_10m(pw10)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: pw10
-    REAL(KIND = wp), DIMENSION(jpi, jpj) :: cd_neutral_10m
+    REAL(KIND = wp), DIMENSION(jpi, jpj) :: cd_neutral_10m, ztmp ! CDe
     INTEGER :: ji, jj
     REAL(KIND = wp) :: zgt33, zw, zw6
     !TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
@@ -198,8 +200,10 @@ MODULE sbcblk_algo_ncar
         zw6 = zw * zw * zw
         zw6 = zw6 * zw6
         zgt33 = 0.5 + SIGN(0.5, (zw - 33.))
-        cd_neutral_10m(ji, jj) = 1.E-3 * ((1. - zgt33) * (2.7 / zw + 0.142 + zw / 13.09 - 3.14807E-10 * zw6) + zgt33 * 2.34)
-        cd_neutral_10m(ji, jj) = MAX(cd_neutral_10m(ji, jj), 1.E-6)
+!        cd_neutral_10m(ji, jj) = 1.E-3 * ((1. - zgt33) * (2.7 / zw + 0.142 + zw / 13.09 - 3.14807E-10 * zw6) + zgt33 * 2.34)
+!        cd_neutral_10m(ji, jj) = MAX(cd_neutral_10m(ji, jj), 1.E-6)
+        ztmp(ji, jj) = 1.E-3 * ((1. - zgt33) * (2.7 / zw + 0.142 + zw / 13.09 - 3.14807E-10 * zw6) + zgt33 * 2.34)
+        cd_neutral_10m(ji, jj) = MAX(ztmp(ji, jj), 1.E-6)
       END DO
     END DO
     !$ACC END KERNELS
