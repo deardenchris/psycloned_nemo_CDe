@@ -8,6 +8,7 @@ MODULE lib_fortran
   PRIVATE
   PUBLIC :: glob_sum
   PUBLIC :: glob_sum_full
+  PUBLIC :: glob_sum_full_gpu ! CDe
   PUBLIC :: local_sum
   PUBLIC :: sum3x3
   PUBLIC :: DDPDD
@@ -18,6 +19,9 @@ MODULE lib_fortran
   END INTERFACE
   INTERFACE glob_sum_full
     MODULE PROCEDURE glob_sum_full_2d, glob_sum_full_3d
+  END INTERFACE
+  INTERFACE glob_sum_full_gpu ! CDe added
+    MODULE PROCEDURE glob_sum_full_gpu_3d
   END INTERFACE
   INTERFACE local_sum
     MODULE PROCEDURE local_sum_2d, local_sum_3d
@@ -172,8 +176,36 @@ MODULE lib_fortran
     REAL(KIND = wp) :: glob_sum_full_3d
     REAL(KIND = wp) :: FUNCTION_GLOB_OP
     COMPLEX(KIND = wp) :: ctmp
-    !REAL(KIND = wp) :: ztmp
-    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:,:,:) :: ztmp ! CDe changed to alloc 3-D array
+    REAL(KIND = wp) :: ztmp
+    INTEGER :: ji, jj, jk
+    INTEGER :: ipi, ipj, ipk
+    COMPLEX(KIND = wp), ALLOCATABLE :: hsum(:)
+    ipi = SIZE(ptab, 1)
+    ipj = SIZE(ptab, 2)
+    ipk = SIZE(ptab, 3)
+    ALLOCATE(hsum(ipk))
+    !$ACC KERNELS ! CDe added
+    DO jk = 1, ipk
+      ctmp = CMPLX(0.E0, 0.E0, wp)
+      DO jj = 1, ipj
+        DO ji = 1, ipi
+          ztmp = ptab(ji, jj, jk) * tmask_h(ji, jj)
+          CALL DDPDD(CMPLX(ztmp, 0.E0, wp), ctmp)
+        END DO
+      END DO
+      hsum(jk) = ctmp
+    END DO
+    !$ACC END KERNELS
+    glob_sum_full_3d = glob_sum_c1d(hsum, ipk, .TRUE. .AND. lk_mpp, cdname)
+    DEALLOCATE(hsum)
+  END FUNCTION glob_sum_full_3d
+  FUNCTION glob_sum_full_gpu_3d(cdname, ptab) ! CDe added
+    CHARACTER(LEN = *), INTENT(IN) :: cdname
+    REAL(KIND = wp), INTENT(IN) :: ptab(:, :, :)
+    REAL(KIND = wp) :: glob_sum_full_gpu_3d
+    REAL(KIND = wp) :: FUNCTION_GLOB_OP
+    COMPLEX(KIND = wp) :: ctmp
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:,:,:) :: ztmp
     INTEGER :: ji, jj, jk
     INTEGER :: ipi, ipj, ipk
     COMPLEX(KIND = wp), ALLOCATABLE :: hsum(:)
@@ -182,23 +214,22 @@ MODULE lib_fortran
     ipk = SIZE(ptab, 3)
     ALLOCATE(hsum(ipk))
     ALLOCATE(ztmp(ipi,ipj,ipk)) ! CDe
-    !$ACC KERNELS ! CDe added
+    !$ACC KERNELS
+    !$ACC LOOP INDEPENDENT COLLAPSE(3)
     DO jk = 1, ipk
-      !ctmp = CMPLX(0.E0, 0.E0, wp)
       DO jj = 1, ipj
         DO ji = 1, ipi
-          !ztmp = ptab(ji, jj, jk) * tmask_h(ji, jj)
-          !CALL DDPDD(CMPLX(ztmp, 0.E0, wp), ctmp)
-          ztmp(ji,jj,jk) = ptab(ji, jj, jk) * tmask_h(ji, jj) ! CDe
+          ztmp(ji,jj,jk) = ptab(ji, jj, jk) * tmask_h(ji, jj)
         END DO
       END DO
-      !hsum(jk) = ctmp
-      hsum(jk)=sum(ztmp(:,:,jk)) ! CDe
     END DO
+    DO jk = 1, ipk
+      hsum(jk)=sum(ztmp(:,:,jk))
+    END DO  
     !$ACC END KERNELS
-    glob_sum_full_3d = glob_sum_c1d(hsum, ipk, .TRUE. .AND. lk_mpp, cdname)
-    DEALLOCATE(hsum)
-  END FUNCTION glob_sum_full_3d
+    glob_sum_full_gpu_3d = glob_sum_c1d(hsum, ipk, .TRUE. .AND. lk_mpp, cdname)
+    DEALLOCATE(hsum, ztmp)
+  END FUNCTION glob_sum_full_gpu_3d
   FUNCTION glob_min_2d(cdname, ptab)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdname
