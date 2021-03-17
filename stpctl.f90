@@ -24,7 +24,8 @@ MODULE stpctl
     INTEGER, DIMENSION(2) :: ih
     INTEGER, DIMENSION(3) :: iu, is1, is2
     REAL(KIND = wp) :: zzz
-    REAL(KIND = wp), DIMENSION(9) :: zmax
+    !REAL(KIND = wp), DIMENSION(9) :: zmax
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:) :: zmax ! CDe
     LOGICAL :: ll_wrtstp, ll_colruns, ll_wrtruns
     CHARACTER(LEN = 20) :: clname
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
@@ -36,6 +37,7 @@ MODULE stpctl
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
+    ALLOCATE(zmax(9)) ! CDe
     CALL profile_psy_data0 % PreStart('stp_ctl', 'r0', 0, 0)
     ll_wrtstp = (MOD(kt, sn_cfctl % ptimincr) == 0) .OR. (kt == nitend)
     ll_colruns = ll_wrtstp .AND. (ln_ctl .OR. sn_cfctl % l_runstat)
