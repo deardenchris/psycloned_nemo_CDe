@@ -523,8 +523,12 @@ MODULE lib_mpp
           ptab(jf) % pt2d(jpi, :) = ptab(jf) % pt2d(2, :)
           !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS      
-          IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(1 : nn_hls, :) = zland
+          IF (.NOT. cd_nat(jf) == 'F') THEN
+            !$ACC KERNELS
+            ptab(jf) % pt2d(1 : nn_hls, :) = zland
+            !$ACC END KERNELS
+          END IF
+          !$ACC KERNELS
           ptab(jf) % pt2d(nlci - nn_hls + 1 : jpi, :) = zland
           !$ACC END KERNELS
         END IF
@@ -534,11 +538,17 @@ MODULE lib_mpp
           ptab(jf) % pt2d(:, jpj) = ptab(jf) % pt2d(:, 2)
           !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS      
-          IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(:, 1 : nn_hls) = zland
-          !$ACC END KERNELS
+          IF (.NOT. cd_nat(jf) == 'F') THEN
+            !$ACC KERNELS
+            DO ji = 1, jpi ! CDe verifies
+              ptab(jf) % pt2d(ji, 1 : nn_hls) = zland
+            END DO
+            !$ACC END KERNELS
+          END IF
           !$ACC KERNELS
-          ptab(jf) % pt2d(:, nlcj - nn_hls + 1 : jpj) = zland
+          DO ji = 1, jpi ! CDe verifies
+            ptab(jf) % pt2d(ji, nlcj - nn_hls + 1 : jpj) = zland
+          END DO
           !$ACC END KERNELS
         END IF
       END DO
@@ -743,7 +753,7 @@ MODULE lib_mpp
       DO jf = 1, ipf
         DO jl = 1, ipl
           !$ACC KERNELS
-          DO jk = 1, ipk
+          DO jk = 1, ipk 
             DO jh = 1, nn_hls
               ptab(jf) % pt2d(:, ijhom + jh) = zt3ns(:, jh, jk, jl, jf, 1)
             END DO
@@ -1083,20 +1093,44 @@ MODULE lib_mpp
           ptab(jf) % pt3d(jpi, :, :) = ptab(jf) % pt3d(2, :, :)
           !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS      
-          IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(1 : nn_hls, :, :) = zland
-          ptab(jf) % pt3d(nlci - nn_hls + 1 : jpi, :, :) = zland
+          IF (.NOT. cd_nat(jf) == 'F') THEN
+            !$ACC KERNELS
+            DO jk = 1, ipk ! CDe verifies
+              DO jj = 1, jpj 
+                ptab(jf) % pt3d(1 : nn_hls, jj, jk) = zland
+              END DO
+            END DO
+            !$ACC END KERNELS
+          END IF
+          !$ACC KERNELS ! CDe verifies
+          DO jk = 1, ipk
+            DO jj = 1, jpj
+              ptab(jf) % pt3d(nlci - nn_hls + 1 : jpi, jj, jk) = zland
+            END DO
+          END DO
           !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
-          !$ACC KERNELS      
+          !$ACC KERNELS     
           ptab(jf) % pt3d(:, 1, :) = ptab(jf) % pt3d(:, jpjm1, :)
           ptab(jf) % pt3d(:, jpj, :) = ptab(jf) % pt3d(:, 2, :)
           !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS      
-          IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(:, 1 : nn_hls, :) = zland
-          ptab(jf) % pt3d(:, nlcj - nn_hls + 1 : jpj, :) = zland
+          IF (.NOT. cd_nat(jf) == 'F') THEN
+            !$ACC KERNELS
+            DO jk = 1, ipk ! CDe verifies
+              DO ji = 1, jpi
+                ptab(jf) % pt3d(ji, 1 : nn_hls, jk) = zland
+              END DO
+            END DO
+            !$ACC END KERNELS
+          END IF
+          !$ACC KERNELS ! CDe verifies
+          DO jk = 1, ipk
+            DO ji = 1, jpi
+              ptab(jf) % pt3d(ji, nlcj - nn_hls + 1 : jpj, jk) = zland
+            END DO
+          END DO
           !$ACC END KERNELS
         END IF
       END DO
