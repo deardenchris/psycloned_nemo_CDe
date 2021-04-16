@@ -88,8 +88,7 @@ MODULE tranxt
       ELSE
         CALL tra_nxt_vvl(kt, nit000, rdt, 'TRA', tsb, tsn, tsa, sbc_tsc, sbc_tsc_b, jpts)
       END IF
-      CALL lbc_lnk_multi('tranxt', tsb(:, :, :, jp_tem), 'T', 1., tsb(:, :, :, jp_sal), 'T', 1., tsn(:, :, :, jp_tem), 'T', 1., &
-&tsn(:, :, :, jp_sal), 'T', 1., tsa(:, :, :, jp_tem), 'T', 1., tsa(:, :, :, jp_sal), 'T', 1.)
+      CALL lbc_lnk_multi('tranxt', tsb(:, :, :, jp_tem), 'T', 1., tsb(:, :, :, jp_sal), 'T', 1., tsn(:, :, :, jp_tem), 'T', 1., tsn(:, :, :, jp_sal), 'T', 1., tsa(:, :, :, jp_tem), 'T', 1., tsa(:, :, :, jp_sal), 'T', 1.)
     END IF
     IF (l_trdtra .AND. ln_linssh) THEN
       zfact = 1._wp / r2dt
@@ -105,8 +104,7 @@ MODULE tranxt
       CALL trd_tra(kt, 'TRA', jp_sal, jptra_atf, ztrds)
     END IF
     IF (l_trdtra) DEALLOCATE(ztrdt, ztrds)
-    IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsn(:, :, :, jp_tem), clinfo1 = ' nxt  - Tn: ', mask1 = tmask, tab3d_2 = tsn(:, :, :, &
-&jp_sal), clinfo2 = ' Sn: ', mask2 = tmask)
+    IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsn(:, :, :, jp_tem), clinfo1 = ' nxt  - Tn: ', mask1 = tmask, tab3d_2 = tsn(:, :, :, jp_sal), clinfo2 = ' Sn: ', mask2 = tmask)
     IF (ln_timing) CALL timing_stop('tra_nxt')
   END SUBROUTINE tra_nxt
   SUBROUTINE tra_nxt_fix(kt, kit000, cdtype, ptb, ptn, pta, kjpt)
@@ -125,6 +123,8 @@ MODULE tranxt
       IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~'
     END IF
     DO jn = 1, kjpt
+      !$OMP parallel default(shared), private(ji,jj,jk,ztd,ztn)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -135,6 +135,8 @@ MODULE tranxt
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END DO
   END SUBROUTINE tra_nxt_fix
   SUBROUTINE tra_nxt_vvl(kt, kit000, p2dt, cdtype, ptb, ptn, pta, psbc_tc, psbc_tc_b, kjpt)
@@ -175,6 +177,8 @@ MODULE tranxt
     zfact1 = atfp * p2dt
     zfact2 = zfact1 * r1_rau0
     DO jn = 1, kjpt
+      !$OMP parallel default(shared), private(ji,jj,jk,ze3t_a,ze3t_b,ze3t_d,ze3t_f,ze3t_n,ztc_a,ztc_b,ztc_d,ztc_f,ztc_n)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -202,13 +206,10 @@ MODULE tranxt
               END IF
             END IF
             IF (ll_traqsr .AND. jn == jp_tem .AND. jk <= nksr) ztc_f = ztc_f - zfact1 * (qsr_hc(ji, jj, jk) - qsr_hc_b(ji, jj, jk))
-            IF (ll_rnf .AND. jk <= nk_rnf(ji, jj)) ztc_f = ztc_f - zfact1 * (rnf_tsc(ji, jj, jn) - rnf_tsc_b(ji, jj, jn)) * &
-&e3t_n(ji, jj, jk) / h_rnf(ji, jj)
+            IF (ll_rnf .AND. jk <= nk_rnf(ji, jj)) ztc_f = ztc_f - zfact1 * (rnf_tsc(ji, jj, jn) - rnf_tsc_b(ji, jj, jn)) * e3t_n(ji, jj, jk) / h_rnf(ji, jj)
             IF (ll_isf) THEN
-              IF (jk >= misfkt(ji, jj) .AND. jk < misfkb(ji, jj)) ztc_f = ztc_f - zfact1 * (risf_tsc(ji, jj, jn) - risf_tsc_b(ji, &
-&jj, jn)) * e3t_n(ji, jj, jk) * r1_hisf_tbl(ji, jj)
-              IF (jk == misfkb(ji, jj)) ztc_f = ztc_f - zfact1 * (risf_tsc(ji, jj, jn) - risf_tsc_b(ji, jj, jn)) * e3t_n(ji, jj, &
-&jk) * r1_hisf_tbl(ji, jj) * ralpha(ji, jj)
+              IF (jk >= misfkt(ji, jj) .AND. jk < misfkb(ji, jj)) ztc_f = ztc_f - zfact1 * (risf_tsc(ji, jj, jn) - risf_tsc_b(ji, jj, jn)) * e3t_n(ji, jj, jk) * r1_hisf_tbl(ji, jj)
+              IF (jk == misfkb(ji, jj)) ztc_f = ztc_f - zfact1 * (risf_tsc(ji, jj, jn) - risf_tsc_b(ji, jj, jn)) * e3t_n(ji, jj, jk) * r1_hisf_tbl(ji, jj) * ralpha(ji, jj)
             END IF
             ze3t_f = 1.E0 / ze3t_f
             ptb(ji, jj, jk, jn) = ztc_f * ze3t_f
@@ -219,6 +220,8 @@ MODULE tranxt
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END DO
     IF ((l_trdtra .AND. cdtype == 'TRA') .OR. (l_trdtrc .AND. cdtype == 'TRC')) THEN
       IF (l_trdtra .AND. cdtype == 'TRA') THEN

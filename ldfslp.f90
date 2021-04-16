@@ -95,8 +95,7 @@ MODULE ldfslp
     !$OMP parallel default(shared), private(jk)
     !$OMP do schedule(static)
     DO jk = 2, jpkm1
-      zdzr(:, :, jk) = zm1_g * (prd(:, :, jk) + 1._wp) * (pn2(:, :, jk) + pn2(:, :, jk + 1)) * (1._wp - 0.5_wp * tmask(:, :, jk + &
-&1))
+      zdzr(:, :, jk) = zm1_g * (prd(:, :, jk) + 1._wp) * (pn2(:, :, jk) + pn2(:, :, jk + 1)) * (1._wp - 0.5_wp * tmask(:, :, jk + 1))
     END DO
     !$OMP end do
     !$OMP end parallel
@@ -104,10 +103,8 @@ MODULE ldfslp
     IF (ln_isfcav) THEN
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          zslpml_hmlpu(ji, jj) = uslpml(ji, jj) / (MAX(hmlpt(ji, jj), hmlpt(ji + 1, jj), 5._wp) - MAX(risfdep(ji, jj), risfdep(ji &
-&+ 1, jj)))
-          zslpml_hmlpv(ji, jj) = vslpml(ji, jj) / (MAX(hmlpt(ji, jj), hmlpt(ji, jj + 1), 5._wp) - MAX(risfdep(ji, jj), risfdep(ji, &
-&jj + 1)))
+          zslpml_hmlpu(ji, jj) = uslpml(ji, jj) / (MAX(hmlpt(ji, jj), hmlpt(ji + 1, jj), 5._wp) - MAX(risfdep(ji, jj), risfdep(ji + 1, jj)))
+          zslpml_hmlpv(ji, jj) = vslpml(ji, jj) / (MAX(hmlpt(ji, jj), hmlpt(ji, jj + 1), 5._wp) - MAX(risfdep(ji, jj), risfdep(ji, jj + 1)))
         END DO
       END DO
     ELSE
@@ -131,10 +128,8 @@ MODULE ldfslp
           zbv = MIN(zbv, - z1_slpmax * ABS(zav), - 7.E+3_wp / e3v_n(ji, jj, jk) * ABS(zav))
           zfi = MAX(omlmask(ji, jj, jk), omlmask(ji + 1, jj, jk))
           zfj = MAX(omlmask(ji, jj, jk), omlmask(ji, jj + 1, jk))
-          zdepu = 0.5_wp * ((gdept_n(ji, jj, jk) + gdept_n(ji + 1, jj, jk)) - 2 * MAX(risfdep(ji, jj), risfdep(ji + 1, jj)) - &
-&e3u_n(ji, jj, miku(ji, jj)))
-          zdepv = 0.5_wp * ((gdept_n(ji, jj, jk) + gdept_n(ji, jj + 1, jk)) - 2 * MAX(risfdep(ji, jj), risfdep(ji, jj + 1)) - &
-&e3v_n(ji, jj, mikv(ji, jj)))
+          zdepu = 0.5_wp * ((gdept_n(ji, jj, jk) + gdept_n(ji + 1, jj, jk)) - 2 * MAX(risfdep(ji, jj), risfdep(ji + 1, jj)) - e3u_n(ji, jj, miku(ji, jj)))
+          zdepv = 0.5_wp * ((gdept_n(ji, jj, jk) + gdept_n(ji, jj + 1, jk)) - 2 * MAX(risfdep(ji, jj), risfdep(ji, jj + 1)) - e3v_n(ji, jj, mikv(ji, jj)))
           zwz(ji, jj, jk) = ((1._wp - zfi) * zau / (zbu - zeps) + zfi * zdepu * zslpml_hmlpu(ji, jj)) * umask(ji, jj, jk)
           zww(ji, jj, jk) = ((1._wp - zfj) * zav / (zbv - zeps) + zfj * zdepv * zslpml_hmlpv(ji, jj)) * vmask(ji, jj, jk)
         END DO
@@ -148,44 +143,33 @@ MODULE ldfslp
     DO jk = 2, jpkm1
       DO jj = 2, jpjm1, MAX(1, jpj - 3)
         DO ji = 2, jpim1
-          uslp(ji, jj, jk) = z1_16 * (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj &
-&+ 1, jk) + 2. * (zwz(ji, jj - 1, jk) + zwz(ji - 1, jj, jk) + zwz(ji + 1, jj, jk) + zwz(ji, jj + 1, jk)) + 4. * zwz(ji, jj, jk))
-          vslp(ji, jj, jk) = z1_16 * (zww(ji - 1, jj - 1, jk) + zww(ji + 1, jj - 1, jk) + zww(ji - 1, jj + 1, jk) + zww(ji + 1, jj &
-&+ 1, jk) + 2. * (zww(ji, jj - 1, jk) + zww(ji - 1, jj, jk) + zww(ji + 1, jj, jk) + zww(ji, jj + 1, jk)) + 4. * zww(ji, jj, jk))
+          uslp(ji, jj, jk) = z1_16 * (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj + 1, jk) + 2. * (zwz(ji, jj - 1, jk) + zwz(ji - 1, jj, jk) + zwz(ji + 1, jj, jk) + zwz(ji, jj + 1, jk)) + 4. * zwz(ji, jj, jk))
+          vslp(ji, jj, jk) = z1_16 * (zww(ji - 1, jj - 1, jk) + zww(ji + 1, jj - 1, jk) + zww(ji - 1, jj + 1, jk) + zww(ji + 1, jj + 1, jk) + 2. * (zww(ji, jj - 1, jk) + zww(ji - 1, jj, jk) + zww(ji + 1, jj, jk) + zww(ji, jj + 1, jk)) + 4. * zww(ji, jj, jk))
         END DO
       END DO
       DO jj = 3, jpj - 2
         DO ji = 2, jpim1
-          uslp(ji, jj, jk) = z1_16 * (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj &
-&+ 1, jk) + 2. * (zwz(ji, jj - 1, jk) + zwz(ji - 1, jj, jk) + zwz(ji + 1, jj, jk) + zwz(ji, jj + 1, jk)) + 4. * zwz(ji, jj, jk))
-          vslp(ji, jj, jk) = z1_16 * (zww(ji - 1, jj - 1, jk) + zww(ji + 1, jj - 1, jk) + zww(ji - 1, jj + 1, jk) + zww(ji + 1, jj &
-&+ 1, jk) + 2. * (zww(ji, jj - 1, jk) + zww(ji - 1, jj, jk) + zww(ji + 1, jj, jk) + zww(ji, jj + 1, jk)) + 4. * zww(ji, jj, jk))
+          uslp(ji, jj, jk) = z1_16 * (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj + 1, jk) + 2. * (zwz(ji, jj - 1, jk) + zwz(ji - 1, jj, jk) + zwz(ji + 1, jj, jk) + zwz(ji, jj + 1, jk)) + 4. * zwz(ji, jj, jk))
+          vslp(ji, jj, jk) = z1_16 * (zww(ji - 1, jj - 1, jk) + zww(ji + 1, jj - 1, jk) + zww(ji - 1, jj + 1, jk) + zww(ji + 1, jj + 1, jk) + 2. * (zww(ji, jj - 1, jk) + zww(ji - 1, jj, jk) + zww(ji + 1, jj, jk) + zww(ji, jj + 1, jk)) + 4. * zww(ji, jj, jk))
         END DO
       END DO
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          uslp(ji, jj, jk) = uslp(ji, jj, jk) * (umask(ji, jj + 1, jk) + umask(ji, jj - 1, jk)) * 0.5_wp * (umask(ji, jj, jk) + &
-&umask(ji, jj, jk + 1)) * 0.5_wp
-          vslp(ji, jj, jk) = vslp(ji, jj, jk) * (vmask(ji + 1, jj, jk) + vmask(ji - 1, jj, jk)) * 0.5_wp * (vmask(ji, jj, jk) + &
-&vmask(ji, jj, jk + 1)) * 0.5_wp
+          uslp(ji, jj, jk) = uslp(ji, jj, jk) * (umask(ji, jj + 1, jk) + umask(ji, jj - 1, jk)) * 0.5_wp * (umask(ji, jj, jk) + umask(ji, jj, jk + 1)) * 0.5_wp
+          vslp(ji, jj, jk) = vslp(ji, jj, jk) * (vmask(ji + 1, jj, jk) + vmask(ji - 1, jj, jk)) * 0.5_wp * (vmask(ji, jj, jk) + vmask(ji, jj, jk + 1)) * 0.5_wp
         END DO
       END DO
     END DO
     !$OMP end do
-    !$OMP barrier ! CDe
     !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zbw = zm1_2g * pn2(ji, jj, jk) * (prd(ji, jj, jk) + prd(ji, jj, jk - 1) + 2.)
-          zci = MAX(umask(ji - 1, jj, jk) + umask(ji, jj, jk) + umask(ji - 1, jj, jk - 1) + umask(ji, jj, jk - 1), zeps) * e1t(ji, &
-&jj)
-          zcj = MAX(vmask(ji, jj - 1, jk) + vmask(ji, jj, jk - 1) + vmask(ji, jj - 1, jk - 1) + vmask(ji, jj, jk), zeps) * e2t(ji, &
-&jj)
-          zai = (zgru(ji - 1, jj, jk) + zgru(ji, jj, jk - 1) + zgru(ji - 1, jj, jk - 1) + zgru(ji, jj, jk)) / zci * wmask(ji, jj, &
-&jk)
-          zaj = (zgrv(ji, jj - 1, jk) + zgrv(ji, jj, jk - 1) + zgrv(ji, jj - 1, jk - 1) + zgrv(ji, jj, jk)) / zcj * wmask(ji, jj, &
-&jk)
+          zci = MAX(umask(ji - 1, jj, jk) + umask(ji, jj, jk) + umask(ji - 1, jj, jk - 1) + umask(ji, jj, jk - 1), zeps) * e1t(ji, jj)
+          zcj = MAX(vmask(ji, jj - 1, jk) + vmask(ji, jj, jk - 1) + vmask(ji, jj - 1, jk - 1) + vmask(ji, jj, jk), zeps) * e2t(ji, jj)
+          zai = (zgru(ji - 1, jj, jk) + zgru(ji, jj, jk - 1) + zgru(ji - 1, jj, jk - 1) + zgru(ji, jj, jk)) / zci * wmask(ji, jj, jk)
+          zaj = (zgrv(ji, jj - 1, jk) + zgrv(ji, jj, jk - 1) + zgrv(ji, jj - 1, jk - 1) + zgrv(ji, jj, jk)) / zcj * wmask(ji, jj, jk)
           zbi = MIN(zbw, - 100._wp * ABS(zai), - 7.E+3_wp / e3w_n(ji, jj, jk) * ABS(zai))
           zbj = MIN(zbw, - 100._wp * ABS(zaj), - 7.E+3_wp / e3w_n(ji, jj, jk) * ABS(zaj))
           zfk = MAX(omlmask(ji, jj, jk), omlmask(ji, jj, jk - 1))
@@ -204,19 +188,15 @@ MODULE ldfslp
       DO jj = 2, jpjm1, MAX(1, jpj - 3)
         DO ji = 2, jpim1
           zcofw = wmask(ji, jj, jk) * z1_16
-          wslpi(ji, jj, jk) = (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj + 1, &
-&jk) + 2. * (zwz(ji, jj - 1, jk) + zwz(ji - 1, jj, jk) + zwz(ji + 1, jj, jk) + zwz(ji, jj + 1, jk)) + 4. * zwz(ji, jj, jk)) * zcofw
-          wslpj(ji, jj, jk) = (zww(ji - 1, jj - 1, jk) + zww(ji + 1, jj - 1, jk) + zww(ji - 1, jj + 1, jk) + zww(ji + 1, jj + 1, &
-&jk) + 2. * (zww(ji, jj - 1, jk) + zww(ji - 1, jj, jk) + zww(ji + 1, jj, jk) + zww(ji, jj + 1, jk)) + 4. * zww(ji, jj, jk)) * zcofw
+          wslpi(ji, jj, jk) = (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj + 1, jk) + 2. * (zwz(ji, jj - 1, jk) + zwz(ji - 1, jj, jk) + zwz(ji + 1, jj, jk) + zwz(ji, jj + 1, jk)) + 4. * zwz(ji, jj, jk)) * zcofw
+          wslpj(ji, jj, jk) = (zww(ji - 1, jj - 1, jk) + zww(ji + 1, jj - 1, jk) + zww(ji - 1, jj + 1, jk) + zww(ji + 1, jj + 1, jk) + 2. * (zww(ji, jj - 1, jk) + zww(ji - 1, jj, jk) + zww(ji + 1, jj, jk) + zww(ji, jj + 1, jk)) + 4. * zww(ji, jj, jk)) * zcofw
         END DO
       END DO
       DO jj = 3, jpj - 2
         DO ji = 2, jpim1
           zcofw = wmask(ji, jj, jk) * z1_16
-          wslpi(ji, jj, jk) = (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj + 1, &
-&jk) + 2. * (zwz(ji, jj - 1, jk) + zwz(ji - 1, jj, jk) + zwz(ji + 1, jj, jk) + zwz(ji, jj + 1, jk)) + 4. * zwz(ji, jj, jk)) * zcofw
-          wslpj(ji, jj, jk) = (zww(ji - 1, jj - 1, jk) + zww(ji + 1, jj - 1, jk) + zww(ji - 1, jj + 1, jk) + zww(ji + 1, jj + 1, &
-&jk) + 2. * (zww(ji, jj - 1, jk) + zww(ji - 1, jj, jk) + zww(ji + 1, jj, jk) + zww(ji, jj + 1, jk)) + 4. * zww(ji, jj, jk)) * zcofw
+          wslpi(ji, jj, jk) = (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj + 1, jk) + 2. * (zwz(ji, jj - 1, jk) + zwz(ji - 1, jj, jk) + zwz(ji + 1, jj, jk) + zwz(ji, jj + 1, jk)) + 4. * zwz(ji, jj, jk)) * zcofw
+          wslpj(ji, jj, jk) = (zww(ji - 1, jj - 1, jk) + zww(ji + 1, jj - 1, jk) + zww(ji - 1, jj + 1, jk) + zww(ji + 1, jj + 1, jk) + 2. * (zww(ji, jj - 1, jk) + zww(ji - 1, jj, jk) + zww(ji + 1, jj, jk) + zww(ji, jj + 1, jk)) + 4. * zww(ji, jj, jk)) * zcofw
         END DO
       END DO
       DO jj = 2, jpjm1
@@ -252,6 +232,8 @@ MODULE ldfslp
     DO jl = 0, 1
       ip = jl
       jp = jl
+      !$OMP parallel default(shared), private(ji,jj,jk,zdis,zdit,zdjs,zdjt,zdxrho_raw,zdyrho_raw)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
@@ -266,6 +248,8 @@ MODULE ldfslp
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
       IF (ln_zps .AND. l_grad_zps) THEN
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
@@ -284,6 +268,8 @@ MODULE ldfslp
       END IF
     END DO
     DO kp = 0, 1
+      ! !$OMP parallel default(shared), private(ji,jj,jk,zdks,zdkt,zdzrho_raw)
+      ! !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -299,6 +285,8 @@ MODULE ldfslp
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
     END DO
     DO jj = 1, jpj
       DO ji = 1, jpi
@@ -325,8 +313,7 @@ MODULE ldfslp
             IF (jk > mbkt(ji + ip, jj)) THEN
               zti_mlb(ji + ip, jj, 1 - ip, kp) = 0.0_wp
             ELSE
-              zti_g_raw = (zdxrho(ji + ip, jj, jk - kp, 1 - ip) / zdzrho(ji + ip, jj, jk - kp, kp) - (gdept_n(ji + 1, jj, jk - kp) &
-&- gdept_n(ji, jj, jk - kp)) * r1_e1u(ji, jj)) * umask(ji, jj, jk)
+              zti_g_raw = (zdxrho(ji + ip, jj, jk - kp, 1 - ip) / zdzrho(ji + ip, jj, jk - kp, kp) - (gdept_n(ji + 1, jj, jk - kp) - gdept_n(ji, jj, jk - kp)) * r1_e1u(ji, jj)) * umask(ji, jj, jk)
               ze3_e1 = e3w_n(ji + ip, jj, jk - kp) * r1_e1u(ji, jj)
               zti_mlb(ji + ip, jj, 1 - ip, kp) = SIGN(MIN(rn_slpmax, 5.0_wp * ze3_e1, ABS(zti_g_raw)), zti_g_raw)
             END IF
@@ -334,8 +321,7 @@ MODULE ldfslp
             IF (jk > mbkt(ji, jj + jp)) THEN
               ztj_mlb(ji, jj + jp, 1 - jp, kp) = 0.0_wp
             ELSE
-              ztj_g_raw = (zdyrho(ji, jj + jp, jk - kp, 1 - jp) / zdzrho(ji, jj + jp, jk - kp, kp) - (gdept_n(ji, jj + 1, jk - kp) &
-&- gdept_n(ji, jj, jk - kp)) / e2v(ji, jj)) * vmask(ji, jj, jk)
+              ztj_g_raw = (zdyrho(ji, jj + jp, jk - kp, 1 - jp) / zdzrho(ji, jj + jp, jk - kp, kp) - (gdept_n(ji, jj + 1, jk - kp) - gdept_n(ji, jj, jk - kp)) / e2v(ji, jj)) * vmask(ji, jj, jk)
               ze3_e2 = e3w_n(ji, jj + jp, jk - kp) / e2v(ji, jj)
               ztj_mlb(ji, jj + jp, 1 - jp, kp) = SIGN(MIN(rn_slpmax, 5.0_wp * ze3_e2, ABS(ztj_g_raw)), ztj_g_raw)
             END IF
@@ -347,6 +333,8 @@ MODULE ldfslp
       DO jl = 0, 1
         ip = jl
         jp = jl
+        ! !$OMP parallel default(shared), private(ji,jj,jk,zbti,zbtj,zbu,zbv,ze3_e1,ze3_e2,zfacti,zfactj,zisw,zjsw,znot_thru_surface,zti_coord,zti_g_lim,zti_g_raw,zti_lim,zti_raw,ztj_coord,ztj_g_lim,ztj_g_raw,ztj_lim,ztj_raw)
+        ! !$OMP do schedule(static)
         DO jk = 1, jpkm1
           znot_thru_surface = REAL(1 - 1 / (jk + kp), wp)
           DO jj = 1, jpjm1
@@ -363,10 +351,8 @@ MODULE ldfslp
               ztj_g_lim = SIGN(MIN(rn_slpmax, 5.0_wp * ze3_e2, ABS(ztj_g_raw)), ztj_g_raw)
               zfacti = REAL(1 - 1 / (1 + (jk + kp - 1) / nmln(ji + ip, jj)), wp)
               zfactj = REAL(1 - 1 / (1 + (jk + kp - 1) / nmln(ji, jj + jp)), wp)
-              zti_g_lim = (zfacti * zti_g_lim + (1._wp - zfacti) * zti_mlb(ji + ip, jj, 1 - ip, kp) * gdepw_n(ji + ip, jj, jk + &
-&kp) * z1_mlbw(ji + ip, jj)) * umask(ji, jj, jk + kp)
-              ztj_g_lim = (zfactj * ztj_g_lim + (1._wp - zfactj) * ztj_mlb(ji, jj + jp, 1 - jp, kp) * gdepw_n(ji, jj + jp, jk + &
-&kp) * z1_mlbw(ji, jj + jp)) * vmask(ji, jj, jk + kp)
+              zti_g_lim = (zfacti * zti_g_lim + (1._wp - zfacti) * zti_mlb(ji + ip, jj, 1 - ip, kp) * gdepw_n(ji + ip, jj, jk + kp) * z1_mlbw(ji + ip, jj)) * umask(ji, jj, jk + kp)
+              ztj_g_lim = (zfactj * ztj_g_lim + (1._wp - zfactj) * ztj_mlb(ji, jj + jp, 1 - jp, kp) * gdepw_n(ji, jj + jp, jk + kp) * z1_mlbw(ji, jj + jp)) * vmask(ji, jj, jk + kp)
               triadi_g(ji + ip, jj, jk, 1 - ip, kp) = zti_g_lim
               triadj_g(ji, jj + jp, jk, 1 - jp, kp) = ztj_g_lim
               zti_lim = (zti_g_lim + zti_coord) * umask(ji, jj, jk + kp)
@@ -379,10 +365,8 @@ MODULE ldfslp
                 zti_lim = zfacti * zti_lim + (1._wp - zfacti) * zti_raw
                 ztj_lim = zfactj * ztj_lim + (1._wp - zfactj) * ztj_raw
               END IF
-              zisw = (1._wp - rn_sw_triad) + rn_sw_triad * 2._wp * ABS(0.5_wp - kp - (0.5_wp - ip) * SIGN(1._wp, zdxrho(ji + ip, &
-&jj, jk, 1 - ip)))
-              zjsw = (1._wp - rn_sw_triad) + rn_sw_triad * 2._wp * ABS(0.5_wp - kp - (0.5_wp - jp) * SIGN(1._wp, zdyrho(ji, jj + &
-&jp, jk, 1 - jp)))
+              zisw = (1._wp - rn_sw_triad) + rn_sw_triad * 2._wp * ABS(0.5_wp - kp - (0.5_wp - ip) * SIGN(1._wp, zdxrho(ji + ip, jj, jk, 1 - ip)))
+              zjsw = (1._wp - rn_sw_triad) + rn_sw_triad * 2._wp * ABS(0.5_wp - kp - (0.5_wp - jp) * SIGN(1._wp, zdyrho(ji, jj + jp, jk, 1 - jp)))
               triadi(ji + ip, jj, jk, 1 - ip, kp) = zti_lim * zisw
               triadj(ji, jj + jp, jk, 1 - jp, kp) = ztj_lim * zjsw
               zbu = e1e2u(ji, jj) * e3u_n(ji, jj, jk)
@@ -394,6 +378,8 @@ MODULE ldfslp
             END DO
           END DO
         END DO
+        ! !$OMP end do
+        ! !$OMP end parallel
       END DO
     END DO
     wslp2(:, :, 1) = 0._wp
@@ -423,6 +409,8 @@ MODULE ldfslp
     wslpiml(jpi, :) = 0._wp
     wslpjml(1, :) = 0._wp
     wslpjml(jpi, :) = 0._wp
+    !$OMP parallel default(shared), private(ik,ji,jj,jk)
+    !$OMP do schedule(static)
     DO jk = 1, jpk
       DO jj = 1, jpj
         DO ji = 1, jpi
@@ -435,6 +423,8 @@ MODULE ldfslp
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         iku = MIN(MAX(1, nmln(ji, jj), nmln(ji + 1, jj)), jpkm1)
@@ -477,14 +467,12 @@ MODULE ldfslp
     ALLOCATE(zgrv(jpi, jpj, jpk), zww(jpi, jpj, jpk))
     IF (ln_traldf_triad) THEN
       IF (lwp) WRITE(numout, FMT = *) '   ==>>>   triad) operator (Griffies)'
-      ALLOCATE(triadi_g(jpi, jpj, jpk, 0 : 1, 0 : 1), triadj_g(jpi, jpj, jpk, 0 : 1, 0 : 1), triadi(jpi, jpj, jpk, 0 : 1, 0 : 1), &
-&triadj(jpi, jpj, jpk, 0 : 1, 0 : 1), wslp2(jpi, jpj, jpk), STAT = ierr)
+      ALLOCATE(triadi_g(jpi, jpj, jpk, 0 : 1, 0 : 1), triadj_g(jpi, jpj, jpk, 0 : 1, 0 : 1), triadi(jpi, jpj, jpk, 0 : 1, 0 : 1), triadj(jpi, jpj, jpk, 0 : 1, 0 : 1), wslp2(jpi, jpj, jpk), STAT = ierr)
       IF (ierr > 0) CALL ctl_stop('STOP', 'ldf_slp_init : unable to allocate Griffies operator slope')
       IF (ln_dynldf_iso) CALL ctl_stop('ldf_slp_init: Griffies operator on momentum not supported')
     ELSE
       IF (lwp) WRITE(numout, FMT = *) '   ==>>>   iso operator (Madec)'
-      ALLOCATE(omlmask(jpi, jpj, jpk), uslp(jpi, jpj, jpk), uslpml(jpi, jpj), wslpi(jpi, jpj, jpk), wslpiml(jpi, jpj), vslp(jpi, &
-&jpj, jpk), vslpml(jpi, jpj), wslpj(jpi, jpj, jpk), wslpjml(jpi, jpj), STAT = ierr)
+      ALLOCATE(omlmask(jpi, jpj, jpk), uslp(jpi, jpj, jpk), uslpml(jpi, jpj), wslpi(jpi, jpj, jpk), wslpiml(jpi, jpj), vslp(jpi, jpj, jpk), vslpml(jpi, jpj), wslpj(jpi, jpj, jpk), wslpjml(jpi, jpj), STAT = ierr)
       IF (ierr > 0) CALL ctl_stop('STOP', 'ldf_slp_init : unable to allocate Madec operator slope ')
       ALLOCATE(z1_mlbw(jpi, jpj))
       ALLOCATE(zalbet(jpi, jpj, jpk))

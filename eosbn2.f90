@@ -132,12 +132,8 @@ MODULE eosbn2
             ztm = tmask(ji, jj, jk)
             zn3 = EOS013 * zt + EOS103 * zs + EOS003
             zn2 = (EOS022 * zt + EOS112 * zs + EOS012) * zt + (EOS202 * zs + EOS102) * zs + EOS002
-            zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + &
-&EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
-            zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + &
-&EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + &
-&((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + &
-&EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
+            zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
+            zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + ((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
             zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
             prd(ji, jj, jk) = (zn * r1_rau0 - 1._wp) * ztm
           END DO
@@ -155,8 +151,7 @@ MODULE eosbn2
             zs = pts(ji, jj, jk, jp_sal) - 35._wp
             zh = pdep(ji, jj, jk)
             ztm = tmask(ji, jj, jk)
-            zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt + rn_mu1 * zh) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs - &
-&rn_mu2 * zh) * zs - rn_nu * zt * zs
+            zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt + rn_mu1 * zh) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs - rn_mu2 * zh) * zs - rn_nu * zt * zs
             prd(ji, jj, jk) = zn * r1_rau0 * ztm
           END DO
         END DO
@@ -188,6 +183,8 @@ MODULE eosbn2
           zsign(jsmp) = 1._wp
           zsign(jsmp + 1) = - 1._wp
         END DO
+        !$OMP parallel default(shared), private(jdof,ji,jj,jk,jsmp,zh,zn1,zn2,zn3,zs,zstemp,zt,ztm)
+        !$OMP do schedule(static)
         DO jk = 1, jpkm1
           DO jj = 1, jpj
             DO ji = 1, jpi
@@ -200,12 +197,8 @@ MODULE eosbn2
                 ztm = tmask(ji, jj, jk)
                 zn3 = EOS013 * zt + EOS103 * zs + EOS003
                 zn2 = (EOS022 * zt + EOS112 * zs + EOS012) * zt + (EOS202 * zs + EOS102) * zs + EOS002
-                zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + &
-&EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
-                zn0_sto(jsmp) = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + &
-&((EOS330 * zs + EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + &
-&EOS020) * zt + ((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + &
-&EOS500) * zs + EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
+                zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
+                zn0_sto(jsmp) = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + ((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
                 zn_sto(jsmp) = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0_sto(jsmp)
               END DO
               prhop(ji, jj, jk) = 0._wp
@@ -219,8 +212,12 @@ MODULE eosbn2
             END DO
           END DO
         END DO
+        !$OMP end do
+        !$OMP end parallel
         DEALLOCATE(zn0_sto, zn_sto, zsign)
       ELSE
+        !$OMP parallel default(shared), private(ji,jj,jk,zh,zn,zn0,zn1,zn2,zn3,zs,zt,ztm)
+        !$OMP do schedule(static)
         DO jk = 1, jpkm1
           DO jj = 1, jpj
             DO ji = 1, jpi
@@ -230,20 +227,20 @@ MODULE eosbn2
               ztm = tmask(ji, jj, jk)
               zn3 = EOS013 * zt + EOS103 * zs + EOS003
               zn2 = (EOS022 * zt + EOS112 * zs + EOS012) * zt + (EOS202 * zs + EOS102) * zs + EOS002
-              zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + &
-&EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
-              zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + &
-&EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + &
-&((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + &
-&EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
+              zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
+              zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + ((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
               zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
               prhop(ji, jj, jk) = zn0 * ztm
               prd(ji, jj, jk) = (zn * r1_rau0 - 1._wp) * ztm
             END DO
           END DO
         END DO
+        !$OMP end do
+        !$OMP end parallel
       END IF
     CASE (np_seos)
+      !$OMP parallel default(shared), private(ji,jj,jk,zh,zn,zs,zt,ztm)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -251,14 +248,15 @@ MODULE eosbn2
             zs = pts(ji, jj, jk, jp_sal) - 35._wp
             zh = pdep(ji, jj, jk)
             ztm = tmask(ji, jj, jk)
-            zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs) * zs - rn_nu * zt &
-&* zs
+            zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs) * zs - rn_nu * zt * zs
             prhop(ji, jj, jk) = (rau0 + zn) * ztm
             zn = zn - (rn_a0 * rn_mu1 * zt + rn_b0 * rn_mu2 * zs) * zh
             prd(ji, jj, jk) = zn * r1_rau0 * ztm
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END SELECT
     IF (ln_ctl) CALL prt_ctl(tab3d_1 = prd, clinfo1 = ' eos-pot: ', tab3d_2 = prhop, clinfo2 = ' pot : ', kdim = jpk)
     IF (ln_timing) CALL timing_stop('eos-pot')
@@ -281,12 +279,8 @@ MODULE eosbn2
           zs = SQRT(ABS(pts(ji, jj, jp_sal) + rdeltaS) * r1_S0)
           zn3 = EOS013 * zt + EOS103 * zs + EOS003
           zn2 = (EOS022 * zt + EOS112 * zs + EOS012) * zt + (EOS202 * zs + EOS102) * zs + EOS002
-          zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + EOS211) &
-&* zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
-          zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + &
-&EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + &
-&((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + &
-&EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
+          zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
+          zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + ((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
           zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
           prd(ji, jj) = zn * r1_rau0 - 1._wp
         END DO
@@ -298,8 +292,7 @@ MODULE eosbn2
           zt = pts(ji, jj, jp_tem) - 10._wp
           zs = pts(ji, jj, jp_sal) - 35._wp
           zh = pdep(ji, jj)
-          zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt + rn_mu1 * zh) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs - &
-&rn_mu2 * zh) * zs - rn_nu * zt * zs
+          zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt + rn_mu1 * zh) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs - rn_mu2 * zh) * zs - rn_nu * zt * zs
           prd(ji, jj) = zn * r1_rau0
         END DO
       END DO
@@ -317,6 +310,8 @@ MODULE eosbn2
     IF (ln_timing) CALL timing_start('rab_3d')
     SELECT CASE (neos)
     CASE (np_teos10, np_eos80)
+      !$OMP parallel default(shared), private(ji,jj,jk,zh,zn,zn0,zn1,zn2,zn3,zs,zt,ztm)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -326,26 +321,24 @@ MODULE eosbn2
             ztm = tmask(ji, jj, jk)
             zn3 = ALP003
             zn2 = ALP012 * zt + ALP102 * zs + ALP002
-            zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + &
-&ALP201) * zs + ALP101) * zs + ALP001
-            zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + &
-&ALP220) * zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + &
-&((((ALP500 * zs + ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
+            zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + ALP201) * zs + ALP101) * zs + ALP001
+            zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + ALP220) * zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + ((((ALP500 * zs + ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
             zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
             pab(ji, jj, jk, jp_tem) = zn * r1_rau0 * ztm
             zn3 = BET003
             zn2 = BET012 * zt + BET102 * zs + BET002
-            zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + &
-&BET201) * zs + BET101) * zs + BET001
-            zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + &
-&BET220) * zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + &
-&((((BET500 * zs + BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
+            zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + BET201) * zs + BET101) * zs + BET001
+            zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + BET220) * zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + ((((BET500 * zs + BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
             zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
             pab(ji, jj, jk, jp_sal) = zn / zs * r1_rau0 * ztm
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     CASE (np_seos)
+      !$OMP parallel default(shared), private(ji,jj,jk,zh,zn,zs,zt,ztm)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -360,12 +353,13 @@ MODULE eosbn2
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     CASE DEFAULT
       WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos
       CALL ctl_stop('rab_3d:', ctmp1)
     END SELECT
-    IF (ln_ctl) CALL prt_ctl(tab3d_1 = pab(:, :, :, jp_tem), clinfo1 = ' rab_3d_t: ', tab3d_2 = pab(:, :, :, jp_sal), clinfo2 = ' &
-&rab_3d_s : ', kdim = jpk)
+    IF (ln_ctl) CALL prt_ctl(tab3d_1 = pab(:, :, :, jp_tem), clinfo1 = ' rab_3d_t: ', tab3d_2 = pab(:, :, :, jp_sal), clinfo2 = ' rab_3d_s : ', kdim = jpk)
     IF (ln_timing) CALL timing_stop('rab_3d')
   END SUBROUTINE rab_3d
   SUBROUTINE rab_2d(pts, pdep, pab)
@@ -386,20 +380,14 @@ MODULE eosbn2
           zs = SQRT(ABS(pts(ji, jj, jp_sal) + rdeltaS) * r1_S0)
           zn3 = ALP003
           zn2 = ALP012 * zt + ALP102 * zs + ALP002
-          zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + ALP201) &
-&* zs + ALP101) * zs + ALP001
-          zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + &
-&ALP220) * zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + &
-&((((ALP500 * zs + ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
+          zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + ALP201) * zs + ALP101) * zs + ALP001
+          zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + ALP220) * zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + ((((ALP500 * zs + ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
           zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
           pab(ji, jj, jp_tem) = zn * r1_rau0
           zn3 = BET003
           zn2 = BET012 * zt + BET102 * zs + BET002
-          zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + BET201) &
-&* zs + BET101) * zs + BET001
-          zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + &
-&BET220) * zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + &
-&((((BET500 * zs + BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
+          zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + BET201) * zs + BET101) * zs + BET001
+          zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + BET220) * zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + ((((BET500 * zs + BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
           zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
           pab(ji, jj, jp_sal) = zn / zs * r1_rau0
         END DO
@@ -422,8 +410,7 @@ MODULE eosbn2
       WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos
       CALL ctl_stop('rab_2d:', ctmp1)
     END SELECT
-    IF (ln_ctl) CALL prt_ctl(tab2d_1 = pab(:, :, jp_tem), clinfo1 = ' rab_2d_t: ', tab2d_2 = pab(:, :, jp_sal), clinfo2 = ' &
-&rab_2d_s : ')
+    IF (ln_ctl) CALL prt_ctl(tab2d_1 = pab(:, :, jp_tem), clinfo1 = ' rab_2d_t: ', tab2d_2 = pab(:, :, jp_sal), clinfo2 = ' rab_2d_s : ')
     IF (ln_timing) CALL timing_stop('rab_2d')
   END SUBROUTINE rab_2d
   SUBROUTINE rab_0d(pts, pdep, pab)
@@ -441,20 +428,14 @@ MODULE eosbn2
       zs = SQRT(ABS(pts(jp_sal) + rdeltaS) * r1_S0)
       zn3 = ALP003
       zn2 = ALP012 * zt + ALP102 * zs + ALP002
-      zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + ALP201) * zs &
-&+ ALP101) * zs + ALP001
-      zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + ALP220) * &
-&zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + ((((ALP500 * zs + &
-&ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
+      zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + ALP201) * zs + ALP101) * zs + ALP001
+      zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + ALP220) * zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + ((((ALP500 * zs + ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
       zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
       pab(jp_tem) = zn * r1_rau0
       zn3 = BET003
       zn2 = BET012 * zt + BET102 * zs + BET002
-      zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + BET201) * zs &
-&+ BET101) * zs + BET001
-      zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + BET220) * &
-&zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + ((((BET500 * zs + &
-&BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
+      zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + BET201) * zs + BET101) * zs + BET001
+      zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + BET220) * zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + ((((BET500 * zs + BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
       zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
       pab(jp_sal) = zn / zs * r1_rau0
     CASE (np_seos)
@@ -478,17 +459,20 @@ MODULE eosbn2
     INTEGER :: ji, jj, jk
     REAL(KIND = wp) :: zaw, zbw, zrw
     IF (ln_timing) CALL timing_start('bn2')
+    !$OMP parallel default(shared), private(ji,jj,jk,zaw,zbw,zrw)
+    !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 1, jpj
         DO ji = 1, jpi
           zrw = (gdepw_n(ji, jj, jk) - gdept_n(ji, jj, jk)) / (gdept_n(ji, jj, jk - 1) - gdept_n(ji, jj, jk))
           zaw = pab(ji, jj, jk, jp_tem) * (1. - zrw) + pab(ji, jj, jk - 1, jp_tem) * zrw
           zbw = pab(ji, jj, jk, jp_sal) * (1. - zrw) + pab(ji, jj, jk - 1, jp_sal) * zrw
-          pn2(ji, jj, jk) = grav * (zaw * (pts(ji, jj, jk - 1, jp_tem) - pts(ji, jj, jk, jp_tem)) - zbw * (pts(ji, jj, jk - 1, &
-&jp_sal) - pts(ji, jj, jk, jp_sal))) / e3w_n(ji, jj, jk) * wmask(ji, jj, jk)
+          pn2(ji, jj, jk) = grav * (zaw * (pts(ji, jj, jk - 1, jp_tem) - pts(ji, jj, jk, jp_tem)) - zbw * (pts(ji, jj, jk - 1, jp_sal) - pts(ji, jj, jk, jp_sal))) / e3w_n(ji, jj, jk) * wmask(ji, jj, jk)
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     IF (ln_ctl) CALL prt_ctl(tab3d_1 = pn2, clinfo1 = ' bn2  : ', kdim = jpk)
     IF (ln_timing) CALL timing_stop('bn2')
   END SUBROUTINE bn2
@@ -509,13 +493,8 @@ MODULE eosbn2
         zt = ctmp(ji, jj) * z1_T0
         zs = SQRT(ABS(psal(ji, jj) + zdeltaS) * r1_S0)
         ztm = tmask(ji, jj, 1)
-        zn = ((((- 2.1385727895E-01_wp * zt - 2.7674419971E-01_wp * zs + 1.0728094330_wp) * zt + (2.6366564313_wp * zs + &
-&3.3546960647_wp) * zs - 7.8012209473_wp) * zt + ((1.8835586562_wp * zs + 7.3949191679_wp) * zs - 3.3937395875_wp) * zs - &
-&5.6414948432_wp) * zt + (((3.5737370589_wp * zs - 1.5512427389E+01_wp) * zs + 2.4625741105E+01_wp) * zs + 1.9912291000E+01_wp) * &
-&zs - 3.2191146312E+01_wp) * zt + ((((5.7153204649E-01_wp * zs - 3.0943149543_wp) * zs + 9.3052495181_wp) * zs - 9.4528934807_wp) &
-&* zs + 3.1066408996_wp) * zs - 4.3504021262E-01_wp
-        zd = (2.0035003456_wp * zt - 3.4570358592E-01_wp * zs + 5.6471810638_wp) * zt + (1.5393993508_wp * zs - 6.9394762624_wp) * &
-&zs + 1.2750522650E+01_wp
+        zn = ((((- 2.1385727895E-01_wp * zt - 2.7674419971E-01_wp * zs + 1.0728094330_wp) * zt + (2.6366564313_wp * zs + 3.3546960647_wp) * zs - 7.8012209473_wp) * zt + ((1.8835586562_wp * zs + 7.3949191679_wp) * zs - 3.3937395875_wp) * zs - 5.6414948432_wp) * zt + (((3.5737370589_wp * zs - 1.5512427389E+01_wp) * zs + 2.4625741105E+01_wp) * zs + 1.9912291000E+01_wp) * zs - 3.2191146312E+01_wp) * zt + ((((5.7153204649E-01_wp * zs - 3.0943149543_wp) * zs + 9.3052495181_wp) * zs - 9.4528934807_wp) * zs + 3.1066408996_wp) * zs - 4.3504021262E-01_wp
+        zd = (2.0035003456_wp * zt - 3.4570358592E-01_wp * zs + 5.6471810638_wp) * zt + (1.5393993508_wp * zs - 6.9394762624_wp) * zs + 1.2750522650E+01_wp
         ptmp(ji, jj) = (zt / z1_T0 + zn / zd) * ztm
       END DO
     END DO
@@ -533,8 +512,7 @@ MODULE eosbn2
       DO jj = 1, jpj
         DO ji = 1, jpi
           zs = SQRT(ABS(psal(ji, jj)) * z1_S0)
-          ptf(ji, jj) = ((((1.46873E-03_wp * zs - 9.64972E-03_wp) * zs + 2.28348E-02_wp) * zs - 3.12775E-02_wp) * zs + &
-&2.07679E-02_wp) * zs - 5.87701E-02_wp
+          ptf(ji, jj) = ((((1.46873E-03_wp * zs - 9.64972E-03_wp) * zs + 2.28348E-02_wp) * zs - 3.12775E-02_wp) * zs + 2.07679E-02_wp) * zs - 5.87701E-02_wp
         END DO
       END DO
       ptf(:, :) = ptf(:, :) * psal(:, :)
@@ -555,8 +533,7 @@ MODULE eosbn2
     SELECT CASE (neos)
     CASE (np_teos10, np_seos)
       zs = SQRT(ABS(psal) / 35.16504_wp)
-      ptf = ((((1.46873E-03_wp * zs - 9.64972E-03_wp) * zs + 2.28348E-02_wp) * zs - 3.12775E-02_wp) * zs + 2.07679E-02_wp) * zs - &
-&5.87701E-02_wp
+      ptf = ((((1.46873E-03_wp * zs - 9.64972E-03_wp) * zs + 2.28348E-02_wp) * zs - 3.12775E-02_wp) * zs + 2.07679E-02_wp) * zs - 5.87701E-02_wp
       ptf = ptf * psal
       IF (PRESENT(pdep)) ptf = ptf - 7.53E-4 * pdep
     CASE (np_eos80)
@@ -577,6 +554,8 @@ MODULE eosbn2
     IF (ln_timing) CALL timing_start('eos_pen')
     SELECT CASE (neos)
     CASE (np_teos10, np_eos80)
+      !$OMP parallel default(shared), private(ji,jj,jk,zh,zn,zn0,zn1,zn2,zs,zt,ztm)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -586,26 +565,27 @@ MODULE eosbn2
             ztm = tmask(ji, jj, jk)
             zn2 = (PEN012) * zt + PEN102 * zs + PEN002
             zn1 = ((PEN021) * zt + PEN111 * zs + PEN011) * zt + (PEN201 * zs + PEN101) * zs + PEN001
-            zn0 = ((((PEN040) * zt + PEN130 * zs + PEN030) * zt + (PEN220 * zs + PEN120) * zs + PEN020) * zt + ((PEN310 * zs + &
-&PEN210) * zs + PEN110) * zs + PEN010) * zt + (((PEN400 * zs + PEN300) * zs + PEN200) * zs + PEN100) * zs + PEN000
+            zn0 = ((((PEN040) * zt + PEN130 * zs + PEN030) * zt + (PEN220 * zs + PEN120) * zs + PEN020) * zt + ((PEN310 * zs + PEN210) * zs + PEN110) * zs + PEN010) * zt + (((PEN400 * zs + PEN300) * zs + PEN200) * zs + PEN100) * zs + PEN000
             zn = (zn2 * zh + zn1) * zh + zn0
             ppen(ji, jj, jk) = zn * zh * r1_rau0 * ztm
             zn2 = APE002
             zn1 = (APE011) * zt + APE101 * zs + APE001
-            zn0 = (((APE030) * zt + APE120 * zs + APE020) * zt + (APE210 * zs + APE110) * zs + APE010) * zt + ((APE300 * zs + &
-&APE200) * zs + APE100) * zs + APE000
+            zn0 = (((APE030) * zt + APE120 * zs + APE020) * zt + (APE210 * zs + APE110) * zs + APE010) * zt + ((APE300 * zs + APE200) * zs + APE100) * zs + APE000
             zn = (zn2 * zh + zn1) * zh + zn0
             pab_pe(ji, jj, jk, jp_tem) = zn * zh * r1_rau0 * ztm
             zn2 = BPE002
             zn1 = (BPE011) * zt + BPE101 * zs + BPE001
-            zn0 = (((BPE030) * zt + BPE120 * zs + BPE020) * zt + (BPE210 * zs + BPE110) * zs + BPE010) * zt + ((BPE300 * zs + &
-&BPE200) * zs + BPE100) * zs + BPE000
+            zn0 = (((BPE030) * zt + BPE120 * zs + BPE020) * zt + (BPE210 * zs + BPE110) * zs + BPE010) * zt + ((BPE300 * zs + BPE200) * zs + BPE100) * zs + BPE000
             zn = (zn2 * zh + zn1) * zh + zn0
             pab_pe(ji, jj, jk, jp_sal) = zn / zs * zh * r1_rau0 * ztm
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     CASE (np_seos)
+      !$OMP parallel default(shared), private(ji,jj,jk,zh,zn,zs,zt,ztm)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -620,6 +600,8 @@ MODULE eosbn2
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     CASE DEFAULT
       WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos
       CALL ctl_stop('eos_pen:', ctmp1)

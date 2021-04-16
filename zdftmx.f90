@@ -50,6 +50,8 @@ MODULE zdftmx
         IF (zkz(ji, jj) /= 0.E0) zkz(ji, jj) = en_tmx(ji, jj) / zkz(ji, jj)
       END DO
     END DO
+    !$OMP parallel default(shared), private(ji,jj,jk)
+    !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 1, jpj
         DO ji = 1, jpi
@@ -57,13 +59,14 @@ MODULE zdftmx
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     IF (kt == nit000) THEN
       ztpc = 0.E0
       DO jk = 1, jpk
         DO jj = 1, jpj
           DO ji = 1, jpi
-            ztpc = ztpc + e3w_n(ji, jj, jk) * e1t(ji, jj) * e2t(ji, jj) * MAX(0.E0, rn2(ji, jj, jk)) * zav_tide(ji, jj, jk) * &
-&tmask(ji, jj, jk) * tmask_i(ji, jj)
+            ztpc = ztpc + e3w_n(ji, jj, jk) * e1t(ji, jj) * e2t(ji, jj) * MAX(0.E0, rn2(ji, jj, jk)) * zav_tide(ji, jj, jk) * tmask(ji, jj, jk) * tmask_i(ji, jj)
           END DO
         END DO
       END DO
@@ -72,6 +75,8 @@ MODULE zdftmx
       IF (lwp) WRITE(numout, FMT = *) '          N Total power consumption by av_tide    : ztpc = ', ztpc * 1.E-12, 'TW'
     END IF
     IF (ln_tmx_itf) CALL tmx_itf(kt, zav_tide)
+    !$OMP parallel default(shared), private(ji,jj,jk)
+    !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 1, jpj
         DO ji = 1, jpi
@@ -81,6 +86,8 @@ MODULE zdftmx
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     CALL iom_put("av_tmx", zav_tide)
     IF (ln_ctl) CALL prt_ctl(tab3d_1 = zav_tide, clinfo1 = ' tmx - av_tide: ', tab3d_2 = p_avt, clinfo2 = ' p_avt: ', kdim = jpk)
   END SUBROUTINE zdf_tmx
@@ -94,14 +101,18 @@ MODULE zdftmx
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zempba_3d_1, zempba_3d_2
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zempba_3d, zdn2dz
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zavt_itf
+    !$OMP parallel default(shared), private(jk)
     zdn2dz(:, :, jpk) = 0.E0
     zempba_3d_1(:, :, jpk) = 0.E0
     zempba_3d_2(:, :, jpk) = 0.E0
+    !$OMP do schedule(static)
     DO jk = 1, jpkm1
       zdn2dz(:, :, jk) = rn2(:, :, jk) - rn2(:, :, jk + 1)
       zempba_3d_1(:, :, jk) = SQRT(MAX(0.E0, rn2(:, :, jk)))
       zempba_3d_2(:, :, jk) = MAX(0.E0, rn2(:, :, jk))
     END DO
+    !$OMP end do
+    !$OMP end parallel
     zsum(:, :) = 0.E0
     zsum1(:, :) = 0.E0
     zsum2(:, :) = 0.E0
@@ -130,40 +141,49 @@ MODULE zdftmx
         IF (zsum(ji, jj) > 0.E0) zsum(ji, jj) = 1.E0 / zsum(ji, jj)
       END DO
     END DO
+    !$OMP parallel default(shared), private(jk)
     zcoef = rn_tfe_itf / (rn_tfe * rau0)
+    !$OMP do schedule(static)
     DO jk = 1, jpk
-      zavt_itf(:, :, jk) = MIN(10.E-4, zcoef * en_tmx(:, :) * zsum(:, :) * zempba_3d(:, :, jk) / MAX(rn_n2min, rn2(:, :, jk)) * &
-&tmask(:, :, jk))
+      zavt_itf(:, :, jk) = MIN(10.E-4, zcoef * en_tmx(:, :) * zsum(:, :) * zempba_3d(:, :, jk) / MAX(rn_n2min, rn2(:, :, jk)) * tmask(:, :, jk))
     END DO
+    !$OMP end do
+    !$OMP end parallel
     zkz(:, :) = 0.E0
     DO jk = 2, jpkm1
-      zkz(:, :) = zkz(:, :) + e3w_n(:, :, jk) * MAX(0.E0, rn2(:, :, jk)) * rau0 * zavt_itf(:, :, jk) * tmask(:, :, jk) * tmask(:, &
-&:, jk - 1)
+      zkz(:, :) = zkz(:, :) + e3w_n(:, :, jk) * MAX(0.E0, rn2(:, :, jk)) * rau0 * zavt_itf(:, :, jk) * tmask(:, :, jk) * tmask(:, :, jk - 1)
     END DO
     DO jj = 1, jpj
       DO ji = 1, jpi
         IF (zkz(ji, jj) /= 0.E0) zkz(ji, jj) = en_tmx(ji, jj) * rn_tfe_itf / rn_tfe / zkz(ji, jj)
       END DO
     END DO
+    !$OMP parallel default(shared), private(jk)
+    !$OMP do schedule(static)
     DO jk = 2, jpkm1
       zavt_itf(:, :, jk) = zavt_itf(:, :, jk) * MIN(zkz(:, :), 120. / 10.) * tmask(:, :, jk) * tmask(:, :, jk - 1)
     END DO
+    !$OMP end do
+    !$OMP end parallel
     IF (kt == nit000) THEN
       ztpc = 0.E0
       DO jk = 1, jpk
         DO jj = 1, jpj
           DO ji = 1, jpi
-            ztpc = ztpc + e1t(ji, jj) * e2t(ji, jj) * e3w_n(ji, jj, jk) * MAX(0.E0, rn2(ji, jj, jk)) * zavt_itf(ji, jj, jk) * &
-&tmask(ji, jj, jk) * tmask_i(ji, jj)
+            ztpc = ztpc + e1t(ji, jj) * e2t(ji, jj) * e3w_n(ji, jj, jk) * MAX(0.E0, rn2(ji, jj, jk)) * zavt_itf(ji, jj, jk) * tmask(ji, jj, jk) * tmask_i(ji, jj)
           END DO
         END DO
       END DO
       ztpc = rau0 * ztpc / (rn_me * rn_tfe_itf)
       IF (lwp) WRITE(numout, FMT = *) '          N Total power consumption by zavt_itf: ztpc = ', ztpc * 1.E-12, 'TW'
     END IF
+    !$OMP parallel default(shared), private(jk)
+    !$OMP do schedule(static)
     DO jk = 2, jpkm1
       pav(:, :, jk) = pav(:, :, jk) * (1.E0 - mask_itf(:, :)) + zavt_itf(:, :, jk) * mask_itf(:, :)
     END DO
+    !$OMP end do
+    !$OMP end parallel
   END SUBROUTINE tmx_itf
   SUBROUTINE zdf_tmx_init
     INTEGER :: ji, jj, jk
@@ -216,6 +236,8 @@ MODULE zdftmx
         IF (zfact(ji, jj) /= 0) zfact(ji, jj) = en_tmx(ji, jj) / zfact(ji, jj)
       END DO
     END DO
+    !$OMP parallel default(shared), private(ji,jj,jk)
+    !$OMP do schedule(static)
     DO jk = 1, jpk
       DO jj = 1, jpj
         DO ji = 1, jpi
@@ -223,6 +245,8 @@ MODULE zdftmx
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     IF (nprint == 1 .AND. lwp) THEN
       zav_tide(:, :, :) = 0.E0
       DO jk = 2, jpkm1
@@ -245,8 +269,7 @@ MODULE zdftmx
       DO jk = 2, jpkm1
         DO jj = 1, jpj
           DO ji = 1, jpi
-            zkz(ji, jj) = zkz(ji, jj) + e3w_0(ji, jj, jk) * MAX(0.E0, rn2(ji, jj, jk)) * rau0 * zav_tide(ji, jj, jk) * wmask(ji, &
-&jj, jk)
+            zkz(ji, jj) = zkz(ji, jj) + e3w_0(ji, jj, jk) * MAX(0.E0, rn2(ji, jj, jk)) * rau0 * zav_tide(ji, jj, jk) * wmask(ji, jj, jk)
           END DO
         END DO
       END DO
@@ -285,16 +308,14 @@ MODULE zdftmx
       ztpc = rau0 * 1 / (rn_tfe * rn_me) * ztpc
       WRITE(numout, FMT = *) '          2 Total power consumption of the tidally driven part of Kz : ztpc = ', ztpc * 1.E-12, 'TW'
       DO jk = 1, jpk
-        ze_z = SUM(e1t(:, :) * e2t(:, :) * zav_tide(:, :, jk) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, &
-&:, jk) * tmask_i(:, :)))
+        ze_z = SUM(e1t(:, :) * e2t(:, :) * zav_tide(:, :, jk) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * tmask_i(:, :)))
         ztpc = 1.E50
         DO jj = 1, jpj
           DO ji = 1, jpi
             IF (zav_tide(ji, jj, jk) /= 0.E0) ztpc = MIN(ztpc, zav_tide(ji, jj, jk))
           END DO
         END DO
-        WRITE(numout, FMT = *) '            N2 min - jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s min= ', ztpc * 1.E4, 'max= ', &
-&MAXVAL(zav_tide(:, :, jk)) * 1.E4, ' cm2/s'
+        WRITE(numout, FMT = *) '            N2 min - jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s min= ', ztpc * 1.E4, 'max= ', MAXVAL(zav_tide(:, :, jk)) * 1.E4, ' cm2/s'
       END DO
       WRITE(numout, FMT = *) '          e_tide : ', SUM(e1t * e2t * en_tmx) / (rn_tfe * rn_me) * 1.E-12, 'TW'
       WRITE(numout, FMT = *)
@@ -305,17 +326,14 @@ MODULE zdftmx
             zkz(ji, jj) = az_tmx(ji, jj, jk) / MAX(rn_n2min, rn2(ji, jj, jk))
           END DO
         END DO
-        ze_z = SUM(e1t(:, :) * e2t(:, :) * zkz(:, :) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * &
-&tmask_i(:, :)))
+        ze_z = SUM(e1t(:, :) * e2t(:, :) * zkz(:, :) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * tmask_i(:, :)))
         WRITE(numout, FMT = *) '                jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s'
       END DO
       DO jk = 1, jpk
         zkz(:, :) = az_tmx(:, :, jk) / rn_n2min
-        ze_z = SUM(e1t(:, :) * e2t(:, :) * zkz(:, :) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * &
-&tmask_i(:, :)))
+        ze_z = SUM(e1t(:, :) * e2t(:, :) * zkz(:, :) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * tmask_i(:, :)))
         WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '          N2 min - jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s min= ', MINVAL(zkz) * 1.E4, 'max= ', &
-&MAXVAL(zkz) * 1.E4, ' cm2/s'
+        WRITE(numout, FMT = *) '          N2 min - jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s min= ', MINVAL(zkz) * 1.E4, 'max= ', MAXVAL(zkz) * 1.E4, ' cm2/s'
       END DO
     END IF
   END SUBROUTINE zdf_tmx_init

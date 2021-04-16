@@ -44,8 +44,7 @@ MODULE traadv_ubs
     l_ptr = .FALSE.
     IF ((cdtype == 'TRA' .AND. l_trdtra) .OR. (cdtype == 'TRC' .AND. l_trdtrc)) l_trd = .TRUE.
     IF (cdtype == 'TRA' .AND. ln_diaptr) l_ptr = .TRUE.
-    IF (cdtype == 'TRA' .AND. (iom_use("uadv_heattr") .OR. iom_use("vadv_heattr") .OR. iom_use("uadv_salttr") .OR. &
-&iom_use("vadv_salttr"))) l_hst = .TRUE.
+    IF (cdtype == 'TRA' .AND. (iom_use("uadv_heattr") .OR. iom_use("vadv_heattr") .OR. iom_use("uadv_salttr") .OR. iom_use("vadv_salttr"))) l_hst = .TRUE.
     ztw(:, :, 1) = 0._wp
     zltu(:, :, jpk) = 0._wp
     zltv(:, :, jpk) = 0._wp
@@ -99,8 +98,7 @@ MODULE traadv_ubs
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (ztu(ji, jj, jk) - ztu(ji - 1, jj, jk) + ztv(ji, jj, jk) - ztv(ji, jj - 1, &
-&jk)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
+            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (ztu(ji, jj, jk) - ztu(ji - 1, jj, jk) + ztv(ji, jj, jk) - ztv(ji, jj - 1, jk)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
           END DO
         END DO
       END DO
@@ -159,8 +157,7 @@ MODULE traadv_ubs
         DO jk = 2, jpkm1
           DO jj = 1, jpj
             DO ji = 1, jpi
-              ztw(ji, jj, jk) = (0.5_wp * pwn(ji, jj, jk) * (ptn(ji, jj, jk, jn) + ptn(ji, jj, jk - 1, jn)) - ztw(ji, jj, jk)) * &
-&wmask(ji, jj, jk)
+              ztw(ji, jj, jk) = (0.5_wp * pwn(ji, jj, jk) * (ptn(ji, jj, jk, jn) + ptn(ji, jj, jk - 1, jn)) - ztw(ji, jj, jk)) * wmask(ji, jj, jk)
             END DO
           END DO
         END DO
@@ -188,8 +185,7 @@ MODULE traadv_ubs
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (ztw(ji, jj, jk) - ztw(ji, jj, jk + 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, &
-&jk)
+            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (ztw(ji, jj, jk) - ztw(ji, jj, jk + 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
           END DO
         END DO
       END DO
@@ -201,8 +197,7 @@ MODULE traadv_ubs
         DO jk = 1, jpkm1
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
-              zltv(ji, jj, jk) = pta(ji, jj, jk, jn) - zltv(ji, jj, jk) + ptn(ji, jj, jk, jn) * (pwn(ji, jj, jk) - pwn(ji, jj, jk &
-&+ 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
+              zltv(ji, jj, jk) = pta(ji, jj, jk, jn) - zltv(ji, jj, jk) + ptn(ji, jj, jk, jn) * (pwn(ji, jj, jk) - pwn(ji, jj, jk + 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
             END DO
           END DO
         END DO
@@ -227,28 +222,36 @@ MODULE traadv_ubs
     zbetdo(:, :, :) = 0._wp
     pbef(:, :, :) = pbef(:, :, :) * tmask(:, :, :) - zbig * (1.E0 - tmask(:, :, :))
     paft(:, :, :) = paft(:, :, :) * tmask(:, :, :) - zbig * (1.E0 - tmask(:, :, :))
+    !$OMP parallel default(shared), private(ikm1,ji,jj,jk)
+    !$OMP do schedule(static)
     DO jk = 1, jpkm1
       ikm1 = MAX(jk - 1, 1)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          zbetup(ji, jj, jk) = MAX(pbef(ji, jj, jk), paft(ji, jj, jk), pbef(ji, jj, ikm1), pbef(ji, jj, jk + 1), paft(ji, jj, &
-&ikm1), paft(ji, jj, jk + 1))
+          zbetup(ji, jj, jk) = MAX(pbef(ji, jj, jk), paft(ji, jj, jk), pbef(ji, jj, ikm1), pbef(ji, jj, jk + 1), paft(ji, jj, ikm1), paft(ji, jj, jk + 1))
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     pbef(:, :, :) = pbef(:, :, :) * tmask(:, :, :) + zbig * (1.E0 - tmask(:, :, :))
     paft(:, :, :) = paft(:, :, :) * tmask(:, :, :) + zbig * (1.E0 - tmask(:, :, :))
+    !$OMP parallel default(shared), private(ikm1,ji,jj,jk)
+    !$OMP do schedule(static)
     DO jk = 1, jpkm1
       ikm1 = MAX(jk - 1, 1)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          zbetdo(ji, jj, jk) = MIN(pbef(ji, jj, jk), paft(ji, jj, jk), pbef(ji, jj, ikm1), pbef(ji, jj, jk + 1), paft(ji, jj, &
-&ikm1), paft(ji, jj, jk + 1))
+          zbetdo(ji, jj, jk) = MIN(pbef(ji, jj, jk), paft(ji, jj, jk), pbef(ji, jj, ikm1), pbef(ji, jj, jk + 1), paft(ji, jj, ikm1), paft(ji, jj, jk + 1))
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     pbef(:, :, :) = pbef(:, :, :) * tmask(:, :, :)
     paft(:, :, :) = paft(:, :, :) * tmask(:, :, :)
+    !$OMP parallel default(shared), private(ji,jj,jk,za,zb,zbt,zc,zneg,zpos)
+    !$OMP do schedule(static)
     DO jk = 1, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -260,6 +263,8 @@ MODULE traadv_ubs
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -270,5 +275,7 @@ MODULE traadv_ubs
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
   END SUBROUTINE nonosc_z
 END MODULE traadv_ubs

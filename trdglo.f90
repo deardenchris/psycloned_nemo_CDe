@@ -40,8 +40,8 @@ MODULE trdglo
     IF (MOD(kt, nn_trd) == 0 .OR. kt == nit000 .OR. kt == nitend) THEN
       SELECT CASE (ctype)
       CASE ('TRA')
-        ! !$OMP parallel default(shared), private(ji,jj,jk,zvm,zvs,zvt) ! CDe race condition??
-        ! !$OMP do schedule(static)
+        ! !$OMP parallel default(shared), private(ji,jj,jk,zvm,zvs,zvt)
+        ! !$OMP do schedule(static) ! CDe race condition on s2?
         DO jk = 1, jpkm1
           DO jj = 1, jpj
             DO ji = 1, jpi
@@ -71,15 +71,13 @@ MODULE trdglo
           s2(:) = 0._wp
         END IF
       CASE ('DYN')
-        ! !$OMP parallel default(shared), private(ji,jj,jk,zvs,zvt) ! CDe race condition??
-        ! !$OMP do schedule(static)
+        ! !$OMP parallel default(shared), private(ji,jj,jk,zvs,zvt)
+        ! !$OMP do schedule(static) ! CDe race condition on hke?
         DO jk = 1, jpkm1
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
-              zvt = ptrdx(ji, jj, jk) * tmask_i(ji + 1, jj) * tmask_i(ji, jj) * umask(ji, jj, jk) * e1e2u(ji, jj) * e3u_n(ji, jj, &
-&jk)
-              zvs = ptrdy(ji, jj, jk) * tmask_i(ji, jj + 1) * tmask_i(ji, jj) * vmask(ji, jj, jk) * e1e2v(ji, jj) * e3u_n(ji, jj, &
-&jk)
+              zvt = ptrdx(ji, jj, jk) * tmask_i(ji + 1, jj) * tmask_i(ji, jj) * umask(ji, jj, jk) * e1e2u(ji, jj) * e3u_n(ji, jj, jk)
+              zvs = ptrdy(ji, jj, jk) * tmask_i(ji, jj + 1) * tmask_i(ji, jj) * vmask(ji, jj, jk) * e1e2v(ji, jj) * e3u_n(ji, jj, jk)
               umo(ktrd) = umo(ktrd) + zvt
               vmo(ktrd) = vmo(ktrd) + zvs
               hke(ktrd) = hke(ktrd) + un(ji, jj, jk) * zvt + vn(ji, jj, jk) * zvs
@@ -92,10 +90,8 @@ MODULE trdglo
           z1_2rau0 = 0.5_wp / rau0
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
-              zvt = (utau_b(ji, jj) + utau(ji, jj)) * tmask_i(ji + 1, jj) * tmask_i(ji, jj) * umask(ji, jj, jk) * z1_2rau0 * &
-&e1e2u(ji, jj)
-              zvs = (vtau_b(ji, jj) + vtau(ji, jj)) * tmask_i(ji, jj + 1) * tmask_i(ji, jj) * vmask(ji, jj, jk) * z1_2rau0 * &
-&e1e2v(ji, jj)
+              zvt = (utau_b(ji, jj) + utau(ji, jj)) * tmask_i(ji + 1, jj) * tmask_i(ji, jj) * umask(ji, jj, jk) * z1_2rau0 * e1e2u(ji, jj)
+              zvs = (vtau_b(ji, jj) + vtau(ji, jj)) * tmask_i(ji, jj + 1) * tmask_i(ji, jj) * vmask(ji, jj, jk) * z1_2rau0 * e1e2v(ji, jj)
               umo(jpdyn_tau) = umo(jpdyn_tau) + zvt
               vmo(jpdyn_tau) = vmo(jpdyn_tau) + zvs
               hke(jpdyn_tau) = hke(jpdyn_tau) + un(ji, jj, 1) * zvt + vn(ji, jj, 1) * zvs
@@ -118,10 +114,16 @@ MODULE trdglo
       CALL eos(tsn, rhd, rhop)
       zcof = 0.5_wp / rau0
       zkz(:, :, 1) = 0._wp
+      !$OMP parallel default(shared), private(jk)
+      !$OMP do schedule(static)
       DO jk = 2, jpk
         zkz(:, :, jk) = zcof * e1e2t(:, :) * wn(:, :, jk) * (rhop(:, :, jk) + rhop(:, :, jk - 1)) * tmask_i(:, :)
       END DO
+      !$OMP end do
+      !$OMP end parallel
       zcof = 0.5_wp / rau0
+      !$OMP parallel default(shared), private(ji,jj,jk)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
@@ -130,18 +132,25 @@ MODULE trdglo
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zkepe(ji, jj, jk) = - (zkz(ji, jj, jk) - zkz(ji, jj, jk + 1) + zkx(ji, jj, jk) - zkx(ji - 1, jj, jk) + zky(ji, jj, jk) &
-&- zky(ji, jj - 1, jk)) / (e1e2t(ji, jj) * e3t_n(ji, jj, jk)) * tmask(ji, jj, jk) * tmask_i(ji, jj)
+            zkepe(ji, jj, jk) = - (zkz(ji, jj, jk) - zkz(ji, jj, jk + 1) + zkx(ji, jj, jk) - zkx(ji - 1, jj, jk) + zky(ji, jj, jk) - zky(ji, jj - 1, jk)) / (e1e2t(ji, jj) * e3t_n(ji, jj, jk)) * tmask(ji, jj, jk) * tmask_i(ji, jj)
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
       peke = 0._wp
+      ! !$OMP parallel default(shared), private(jk)
+      ! !$OMP do schedule(static) ! CDe race condition
       DO jk = 1, jpkm1
         peke = peke + SUM(zkepe(:, :, jk) * gdept_n(:, :, jk) * e1e2t(:, :) * e3t_n(:, :, jk))
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
       peke = grav * peke
       IF (lk_mpp) THEN
         CALL mpp_sum('trdglo', peke)
@@ -164,9 +173,7 @@ MODULE trdglo
         WRITE(numout, 9509) umo(jpdyn_bfr) / tvolu, vmo(jpdyn_bfr) / tvolv
         WRITE(numout, 9510) umo(jpdyn_atf) / tvolu, vmo(jpdyn_atf) / tvolv
         WRITE(numout, 9511)
-        WRITE(numout, 9512) (umo(jpdyn_hpg) + umo(jpdyn_keg) + umo(jpdyn_rvo) + umo(jpdyn_pvo) + umo(jpdyn_zad) + umo(jpdyn_ldf) + &
-&umo(jpdyn_zdf) + umo(jpdyn_spg) + umo(jpdyn_bfr) + umo(jpdyn_atf)) / tvolu, (vmo(jpdyn_hpg) + vmo(jpdyn_keg) + vmo(jpdyn_rvo) + &
-&vmo(jpdyn_pvo) + vmo(jpdyn_zad) + vmo(jpdyn_ldf) + vmo(jpdyn_zdf) + vmo(jpdyn_spg) + vmo(jpdyn_bfr) + vmo(jpdyn_atf)) / tvolv
+        WRITE(numout, 9512) (umo(jpdyn_hpg) + umo(jpdyn_keg) + umo(jpdyn_rvo) + umo(jpdyn_pvo) + umo(jpdyn_zad) + umo(jpdyn_ldf) + umo(jpdyn_zdf) + umo(jpdyn_spg) + umo(jpdyn_bfr) + umo(jpdyn_atf)) / tvolu, (vmo(jpdyn_hpg) + vmo(jpdyn_keg) + vmo(jpdyn_rvo) + vmo(jpdyn_pvo) + vmo(jpdyn_zad) + vmo(jpdyn_ldf) + vmo(jpdyn_zdf) + vmo(jpdyn_spg) + vmo(jpdyn_bfr) + vmo(jpdyn_atf)) / tvolv
         WRITE(numout, 9513) umo(jpdyn_tau) / tvolu, vmo(jpdyn_tau) / tvolv
       END IF
 9500  FORMAT(' momentum trend at it= ', I6, ' :', /, ' ==============================')
@@ -199,8 +206,7 @@ MODULE trdglo
         WRITE(numout, 9529) hke(jpdyn_bfr) / tvolt
         WRITE(numout, 9530) hke(jpdyn_atf) / tvolt
         WRITE(numout, 9531)
-        WRITE(numout, 9532) (hke(jpdyn_hpg) + hke(jpdyn_keg) + hke(jpdyn_rvo) + hke(jpdyn_pvo) + hke(jpdyn_zad) + hke(jpdyn_ldf) + &
-&hke(jpdyn_zdf) + hke(jpdyn_spg) + hke(jpdyn_bfr) + hke(jpdyn_atf)) / tvolt
+        WRITE(numout, 9532) (hke(jpdyn_hpg) + hke(jpdyn_keg) + hke(jpdyn_rvo) + hke(jpdyn_pvo) + hke(jpdyn_zad) + hke(jpdyn_ldf) + hke(jpdyn_zdf) + hke(jpdyn_spg) + hke(jpdyn_bfr) + hke(jpdyn_atf)) / tvolt
         WRITE(numout, 9533) hke(jpdyn_tau) / tvolt
       END IF
 9520  FORMAT(' kinetic energy trend at it= ', I6, ' :', /, ' ====================================')
@@ -269,9 +275,7 @@ MODULE trdglo
         WRITE(numout, 9407) tmo(jptra_qsr) / tvolt
         WRITE(numout, 9408) tmo(jptra_nsr) / tvolt, smo(jptra_nsr) / tvolt
         WRITE(numout, 9409)
-        WRITE(numout, 9410) (tmo(jptra_xad) + tmo(jptra_yad) + tmo(jptra_zad) + tmo(jptra_ldf) + tmo(jptra_zdf) + tmo(jptra_npc) + &
-&tmo(jptra_dmp) + tmo(jptra_qsr) + tmo(jptra_nsr)) / tvolt, (smo(jptra_xad) + smo(jptra_yad) + smo(jptra_zad) + smo(jptra_ldf) + &
-&smo(jptra_zdf) + smo(jptra_npc) + smo(jptra_dmp) + smo(jptra_nsr)) / tvolt
+        WRITE(numout, 9410) (tmo(jptra_xad) + tmo(jptra_yad) + tmo(jptra_zad) + tmo(jptra_ldf) + tmo(jptra_zdf) + tmo(jptra_npc) + tmo(jptra_dmp) + tmo(jptra_qsr) + tmo(jptra_nsr)) / tvolt, (smo(jptra_xad) + smo(jptra_yad) + smo(jptra_zad) + smo(jptra_ldf) + smo(jptra_zdf) + smo(jptra_npc) + smo(jptra_dmp) + smo(jptra_nsr)) / tvolt
       END IF
 9400  FORMAT(' tracer trend at it= ', I6, ' :     temperature', '              salinity', /, ' ============================')
 9401  FORMAT(' zonal      advection        ', E20.13, '     ', E20.13)
@@ -299,12 +303,9 @@ MODULE trdglo
         WRITE(numout, 9427) t2(jptra_qsr) / tvolt
         WRITE(numout, 9428) t2(jptra_nsr) / tvolt, s2(jptra_nsr) / tvolt
         WRITE(numout, 9429)
-        WRITE(numout, 9430) (t2(jptra_xad) + t2(jptra_yad) + t2(jptra_zad) + t2(jptra_ldf) + t2(jptra_zdf) + t2(jptra_npc) + &
-&t2(jptra_dmp) + t2(jptra_qsr) + t2(jptra_nsr)) / tvolt, (s2(jptra_xad) + s2(jptra_yad) + s2(jptra_zad) + s2(jptra_ldf) + &
-&s2(jptra_zdf) + s2(jptra_npc) + s2(jptra_dmp) + s2(jptra_nsr)) / tvolt
+        WRITE(numout, 9430) (t2(jptra_xad) + t2(jptra_yad) + t2(jptra_zad) + t2(jptra_ldf) + t2(jptra_zdf) + t2(jptra_npc) + t2(jptra_dmp) + t2(jptra_qsr) + t2(jptra_nsr)) / tvolt, (s2(jptra_xad) + s2(jptra_yad) + s2(jptra_zad) + s2(jptra_ldf) + s2(jptra_zdf) + s2(jptra_npc) + s2(jptra_dmp) + s2(jptra_nsr)) / tvolt
       END IF
-9420  FORMAT(' tracer**2 trend at it= ', I6, ' :      temperature', '               salinity', /, ' &
-&===============================')
+9420  FORMAT(' tracer**2 trend at it= ', I6, ' :      temperature', '               salinity', /, ' ===============================')
 9421  FORMAT(' zonal      advection      * t   ', E20.13, '     ', E20.13)
 9431  FORMAT(' meridional advection      * t   ', E20.13, '     ', E20.13)
 9422  FORMAT(' vertical advection        * t   ', E20.13, '     ', E20.13)
@@ -320,20 +321,17 @@ MODULE trdglo
         WRITE(numout, FMT = *)
         WRITE(numout, FMT = *)
         WRITE(numout, 9440) kt
-        WRITE(numout, 9441) (tmo(jptra_xad) + tmo(jptra_yad) + tmo(jptra_zad)) / tvolt, (smo(jptra_xad) + smo(jptra_yad) + &
-&smo(jptra_zad)) / tvolt
+        WRITE(numout, 9441) (tmo(jptra_xad) + tmo(jptra_yad) + tmo(jptra_zad)) / tvolt, (smo(jptra_xad) + smo(jptra_yad) + smo(jptra_zad)) / tvolt
         WRITE(numout, 9442) tmo(jptra_sad) / tvolt, smo(jptra_sad) / tvolt
         WRITE(numout, 9443) tmo(jptra_ldf) / tvolt, smo(jptra_ldf) / tvolt
         WRITE(numout, 9444) tmo(jptra_zdf) / tvolt, smo(jptra_zdf) / tvolt
         WRITE(numout, 9445) tmo(jptra_npc) / tvolt, smo(jptra_npc) / tvolt
-        WRITE(numout, 9446) (t2(jptra_xad) + t2(jptra_yad) + t2(jptra_zad)) / tvolt, (s2(jptra_xad) + s2(jptra_yad) + &
-&s2(jptra_zad)) / tvolt
+        WRITE(numout, 9446) (t2(jptra_xad) + t2(jptra_yad) + t2(jptra_zad)) / tvolt, (s2(jptra_xad) + s2(jptra_yad) + s2(jptra_zad)) / tvolt
         WRITE(numout, 9447) t2(jptra_ldf) / tvolt, s2(jptra_ldf) / tvolt
         WRITE(numout, 9448) t2(jptra_zdf) / tvolt, s2(jptra_zdf) / tvolt
         WRITE(numout, 9449) t2(jptra_npc) / tvolt, s2(jptra_npc) / tvolt
       END IF
-9440  FORMAT(' tracer consistency at it= ', I6, ' :         temperature', '                salinity', /, ' &
-&==================================')
+9440  FORMAT(' tracer consistency at it= ', I6, ' :         temperature', '                salinity', /, ' ==================================')
 9441  FORMAT(' 0 = horizontal+vertical advection +    ', E20.13, '       ', E20.13)
 9442  FORMAT('     1st lev vertical advection         ', E20.13, '       ', E20.13)
 9443  FORMAT(' 0 = horizontal diffusion               ', E20.13, '       ', E20.13)
@@ -353,14 +351,20 @@ MODULE trdglo
       WRITE(numout, FMT = *) '~~~~~~~~~~~~~'
     END IF
     tvolt = 0._wp
+    ! !$OMP parallel default(shared), private(jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = 1, jpkm1
       tvolt = tvolt + SUM(e1e2t(:, :) * e3t_n(:, :, jk) * tmask(:, :, jk) * tmask_i(:, :))
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     CALL mpp_sum('trdglo', tvolt)
     IF (lwp) WRITE(numout, FMT = *) '                total ocean volume at T-point   tvolt = ', tvolt
     rpktrd = 0._wp
     tvolu = 0._wp
     tvolv = 0._wp
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = 1, jpk
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -369,6 +373,8 @@ MODULE trdglo
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     CALL mpp_sum('trdglo', tvolu)
     CALL mpp_sum('trdglo', tvolv)
     IF (lwp) THEN

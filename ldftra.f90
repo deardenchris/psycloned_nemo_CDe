@@ -51,8 +51,7 @@ MODULE ldftra
     INTEGER :: ioptio, ierr, inum, ios, inn
     REAL(KIND = wp) :: zah_max, zUfac
     CHARACTER(LEN = 5) :: cl_Units
-    NAMELIST /namtra_ldf/ ln_traldf_OFF, ln_traldf_lap, ln_traldf_blp, ln_traldf_lev, ln_traldf_hor, ln_traldf_triad, &
-&ln_traldf_iso, ln_traldf_msc, rn_slpmax, ln_triad_iso, ln_botmix_triad, rn_sw_triad, nn_aht_ijk_t, rn_Ud, rn_Ld
+    NAMELIST /namtra_ldf/ ln_traldf_OFF, ln_traldf_lap, ln_traldf_blp, ln_traldf_lev, ln_traldf_hor, ln_traldf_triad, ln_traldf_iso, ln_traldf_msc, rn_slpmax, ln_triad_iso, ln_botmix_triad, rn_sw_triad, nn_aht_ijk_t, rn_Ud, rn_Ld
     IF (lwp) THEN
       WRITE(numout, FMT = *)
       WRITE(numout, FMT = *) 'ldf_tra_init : lateral tracer diffusion'
@@ -149,8 +148,7 @@ MODULE ldftra
       END IF
       IF (ierr == 1) CALL ctl_stop('iso-level in z-partial step, not allowed')
     END IF
-    IF (ln_ldfeiv .AND. .NOT. (ln_traldf_iso .OR. ln_traldf_triad)) CALL ctl_stop('ln_ldfeiv=T requires iso-neutral laplacian &
-&diffusion')
+    IF (ln_ldfeiv .AND. .NOT. (ln_traldf_iso .OR. ln_traldf_triad)) CALL ctl_stop('ln_ldfeiv=T requires iso-neutral laplacian diffusion')
     IF (ln_isfcav .AND. ln_traldf_triad) CALL ctl_stop(' ice shelf cavity and traldf_triad not tested')
     IF (nldf_tra == np_lap_i .OR. nldf_tra == np_lap_it .OR. nldf_tra == np_blp_i .OR. nldf_tra == np_blp_it) l_ldfslp = .TRUE.
     IF (ln_traldf_blp .AND. (ln_traldf_iso .OR. ln_traldf_triad)) THEN
@@ -224,18 +222,15 @@ MODULE ldftra
       CASE (20)
         IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy diffusivity = F( e1, e2 ) or F( e1^3, e2^3 ) (lap or blp case)'
         IF (lwp) WRITE(numout, FMT = *) '           using a fixed diffusive velocity = ', rn_Ud, ' m/s   and   Ld = Max(e1,e2)'
-        IF (lwp) WRITE(numout, FMT = *) '           maximum reachable coefficient (at the Equator) = ', zah_max, cl_Units, '  for &
-&e1=1°)'
+        IF (lwp) WRITE(numout, FMT = *) '           maximum reachable coefficient (at the Equator) = ', zah_max, cl_Units, '  for e1=1°)'
         CALL ldf_c2d('TRA', zUfac, inn, ahtu, ahtv)
       CASE (21)
         IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy diffusivity = F( latitude, longitude, time )'
         IF (lwp) WRITE(numout, FMT = *) '                            = F( growth rate of baroclinic instability )'
         IF (lwp) WRITE(numout, FMT = *) '            min value = 0.2 * aht0 (with aht0= 1/2 rn_Ud*rn_Ld)'
-        IF (lwp) WRITE(numout, FMT = *) '            max value =       aei0 (with aei0=1/2 rn_Ue*Le  increased to aht0 within &
-&20N-20S'
+        IF (lwp) WRITE(numout, FMT = *) '            max value =       aei0 (with aei0=1/2 rn_Ue*Le  increased to aht0 within 20N-20S'
         l_ldftra_time = .TRUE.
-        IF (ln_traldf_blp) CALL ctl_stop('ldf_tra_init: aht=F( growth rate of baroc. insta .)', '              incompatible with &
-&bilaplacian operator')
+        IF (ln_traldf_blp) CALL ctl_stop('ldf_tra_init: aht=F( growth rate of baroc. insta .)', '              incompatible with bilaplacian operator')
       CASE (- 30)
         IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy diffusivity = F(i,j,k) read in eddy_diffusivity.nc file'
         CALL iom_open('eddy_diffusivity_3D.nc', inum)
@@ -245,8 +240,7 @@ MODULE ldftra
       CASE (30)
         IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy diffusivity = F( latitude, longitude, depth )'
         IF (lwp) WRITE(numout, FMT = *) '           using a fixed diffusive velocity = ', rn_Ud, ' m/s   and   Ld = Max(e1,e2)'
-        IF (lwp) WRITE(numout, FMT = *) '           maximum reachable coefficient (at the Equator) = ', zah_max, cl_Units, '  for &
-&e1=1°)'
+        IF (lwp) WRITE(numout, FMT = *) '           maximum reachable coefficient (at the Equator) = ', zah_max, cl_Units, '  for e1=1°)'
         CALL ldf_c2d('TRA', zUfac, inn, ahtu, ahtv)
         CALL ldf_c1d('TRA', ahtu(:, :, 1), ahtv(:, :, 1), ahtu, ahtv)
       CASE (31)
@@ -293,21 +287,33 @@ MODULE ldftra
           ahtv(ji, jj, 1) = (MAX(zaht_min, ahtv(ji, jj, 1)) + zahf)
         END DO
       END DO
+      !$OMP parallel default(shared), private(jk)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         ahtu(:, :, jk) = ahtu(:, :, 1) * umask(:, :, jk)
         ahtv(:, :, jk) = ahtv(:, :, 1) * vmask(:, :, jk)
       END DO
+      !$OMP end do
+      !$OMP end parallel
     CASE (31)
       IF (ln_traldf_lap) THEN
+        !$OMP parallel default(shared), private(jk)
+        !$OMP do schedule(static)
         DO jk = 1, jpkm1
           ahtu(:, :, jk) = ABS(ub(:, :, jk)) * e1u(:, :) * r1_12
           ahtv(:, :, jk) = ABS(vb(:, :, jk)) * e2v(:, :) * r1_12
         END DO
+        !$OMP end do
+        !$OMP end parallel
       ELSE IF (ln_traldf_blp) THEN
+        !$OMP parallel default(shared), private(jk)
+        !$OMP do schedule(static)
         DO jk = 1, jpkm1
           ahtu(:, :, jk) = SQRT(ABS(ub(:, :, jk)) * e1u(:, :) * r1_12) * e1u(:, :)
           ahtv(:, :, jk) = SQRT(ABS(vb(:, :, jk)) * e2v(:, :) * r1_12) * e2v(:, :)
         END DO
+        !$OMP end do
+        !$OMP end parallel
       END IF
     END SELECT
     CALL iom_put("ahtu_2d", ahtu(:, :, 1))
@@ -381,15 +387,18 @@ MODULE ldftra
         CALL iom_get(inum, jpdom_data, 'aeiu', aeiu(:, :, 1))
         CALL iom_get(inum, jpdom_data, 'aeiv', aeiv(:, :, 1))
         CALL iom_close(inum)
+        !$OMP parallel default(shared), private(jk)
+        !$OMP do schedule(static)
         DO jk = 2, jpkm1
           aeiu(:, :, jk) = aeiu(:, :, 1)
           aeiv(:, :, jk) = aeiv(:, :, 1)
         END DO
+        !$OMP end do
+        !$OMP end parallel
       CASE (20)
         IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy induced velocity coef. = F( e1, e2 )'
         IF (lwp) WRITE(numout, FMT = *) '           using a fixed diffusive velocity = ', rn_Ue, ' m/s   and   Le = Max(e1,e2)'
-        IF (lwp) WRITE(numout, FMT = *) '           maximum reachable coefficient (at the Equator) = ', zah_max, ' m2/s   for &
-&e1=1°)'
+        IF (lwp) WRITE(numout, FMT = *) '           maximum reachable coefficient (at the Equator) = ', zah_max, ' m2/s   for e1=1°)'
         CALL ldf_c2d('TRA', zUfac, inn, aeiu, aeiv)
       CASE (21)
         IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy induced velocity coef. = F( latitude, longitude, time )'
@@ -410,10 +419,14 @@ MODULE ldftra
         CALL ctl_stop('ldf_tra_init: wrong choice for nn_aei_ijk_t, the type of space-time variation of aei')
       END SELECT
       IF (.NOT. l_ldfeiv_time) THEN
+        !$OMP parallel default(shared), private(jk)
+        !$OMP do schedule(static)
         DO jk = 1, jpkm1
           aeiu(:, :, jk) = aeiu(:, :, jk) * umask(:, :, jk)
           ahtv(:, :, jk) = ahtv(:, :, jk) * vmask(:, :, jk)
         END DO
+        !$OMP end do
+        !$OMP end parallel
       END IF
     END IF
   END SUBROUTINE ldf_eiv_init
@@ -429,6 +442,8 @@ MODULE ldftra
     zah(:, :) = 0._wp
     zRo(:, :) = 0._wp
     IF (ln_traldf_triad) THEN
+      ! !$OMP parallel default(shared), private(ji,jj,jk,ze3w,zn2)
+      ! !$OMP do schedule(static) ! CDe race condition
       DO jk = 1, jpk
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -440,7 +455,11 @@ MODULE ldftra
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
     ELSE
+      ! !$OMP parallel default(shared), private(ji,jj,jk,ze3w,zn2)
+      ! !$OMP do schedule(static) ! CDe race condition
       DO jk = 1, jpk
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -452,6 +471,8 @@ MODULE ldftra
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
     END IF
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
@@ -475,10 +496,14 @@ MODULE ldftra
       END DO
     END DO
     CALL lbc_lnk_multi('ldftra', paeiu(:, :, 1), 'U', 1., paeiv(:, :, 1), 'V', 1.)
+    !$OMP parallel default(shared), private(jk)
+    !$OMP do schedule(static)
     DO jk = 2, jpkm1
       paeiu(:, :, jk) = paeiu(:, :, 1) * umask(:, :, jk)
       paeiv(:, :, jk) = paeiv(:, :, 1) * vmask(:, :, jk)
     END DO
+    !$OMP end do
+    !$OMP end parallel
   END SUBROUTINE ldf_eiv
   SUBROUTINE ldf_eiv_trp(kt, kit000, pun, pvn, pwn, cdtype)
     INTEGER, INTENT(IN) :: kt
@@ -500,16 +525,18 @@ MODULE ldftra
     zpsi_vw(:, :, 1) = 0._wp
     zpsi_uw(:, :, jpk) = 0._wp
     zpsi_vw(:, :, jpk) = 0._wp
+    !$OMP parallel default(shared), private(ji,jj,jk)
+    !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
-          zpsi_uw(ji, jj, jk) = - r1_4 * e2u(ji, jj) * (wslpi(ji, jj, jk) + wslpi(ji + 1, jj, jk)) * (aeiu(ji, jj, jk - 1) + &
-&aeiu(ji, jj, jk)) * umask(ji, jj, jk)
-          zpsi_vw(ji, jj, jk) = - r1_4 * e1v(ji, jj) * (wslpj(ji, jj, jk) + wslpj(ji, jj + 1, jk)) * (aeiv(ji, jj, jk - 1) + &
-&aeiv(ji, jj, jk)) * vmask(ji, jj, jk)
+          zpsi_uw(ji, jj, jk) = - r1_4 * e2u(ji, jj) * (wslpi(ji, jj, jk) + wslpi(ji + 1, jj, jk)) * (aeiu(ji, jj, jk - 1) + aeiu(ji, jj, jk)) * umask(ji, jj, jk)
+          zpsi_vw(ji, jj, jk) = - r1_4 * e1v(ji, jj) * (wslpj(ji, jj, jk) + wslpj(ji, jj + 1, jk)) * (aeiv(ji, jj, jk - 1) + aeiv(ji, jj, jk)) * vmask(ji, jj, jk)
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP do schedule(static)
     DO jk = 1, jpkm1
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
@@ -518,14 +545,17 @@ MODULE ldftra
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP do schedule(static)
     DO jk = 1, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          pwn(ji, jj, jk) = pwn(ji, jj, jk) + (zpsi_uw(ji, jj, jk) - zpsi_uw(ji - 1, jj, jk) + zpsi_vw(ji, jj, jk) - zpsi_vw(ji, &
-&jj - 1, jk))
+          pwn(ji, jj, jk) = pwn(ji, jj, jk) + (zpsi_uw(ji, jj, jk) - zpsi_uw(ji - 1, jj, jk) + zpsi_vw(ji, jj, jk) - zpsi_vw(ji, jj - 1, jk))
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     IF (ln_ldfeiv_dia .AND. cdtype == 'TRA') CALL ldf_eiv_dia(zpsi_uw, zpsi_vw)
   END SUBROUTINE ldf_eiv_trp
   SUBROUTINE ldf_eiv_dia(psi_uw, psi_vw)
@@ -537,26 +567,37 @@ MODULE ldftra
     CALL lbc_lnk_multi('ldftra', psi_uw, 'U', - 1., psi_vw, 'V', - 1.)
     zw3d(:, :, jpk) = 0._wp
     IF (iom_use("uoce_eiv")) THEN
+      !$OMP parallel default(shared), private(jk)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         zw3d(:, :, jk) = (psi_uw(:, :, jk + 1) - psi_uw(:, :, jk)) / (e2u(:, :) * e3u_n(:, :, jk))
       END DO
+      !$OMP end do
+      !$OMP end parallel
       CALL iom_put("uoce_eiv", zw3d)
     END IF
     IF (iom_use("voce_eiv")) THEN
+      !$OMP parallel default(shared), private(jk)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         zw3d(:, :, jk) = (psi_vw(:, :, jk + 1) - psi_vw(:, :, jk)) / (e1v(:, :) * e3v_n(:, :, jk))
       END DO
+      !$OMP end do
+      !$OMP end parallel
       CALL iom_put("voce_eiv", zw3d)
     END IF
     IF (iom_use("woce_eiv")) THEN
+      !$OMP parallel default(shared), private(ji,jj,jk)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zw3d(ji, jj, jk) = (psi_vw(ji, jj, jk) - psi_vw(ji, jj - 1, jk) + psi_uw(ji, jj, jk) - psi_uw(ji - 1, jj, jk)) / &
-&e1e2t(ji, jj)
+            zw3d(ji, jj, jk) = (psi_vw(ji, jj, jk) - psi_vw(ji, jj - 1, jk) + psi_uw(ji, jj, jk) - psi_uw(ji - 1, jj, jk)) / e1e2t(ji, jj)
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
       CALL lbc_lnk('ldftra', zw3d, 'T', 1.)
       CALL iom_put("woce_eiv", zw3d)
     END IF
@@ -564,15 +605,18 @@ MODULE ldftra
     IF (iom_use('ueiv_heattr') .OR. iom_use('ueiv_heattr3d')) THEN
       zw2d(:, :) = 0._wp
       zw3d(:, :, :) = 0._wp
+      ! !$OMP parallel default(shared), private(ji,jj,jk)
+      ! !$OMP do schedule(static) ! CDe race condition?
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zw3d(ji, jj, jk) = zw3d(ji, jj, jk) + (psi_uw(ji, jj, jk + 1) - psi_uw(ji, jj, jk)) * (tsn(ji, jj, jk, jp_tem) + &
-&tsn(ji + 1, jj, jk, jp_tem))
+            zw3d(ji, jj, jk) = zw3d(ji, jj, jk) + (psi_uw(ji, jj, jk + 1) - psi_uw(ji, jj, jk)) * (tsn(ji, jj, jk, jp_tem) + tsn(ji + 1, jj, jk, jp_tem))
             zw2d(ji, jj) = zw2d(ji, jj) + zw3d(ji, jj, jk)
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
       CALL lbc_lnk('ldftra', zw2d, 'U', - 1.)
       CALL lbc_lnk('ldftra', zw3d, 'U', - 1.)
       CALL iom_put("ueiv_heattr", zztmp * zw2d)
@@ -581,15 +625,18 @@ MODULE ldftra
     IF (iom_use('veiv_heattr')) THEN
       zw2d(:, :) = 0._wp
       zw3d(:, :, :) = 0._wp
+      ! !$OMP parallel default(shared), private(ji,jj,jk)
+      ! !$OMP do schedule(static) ! CDe race condition?
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zw3d(ji, jj, jk) = zw3d(ji, jj, jk) + (psi_vw(ji, jj, jk + 1) - psi_vw(ji, jj, jk)) * (tsn(ji, jj, jk, jp_tem) + &
-&tsn(ji, jj + 1, jk, jp_tem))
+            zw3d(ji, jj, jk) = zw3d(ji, jj, jk) + (psi_vw(ji, jj, jk + 1) - psi_vw(ji, jj, jk)) * (tsn(ji, jj, jk, jp_tem) + tsn(ji, jj + 1, jk, jp_tem))
             zw2d(ji, jj) = zw2d(ji, jj) + zw3d(ji, jj, jk)
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
       CALL lbc_lnk('ldftra', zw2d, 'V', - 1.)
       CALL iom_put("veiv_heattr", zztmp * zw2d)
       CALL iom_put("veiv_heattr", zztmp * zw3d)
@@ -599,15 +646,18 @@ MODULE ldftra
     IF (iom_use('ueiv_salttr') .OR. iom_use('ueiv_salttr3d')) THEN
       zw2d(:, :) = 0._wp
       zw3d(:, :, :) = 0._wp
+      ! !$OMP parallel default(shared), private(ji,jj,jk)
+      ! !$OMP do schedule(static) ! CDe race condition?
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zw3d(ji, jj, jk) = zw3d(ji, jj, jk) * (psi_uw(ji, jj, jk + 1) - psi_uw(ji, jj, jk)) * (tsn(ji, jj, jk, jp_sal) + &
-&tsn(ji + 1, jj, jk, jp_sal))
+            zw3d(ji, jj, jk) = zw3d(ji, jj, jk) * (psi_uw(ji, jj, jk + 1) - psi_uw(ji, jj, jk)) * (tsn(ji, jj, jk, jp_sal) + tsn(ji + 1, jj, jk, jp_sal))
             zw2d(ji, jj) = zw2d(ji, jj) + zw3d(ji, jj, jk)
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
       CALL lbc_lnk('ldftra', zw2d, 'U', - 1.)
       CALL lbc_lnk('ldftra', zw3d, 'U', - 1.)
       CALL iom_put("ueiv_salttr", zztmp * zw2d)
@@ -616,15 +666,18 @@ MODULE ldftra
     IF (iom_use('veiv_salttr')) THEN
       zw2d(:, :) = 0._wp
       zw3d(:, :, :) = 0._wp
+      ! !$OMP parallel default(shared), private(ji,jj,jk)
+      ! !$OMP do schedule(static) ! CDe race condition?
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zw3d(ji, jj, jk) = zw3d(ji, jj, jk) + (psi_vw(ji, jj, jk + 1) - psi_vw(ji, jj, jk)) * (tsn(ji, jj, jk, jp_sal) + &
-&tsn(ji, jj + 1, jk, jp_sal))
+            zw3d(ji, jj, jk) = zw3d(ji, jj, jk) + (psi_vw(ji, jj, jk + 1) - psi_vw(ji, jj, jk)) * (tsn(ji, jj, jk, jp_sal) + tsn(ji, jj + 1, jk, jp_sal))
             zw2d(ji, jj) = zw2d(ji, jj) + zw3d(ji, jj, jk)
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
       CALL lbc_lnk('ldftra', zw2d, 'V', - 1.)
       CALL iom_put("veiv_salttr", zztmp * zw2d)
       CALL iom_put("veiv_salttr", zztmp * zw3d)

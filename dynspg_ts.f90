@@ -137,8 +137,7 @@ MODULE dynspg_ts
         CASE (1)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
-              zwz(ji, jj) = (ht_n(ji, jj + 1) + ht_n(ji + 1, jj + 1) + ht_n(ji, jj) + ht_n(ji + 1, jj)) / (MAX(1._wp, ssmask(ji, &
-&jj + 1) + ssmask(ji + 1, jj + 1) + ssmask(ji, jj) + ssmask(ji + 1, jj)))
+              zwz(ji, jj) = (ht_n(ji, jj + 1) + ht_n(ji + 1, jj + 1) + ht_n(ji, jj) + ht_n(ji + 1, jj)) / (MAX(1._wp, ssmask(ji, jj + 1) + ssmask(ji + 1, jj + 1) + ssmask(ji, jj) + ssmask(ji + 1, jj)))
               IF (zwz(ji, jj) /= 0._wp) zwz(ji, jj) = ff_f(ji, jj) / zwz(ji, jj)
             END DO
           END DO
@@ -177,8 +176,7 @@ MODULE dynspg_ts
         ELSE
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
-              zhf(ji, jj) = (ht_0(ji, jj) + ht_0(ji + 1, jj) + ht_0(ji, jj + 1) + ht_0(ji + 1, jj + 1)) / MAX(ssmask(ji, jj) + &
-&ssmask(ji + 1, jj) + ssmask(ji, jj + 1) + ssmask(ji + 1, jj + 1), 1._wp)
+              zhf(ji, jj) = (ht_0(ji, jj) + ht_0(ji + 1, jj) + ht_0(ji, jj + 1) + ht_0(ji + 1, jj + 1)) / MAX(ssmask(ji, jj) + ssmask(ji + 1, jj) + ssmask(ji, jj + 1) + ssmask(ji + 1, jj + 1), 1._wp)
             END DO
           END DO
         END IF
@@ -187,6 +185,8 @@ MODULE dynspg_ts
             zhf(ji, jj) = zhf(ji, jj) * (1._wp - umask(ji, jj, 1) * umask(ji, jj + 1, 1))
           END DO
         END DO
+        ! !$OMP parallel default(shared), private(ji,jj,jk)
+        ! !$OMP do schedule(static) ! CDe race condition on zhf?
         DO jk = 1, jpkm1
           DO jj = 1, jpjm1
             DO ji = 1, jpi
@@ -194,6 +194,8 @@ MODULE dynspg_ts
             END DO
           END DO
         END DO
+        ! !$OMP end do
+        ! !$OMP end parallel
         CALL lbc_lnk('dynspg_ts', zhf, 'F', 1._wp)
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -209,12 +211,18 @@ MODULE dynspg_ts
     END IF
     zu_frc(:, :) = 0._wp
     zv_frc(:, :) = 0._wp
+    ! !$OMP parallel default(shared), private(jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = 1, jpkm1
       zu_frc(:, :) = zu_frc(:, :) + e3u_n(:, :, jk) * ua(:, :, jk) * umask(:, :, jk)
       zv_frc(:, :) = zv_frc(:, :) + e3v_n(:, :, jk) * va(:, :, jk) * vmask(:, :, jk)
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     zu_frc(:, :) = zu_frc(:, :) * r1_hu_n(:, :)
     zv_frc(:, :) = zv_frc(:, :) * r1_hv_n(:, :)
+    !$OMP parallel default(shared), private(ji,jj,jk)
+    !$OMP do schedule(static)
     DO jk = 1, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -223,16 +231,16 @@ MODULE dynspg_ts
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     zwx(:, :) = un_b(:, :) * hu_n(:, :) * e2u(:, :)
     zwy(:, :) = vn_b(:, :) * hv_n(:, :) * e1v(:, :)
     SELECT CASE (nvor_scheme)
     CASE (np_ENT)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          zu_trd(ji, jj) = + r1_4 * r1_e1e2u(ji, jj) * r1_hu_n(ji, jj) * (e1e2t(ji + 1, jj) * ht_n(ji + 1, jj) * ff_t(ji + 1, jj) &
-&* (vn_b(ji + 1, jj) + vn_b(ji + 1, jj - 1)) + e1e2t(ji, jj) * ht_n(ji, jj) * ff_t(ji, jj) * (vn_b(ji, jj) + vn_b(ji, jj - 1)))
-          zv_trd(ji, jj) = - r1_4 * r1_e1e2v(ji, jj) * r1_hv_n(ji, jj) * (e1e2t(ji, jj + 1) * ht_n(ji, jj + 1) * ff_t(ji, jj + 1) &
-&* (un_b(ji, jj + 1) + un_b(ji - 1, jj + 1)) + e1e2t(ji, jj) * ht_n(ji, jj) * ff_t(ji, jj) * (un_b(ji, jj) + un_b(ji - 1, jj)))
+          zu_trd(ji, jj) = + r1_4 * r1_e1e2u(ji, jj) * r1_hu_n(ji, jj) * (e1e2t(ji + 1, jj) * ht_n(ji + 1, jj) * ff_t(ji + 1, jj) * (vn_b(ji + 1, jj) + vn_b(ji + 1, jj - 1)) + e1e2t(ji, jj) * ht_n(ji, jj) * ff_t(ji, jj) * (vn_b(ji, jj) + vn_b(ji, jj - 1)))
+          zv_trd(ji, jj) = - r1_4 * r1_e1e2v(ji, jj) * r1_hv_n(ji, jj) * (e1e2t(ji, jj + 1) * ht_n(ji, jj + 1) * ff_t(ji, jj + 1) * (un_b(ji, jj + 1) + un_b(ji - 1, jj + 1)) + e1e2t(ji, jj) * ht_n(ji, jj) * ff_t(ji, jj) * (un_b(ji, jj) + un_b(ji - 1, jj)))
         END DO
       END DO
     CASE (np_ENE, np_MIX)
@@ -258,10 +266,8 @@ MODULE dynspg_ts
     CASE (np_EET, np_EEN)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          zu_trd(ji, jj) = + r1_12 * r1_e1u(ji, jj) * (ftne(ji, jj) * zwy(ji, jj) + ftnw(ji + 1, jj) * zwy(ji + 1, jj) + ftse(ji, &
-&jj) * zwy(ji, jj - 1) + ftsw(ji + 1, jj) * zwy(ji + 1, jj - 1))
-          zv_trd(ji, jj) = - r1_12 * r1_e2v(ji, jj) * (ftsw(ji, jj + 1) * zwx(ji - 1, jj + 1) + ftse(ji, jj + 1) * zwx(ji, jj + 1) &
-&+ ftnw(ji, jj) * zwx(ji - 1, jj) + ftne(ji, jj) * zwx(ji, jj))
+          zu_trd(ji, jj) = + r1_12 * r1_e1u(ji, jj) * (ftne(ji, jj) * zwy(ji, jj) + ftnw(ji + 1, jj) * zwy(ji + 1, jj) + ftse(ji, jj) * zwy(ji, jj - 1) + ftsw(ji + 1, jj) * zwy(ji + 1, jj - 1))
+          zv_trd(ji, jj) = - r1_12 * r1_e2v(ji, jj) * (ftsw(ji, jj + 1) * zwx(ji - 1, jj + 1) + ftse(ji, jj + 1) * zwx(ji, jj + 1) + ftnw(ji, jj) * zwx(ji - 1, jj) + ftne(ji, jj) * zwx(ji, jj))
         END DO
       END DO
     END SELECT
@@ -269,28 +275,22 @@ MODULE dynspg_ts
       IF (ln_wd_il) THEN
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            ll_tmp1 = MIN(sshn(ji, jj), sshn(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) .AND. MAX(sshn(ji, jj) + &
-&ht_0(ji, jj), sshn(ji + 1, jj) + ht_0(ji + 1, jj)) > rn_wdmin1 + rn_wdmin2
-            ll_tmp2 = (ABS(sshn(ji + 1, jj) - sshn(ji, jj)) > 1.E-12) .AND. (MAX(sshn(ji, jj), sshn(ji + 1, jj)) > MAX(- ht_0(ji, &
-&jj), - ht_0(ji + 1, jj)) + rn_wdmin1 + rn_wdmin2)
+            ll_tmp1 = MIN(sshn(ji, jj), sshn(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) .AND. MAX(sshn(ji, jj) + ht_0(ji, jj), sshn(ji + 1, jj) + ht_0(ji + 1, jj)) > rn_wdmin1 + rn_wdmin2
+            ll_tmp2 = (ABS(sshn(ji + 1, jj) - sshn(ji, jj)) > 1.E-12) .AND. (MAX(sshn(ji, jj), sshn(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) + rn_wdmin1 + rn_wdmin2)
             IF (ll_tmp1) THEN
               zcpx(ji, jj) = 1.0_wp
             ELSE IF (ll_tmp2) THEN
-              zcpx(ji, jj) = ABS((sshn(ji + 1, jj) + ht_0(ji + 1, jj) - sshn(ji, jj) - ht_0(ji, jj)) / (sshn(ji + 1, jj) - &
-&sshn(ji, jj)))
+              zcpx(ji, jj) = ABS((sshn(ji + 1, jj) + ht_0(ji + 1, jj) - sshn(ji, jj) - ht_0(ji, jj)) / (sshn(ji + 1, jj) - sshn(ji, jj)))
               zcpx(ji, jj) = MAX(MIN(zcpx(ji, jj), 1.0_wp), 0.0_wp)
             ELSE
               zcpx(ji, jj) = 0._wp
             END IF
-            ll_tmp1 = MIN(sshn(ji, jj), sshn(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) .AND. MAX(sshn(ji, jj) + &
-&ht_0(ji, jj), sshn(ji, jj + 1) + ht_0(ji, jj + 1)) > rn_wdmin1 + rn_wdmin2
-            ll_tmp2 = (ABS(sshn(ji, jj) - sshn(ji, jj + 1)) > 1.E-12) .AND. (MAX(sshn(ji, jj), sshn(ji, jj + 1)) > MAX(- ht_0(ji, &
-&jj), - ht_0(ji, jj + 1)) + rn_wdmin1 + rn_wdmin2)
+            ll_tmp1 = MIN(sshn(ji, jj), sshn(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) .AND. MAX(sshn(ji, jj) + ht_0(ji, jj), sshn(ji, jj + 1) + ht_0(ji, jj + 1)) > rn_wdmin1 + rn_wdmin2
+            ll_tmp2 = (ABS(sshn(ji, jj) - sshn(ji, jj + 1)) > 1.E-12) .AND. (MAX(sshn(ji, jj), sshn(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) + rn_wdmin1 + rn_wdmin2)
             IF (ll_tmp1) THEN
               zcpy(ji, jj) = 1.0_wp
             ELSE IF (ll_tmp2) THEN
-              zcpy(ji, jj) = ABS((sshn(ji, jj + 1) + ht_0(ji, jj + 1) - sshn(ji, jj) - ht_0(ji, jj)) / (sshn(ji, jj + 1) - &
-&sshn(ji, jj)))
+              zcpy(ji, jj) = ABS((sshn(ji, jj + 1) + ht_0(ji, jj + 1) - sshn(ji, jj) - ht_0(ji, jj)) / (sshn(ji, jj + 1) - sshn(ji, jj)))
               zcpy(ji, jj) = MAX(0._wp, MIN(zcpy(ji, jj), 1.0_wp))
             ELSE
               zcpy(ji, jj) = 0._wp
@@ -299,10 +299,8 @@ MODULE dynspg_ts
         END DO
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zu_trd(ji, jj) = zu_trd(ji, jj) - grav * (sshn(ji + 1, jj) - sshn(ji, jj)) * r1_e1u(ji, jj) * zcpx(ji, jj) * &
-&wdrampu(ji, jj)
-            zv_trd(ji, jj) = zv_trd(ji, jj) - grav * (sshn(ji, jj + 1) - sshn(ji, jj)) * r1_e2v(ji, jj) * zcpy(ji, jj) * &
-&wdrampv(ji, jj)
+            zu_trd(ji, jj) = zu_trd(ji, jj) - grav * (sshn(ji + 1, jj) - sshn(ji, jj)) * r1_e1u(ji, jj) * zcpx(ji, jj) * wdrampu(ji, jj)
+            zv_trd(ji, jj) = zv_trd(ji, jj) - grav * (sshn(ji, jj + 1) - sshn(ji, jj)) * r1_e2v(ji, jj) * zcpy(ji, jj) * wdrampv(ji, jj)
           END DO
         END DO
       ELSE
@@ -343,10 +341,8 @@ MODULE dynspg_ts
       zztmp = - 1._wp / rdtbt
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          zu_frc(ji, jj) = zu_frc(ji, jj) + MAX(r1_hu_n(ji, jj) * r1_2 * (rCdU_bot(ji + 1, jj) + rCdU_bot(ji, jj)), zztmp) * &
-&zwx(ji, jj) * wdrampu(ji, jj)
-          zv_frc(ji, jj) = zv_frc(ji, jj) + MAX(r1_hv_n(ji, jj) * r1_2 * (rCdU_bot(ji, jj + 1) + rCdU_bot(ji, jj)), zztmp) * &
-&zwy(ji, jj) * wdrampv(ji, jj)
+          zu_frc(ji, jj) = zu_frc(ji, jj) + MAX(r1_hu_n(ji, jj) * r1_2 * (rCdU_bot(ji + 1, jj) + rCdU_bot(ji, jj)), zztmp) * zwx(ji, jj) * wdrampu(ji, jj)
+          zv_frc(ji, jj) = zv_frc(ji, jj) + MAX(r1_hv_n(ji, jj) * r1_2 * (rCdU_bot(ji, jj + 1) + rCdU_bot(ji, jj)), zztmp) * zwy(ji, jj) * wdrampv(ji, jj)
         END DO
       END DO
     ELSE
@@ -511,10 +507,8 @@ MODULE dynspg_ts
         END IF
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zwx(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji + 1, jj) * &
-&zsshp2_e(ji + 1, jj))
-            zwy(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji, jj + 1) * &
-&zsshp2_e(ji, jj + 1))
+            zwx(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji + 1, jj) * zsshp2_e(ji + 1, jj))
+            zwy(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji, jj + 1) * zsshp2_e(ji, jj + 1))
           END DO
         END DO
         CALL lbc_lnk_multi('dynspg_ts', zwx, 'U', 1._wp, zwy, 'V', 1._wp)
@@ -568,10 +562,8 @@ MODULE dynspg_ts
       IF (.NOT. ln_linssh) THEN
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zsshu_a(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * ssha_e(ji, jj) + e1e2t(ji + 1, jj) * &
-&ssha_e(ji + 1, jj))
-            zsshv_a(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * ssha_e(ji, jj) + e1e2t(ji, jj + 1) * &
-&ssha_e(ji, jj + 1))
+            zsshu_a(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * ssha_e(ji, jj) + e1e2t(ji + 1, jj) * ssha_e(ji + 1, jj))
+            zsshv_a(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * ssha_e(ji, jj) + e1e2t(ji, jj + 1) * ssha_e(ji, jj + 1))
           END DO
         END DO
         CALL lbc_lnk_multi('dynspg_ts', zsshu_a, 'U', 1._wp, zsshv_a, 'V', 1._wp)
@@ -605,27 +597,21 @@ MODULE dynspg_ts
       IF (ln_wd_il) THEN
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            ll_tmp1 = MIN(zsshp2_e(ji, jj), zsshp2_e(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) .AND. MAX(zsshp2_e(ji, &
-&jj) + ht_0(ji, jj), zsshp2_e(ji + 1, jj) + ht_0(ji + 1, jj)) > rn_wdmin1 + rn_wdmin2
-            ll_tmp2 = (ABS(zsshp2_e(ji, jj) - zsshp2_e(ji + 1, jj)) > 1.E-12) .AND. (MAX(zsshp2_e(ji, jj), zsshp2_e(ji + 1, jj)) > &
-&MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) + rn_wdmin1 + rn_wdmin2)
+            ll_tmp1 = MIN(zsshp2_e(ji, jj), zsshp2_e(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) .AND. MAX(zsshp2_e(ji, jj) + ht_0(ji, jj), zsshp2_e(ji + 1, jj) + ht_0(ji + 1, jj)) > rn_wdmin1 + rn_wdmin2
+            ll_tmp2 = (ABS(zsshp2_e(ji, jj) - zsshp2_e(ji + 1, jj)) > 1.E-12) .AND. (MAX(zsshp2_e(ji, jj), zsshp2_e(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) + rn_wdmin1 + rn_wdmin2)
             IF (ll_tmp1) THEN
               zcpx(ji, jj) = 1.0_wp
             ELSE IF (ll_tmp2) THEN
-              zcpx(ji, jj) = ABS((zsshp2_e(ji + 1, jj) + ht_0(ji + 1, jj) - zsshp2_e(ji, jj) - ht_0(ji, jj)) / (zsshp2_e(ji + 1, &
-&jj) - zsshp2_e(ji, jj)))
+              zcpx(ji, jj) = ABS((zsshp2_e(ji + 1, jj) + ht_0(ji + 1, jj) - zsshp2_e(ji, jj) - ht_0(ji, jj)) / (zsshp2_e(ji + 1, jj) - zsshp2_e(ji, jj)))
             ELSE
               zcpx(ji, jj) = 0._wp
             END IF
-            ll_tmp1 = MIN(zsshp2_e(ji, jj), zsshp2_e(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) .AND. MAX(zsshp2_e(ji, &
-&jj) + ht_0(ji, jj), zsshp2_e(ji, jj + 1) + ht_0(ji, jj + 1)) > rn_wdmin1 + rn_wdmin2
-            ll_tmp2 = (ABS(zsshp2_e(ji, jj) - zsshp2_e(ji, jj + 1)) > 1.E-12) .AND. (MAX(zsshp2_e(ji, jj), zsshp2_e(ji, jj + 1)) > &
-&MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) + rn_wdmin1 + rn_wdmin2)
+            ll_tmp1 = MIN(zsshp2_e(ji, jj), zsshp2_e(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) .AND. MAX(zsshp2_e(ji, jj) + ht_0(ji, jj), zsshp2_e(ji, jj + 1) + ht_0(ji, jj + 1)) > rn_wdmin1 + rn_wdmin2
+            ll_tmp2 = (ABS(zsshp2_e(ji, jj) - zsshp2_e(ji, jj + 1)) > 1.E-12) .AND. (MAX(zsshp2_e(ji, jj), zsshp2_e(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) + rn_wdmin1 + rn_wdmin2)
             IF (ll_tmp1) THEN
               zcpy(ji, jj) = 1.0_wp
             ELSE IF (ll_tmp2) THEN
-              zcpy(ji, jj) = ABS((zsshp2_e(ji, jj + 1) + ht_0(ji, jj + 1) - zsshp2_e(ji, jj) - ht_0(ji, jj)) / (zsshp2_e(ji, jj + &
-&1) - zsshp2_e(ji, jj)))
+              zcpy(ji, jj) = ABS((zsshp2_e(ji, jj + 1) + ht_0(ji, jj + 1) - zsshp2_e(ji, jj) - ht_0(ji, jj)) / (zsshp2_e(ji, jj + 1) - zsshp2_e(ji, jj)))
             ELSE
               zcpy(ji, jj) = 0._wp
             END IF
@@ -635,10 +621,8 @@ MODULE dynspg_ts
       IF (.NOT. ln_linssh .AND. .NOT. ln_dynadv_vec) THEN
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zx1 = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji + 1, jj) * zsshp2_e(ji &
-&+ 1, jj))
-            zy1 = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji, jj + 1) * zsshp2_e(ji, &
-&jj + 1))
+            zx1 = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji + 1, jj) * zsshp2_e(ji + 1, jj))
+            zy1 = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji, jj + 1) * zsshp2_e(ji, jj + 1))
             zhust_e(ji, jj) = hu_0(ji, jj) + zx1
             zhvst_e(ji, jj) = hv_0(ji, jj) + zy1
           END DO
@@ -650,10 +634,8 @@ MODULE dynspg_ts
           DO ji = 2, jpim1
             z1_hu = ssumask(ji, jj) / (zhup2_e(ji, jj) + 1._wp - ssumask(ji, jj))
             z1_hv = ssvmask(ji, jj) / (zhvp2_e(ji, jj) + 1._wp - ssvmask(ji, jj))
-            zu_trd(ji, jj) = + r1_4 * r1_e1e2u(ji, jj) * z1_hu * (e1e2t(ji + 1, jj) * zhtp2_e(ji + 1, jj) * ff_t(ji + 1, jj) * &
-&(va_e(ji + 1, jj) + va_e(ji + 1, jj - 1)) + e1e2t(ji, jj) * zhtp2_e(ji, jj) * ff_t(ji, jj) * (va_e(ji, jj) + va_e(ji, jj - 1)))
-            zv_trd(ji, jj) = - r1_4 * r1_e1e2v(ji, jj) * z1_hv * (e1e2t(ji, jj + 1) * zhtp2_e(ji, jj + 1) * ff_t(ji, jj + 1) * &
-&(ua_e(ji, jj + 1) + ua_e(ji - 1, jj + 1)) + e1e2t(ji, jj) * zhtp2_e(ji, jj) * ff_t(ji, jj) * (ua_e(ji, jj) + ua_e(ji - 1, jj)))
+            zu_trd(ji, jj) = + r1_4 * r1_e1e2u(ji, jj) * z1_hu * (e1e2t(ji + 1, jj) * zhtp2_e(ji + 1, jj) * ff_t(ji + 1, jj) * (va_e(ji + 1, jj) + va_e(ji + 1, jj - 1)) + e1e2t(ji, jj) * zhtp2_e(ji, jj) * ff_t(ji, jj) * (va_e(ji, jj) + va_e(ji, jj - 1)))
+            zv_trd(ji, jj) = - r1_4 * r1_e1e2v(ji, jj) * z1_hv * (e1e2t(ji, jj + 1) * zhtp2_e(ji, jj + 1) * ff_t(ji, jj + 1) * (ua_e(ji, jj + 1) + ua_e(ji - 1, jj + 1)) + e1e2t(ji, jj) * zhtp2_e(ji, jj) * ff_t(ji, jj) * (ua_e(ji, jj) + ua_e(ji - 1, jj)))
           END DO
         END DO
       CASE (np_ENE, np_MIX)
@@ -679,10 +661,8 @@ MODULE dynspg_ts
       CASE (np_EET, np_EEN)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zu_trd(ji, jj) = + r1_12 * r1_e1u(ji, jj) * (ftne(ji, jj) * zwy(ji, jj) + ftnw(ji + 1, jj) * zwy(ji + 1, jj) + &
-&ftse(ji, jj) * zwy(ji, jj - 1) + ftsw(ji + 1, jj) * zwy(ji + 1, jj - 1))
-            zv_trd(ji, jj) = - r1_12 * r1_e2v(ji, jj) * (ftsw(ji, jj + 1) * zwx(ji - 1, jj + 1) + ftse(ji, jj + 1) * zwx(ji, jj + &
-&1) + ftnw(ji, jj) * zwx(ji - 1, jj) + ftne(ji, jj) * zwx(ji, jj))
+            zu_trd(ji, jj) = + r1_12 * r1_e1u(ji, jj) * (ftne(ji, jj) * zwy(ji, jj) + ftnw(ji + 1, jj) * zwy(ji + 1, jj) + ftse(ji, jj) * zwy(ji, jj - 1) + ftsw(ji + 1, jj) * zwy(ji + 1, jj - 1))
+            zv_trd(ji, jj) = - r1_12 * r1_e2v(ji, jj) * (ftsw(ji, jj + 1) * zwx(ji - 1, jj + 1) + ftse(ji, jj + 1) * zwx(ji, jj + 1) + ftnw(ji, jj) * zwx(ji - 1, jj) + ftne(ji, jj) * zwx(ji, jj))
           END DO
         END DO
       END SELECT
@@ -737,10 +717,8 @@ MODULE dynspg_ts
             zhvra = hv_0(ji, jj) + zsshv_a(ji, jj)
             zhura = ssumask(ji, jj) / (zhura + 1._wp - ssumask(ji, jj))
             zhvra = ssvmask(ji, jj) / (zhvra + 1._wp - ssvmask(ji, jj))
-            ua_e(ji, jj) = (hu_e(ji, jj) * un_e(ji, jj) + rdtbt * (zhust_e(ji, jj) * zwx(ji, jj) + zhup2_e(ji, jj) * zu_trd(ji, &
-&jj) + hu_n(ji, jj) * zu_frc(ji, jj))) * zhura
-            va_e(ji, jj) = (hv_e(ji, jj) * vn_e(ji, jj) + rdtbt * (zhvst_e(ji, jj) * zwy(ji, jj) + zhvp2_e(ji, jj) * zv_trd(ji, &
-&jj) + hv_n(ji, jj) * zv_frc(ji, jj))) * zhvra
+            ua_e(ji, jj) = (hu_e(ji, jj) * un_e(ji, jj) + rdtbt * (zhust_e(ji, jj) * zwx(ji, jj) + zhup2_e(ji, jj) * zu_trd(ji, jj) + hu_n(ji, jj) * zu_frc(ji, jj))) * zhura
+            va_e(ji, jj) = (hv_e(ji, jj) * vn_e(ji, jj) + rdtbt * (zhvst_e(ji, jj) * zwy(ji, jj) + zhvp2_e(ji, jj) * zv_trd(ji, jj) + hv_n(ji, jj) * zv_frc(ji, jj))) * zhvra
           END DO
         END DO
       END IF
@@ -800,38 +778,50 @@ MODULE dynspg_ts
       vb2_b(:, :) = zwy(:, :)
     END IF
     IF (ln_dynadv_vec .OR. ln_linssh) THEN
+      !$OMP parallel default(shared), private(jk)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         ua(:, :, jk) = ua(:, :, jk) + (ua_b(:, :) - ub_b(:, :)) * r1_2dt_b
         va(:, :, jk) = va(:, :, jk) + (va_b(:, :) - vb_b(:, :)) * r1_2dt_b
       END DO
+      !$OMP end do
+      !$OMP end parallel
     ELSE
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
-          zsshu_a(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * ssha(ji, jj) + e1e2t(ji + 1, jj) * &
-&ssha(ji + 1, jj))
-          zsshv_a(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * ssha(ji, jj) + e1e2t(ji, jj + 1) * &
-&ssha(ji, jj + 1))
+          zsshu_a(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * ssha(ji, jj) + e1e2t(ji + 1, jj) * ssha(ji + 1, jj))
+          zsshv_a(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * ssha(ji, jj) + e1e2t(ji, jj + 1) * ssha(ji, jj + 1))
         END DO
       END DO
       CALL lbc_lnk_multi('dynspg_ts', zsshu_a, 'U', 1._wp, zsshv_a, 'V', 1._wp)
+      !$OMP parallel default(shared), private(jk)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         ua(:, :, jk) = ua(:, :, jk) + r1_hu_n(:, :) * (ua_b(:, :) - ub_b(:, :) * hu_b(:, :)) * r1_2dt_b
         va(:, :, jk) = va(:, :, jk) + r1_hv_n(:, :) * (va_b(:, :) - vb_b(:, :) * hv_b(:, :)) * r1_2dt_b
       END DO
+      !$OMP end do
+      !$OMP end parallel
       ua_b(:, :) = ua_b(:, :) / (hu_0(:, :) + zsshu_a(:, :) + 1._wp - ssumask(:, :))
       va_b(:, :) = va_b(:, :) / (hv_0(:, :) + zsshv_a(:, :) + 1._wp - ssvmask(:, :))
     END IF
+    !$OMP parallel default(shared), private(jk)
+    !$OMP do schedule(static)
     DO jk = 1, jpkm1
       un(:, :, jk) = (un(:, :, jk) + un_adv(:, :) * r1_hu_n(:, :) - un_b(:, :)) * umask(:, :, jk)
       vn(:, :, jk) = (vn(:, :, jk) + vn_adv(:, :) * r1_hv_n(:, :) - vn_b(:, :)) * vmask(:, :, jk)
     END DO
+    !$OMP end do
+    !$OMP end parallel
     IF (ln_wd_dl .AND. ln_wd_dl_bc) THEN
+      !$OMP parallel default(shared), private(jk)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
-        un(:, :, jk) = (un_adv(:, :) * r1_hu_n(:, :) + zuwdav2(:, :) * (un(:, :, jk) - un_adv(:, :) * r1_hu_n(:, :))) * umask(:, &
-&:, jk)
-        vn(:, :, jk) = (vn_adv(:, :) * r1_hv_n(:, :) + zvwdav2(:, :) * (vn(:, :, jk) - vn_adv(:, :) * r1_hv_n(:, :))) * vmask(:, &
-&:, jk)
+        un(:, :, jk) = (un_adv(:, :) * r1_hu_n(:, :) + zuwdav2(:, :) * (un(:, :, jk) - un_adv(:, :) * r1_hu_n(:, :))) * umask(:, :, jk)
+        vn(:, :, jk) = (vn_adv(:, :) * r1_hv_n(:, :) + zvwdav2(:, :) * (vn(:, :, jk) - vn_adv(:, :) * r1_hv_n(:, :))) * vmask(:, :, jk)
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END IF
     CALL iom_put("ubar", un_adv(:, :) * r1_hu_n(:, :))
     CALL iom_put("vbar", vn_adv(:, :) * r1_hv_n(:, :))

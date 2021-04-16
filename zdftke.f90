@@ -94,8 +94,7 @@ MODULE zdftke
         DO ji = 2, jpim1
           zmsku = (2. - umask(ji - 1, jj, mbkt(ji, jj)) * umask(ji, jj, mbkt(ji, jj)))
           zmskv = (2. - vmask(ji, jj - 1, mbkt(ji, jj)) * vmask(ji, jj, mbkt(ji, jj)))
-          zebot = - 0.001875_wp * rCdU_bot(ji, jj) * SQRT((zmsku * (ub(ji, jj, mbkt(ji, jj)) + ub(ji - 1, jj, mbkt(ji, jj)))) ** 2 &
-&+ (zmskv * (vb(ji, jj, mbkt(ji, jj)) + vb(ji, jj - 1, mbkt(ji, jj)))) ** 2)
+          zebot = - 0.001875_wp * rCdU_bot(ji, jj) * SQRT((zmsku * (ub(ji, jj, mbkt(ji, jj)) + ub(ji - 1, jj, mbkt(ji, jj)))) ** 2 + (zmskv * (vb(ji, jj, mbkt(ji, jj)) + vb(ji, jj - 1, mbkt(ji, jj)))) ** 2)
           en(ji, jj, mbkt(ji, jj) + 1) = MAX(zebot, rn_emin) * ssmask(ji, jj)
         END DO
       END DO
@@ -104,8 +103,7 @@ MODULE zdftke
           DO ji = 2, jpim1
             zmsku = (2. - umask(ji - 1, jj, mikt(ji, jj)) * umask(ji, jj, mikt(ji, jj)))
             zmskv = (2. - vmask(ji, jj - 1, mikt(ji, jj)) * vmask(ji, jj, mikt(ji, jj)))
-            zetop = - 0.001875_wp * rCdU_top(ji, jj) * SQRT((zmsku * (ub(ji, jj, mikt(ji, jj)) + ub(ji - 1, jj, mikt(ji, jj)))) ** &
-&2 + (zmskv * (vb(ji, jj, mikt(ji, jj)) + vb(ji, jj - 1, mikt(ji, jj)))) ** 2)
+            zetop = - 0.001875_wp * rCdU_top(ji, jj) * SQRT((zmsku * (ub(ji, jj, mikt(ji, jj)) + ub(ji - 1, jj, mikt(ji, jj)))) ** 2 + (zmskv * (vb(ji, jj, mikt(ji, jj)) + vb(ji, jj - 1, mikt(ji, jj)))) ** 2)
             en(ji, jj, mikt(ji, jj)) = MAX(zetop, rn_emin) * (1._wp - tmask(ji, jj, 1))
           END DO
         END DO
@@ -113,11 +111,17 @@ MODULE zdftke
     END IF
     IF (ln_lc) THEN
       zpelc(:, :, 1) = MAX(rn2b(:, :, 1), 0._wp) * pdepw(:, :, 1) * p_e3w(:, :, 1)
+      ! !$OMP parallel default(shared), private(jk)
+      ! !$OMP do schedule(static) ! CDe race condition
       DO jk = 2, jpk
         zpelc(:, :, jk) = zpelc(:, :, jk - 1) + MAX(rn2b(:, :, jk), 0._wp) * pdepw(:, :, jk) * p_e3w(:, :, jk)
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
       zcof = 0.5 * 0.016 * 0.016 / (zrhoa * zcdrag)
       imlc(:, :) = mbkt(:, :) + 1
+      ! !$OMP parallel default(shared), private(ji,jj,jk,zus)
+      ! !$OMP do schedule(static) ! CDe race condition on imlc?
       DO jk = jpkm1, 2, - 1
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -126,6 +130,8 @@ MODULE zdftke
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
       DO jj = 1, jpj
         DO ji = 1, jpi
           zhlc(ji, jj) = pdepw(ji, jj, imlc(ji, jj))
@@ -139,6 +145,8 @@ MODULE zdftke
           IF (zfr_i(ji, jj) < 0.) zfr_i(ji, jj) = 0.
         END DO
       END DO
+      !$OMP parallel default(shared), private(ji,jj,jk,zwlc)
+      !$OMP do schedule(static)
       DO jk = 2, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -151,8 +159,12 @@ MODULE zdftke
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END IF
     IF (nn_pdl == 1) THEN
+      !$OMP parallel default(shared), private(ji,jj,jk,zri)
+      !$OMP do schedule(static)
       DO jk = 2, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -161,7 +173,11 @@ MODULE zdftke
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END IF
+    !$OMP parallel default(shared), private(ji,jj,jk,zcof,zzd_lw,zzd_up)
+    !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -171,11 +187,13 @@ MODULE zdftke
           zd_up(ji, jj, jk) = zzd_up
           zd_lw(ji, jj, jk) = zzd_lw
           zdiag(ji, jj, jk) = 1._wp - zzd_lw - zzd_up + zfact2 * dissl(ji, jj, jk) * wmask(ji, jj, jk)
-          en(ji, jj, jk) = en(ji, jj, jk) + rdt * (p_sh2(ji, jj, jk) - p_avt(ji, jj, jk) * rn2(ji, jj, jk) + zfact3 * dissl(ji, &
-&jj, jk) * en(ji, jj, jk)) * wmask(ji, jj, jk)
+          en(ji, jj, jk) = en(ji, jj, jk) + rdt * (p_sh2(ji, jj, jk) - p_avt(ji, jj, jk) * rn2(ji, jj, jk) + zfact3 * dissl(ji, jj, jk) * en(ji, jj, jk)) * wmask(ji, jj, jk)
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
+    ! !$OMP do schedule(static) ! CDe race condition on zdiag
     DO jk = 3, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -183,11 +201,15 @@ MODULE zdftke
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         zd_lw(ji, jj, 2) = en(ji, jj, 2) - zd_lw(ji, jj, 2) * en(ji, jj, 1)
       END DO
     END DO
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = 3, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -195,11 +217,15 @@ MODULE zdftke
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         en(ji, jj, jpkm1) = zd_lw(ji, jj, jpkm1) / zdiag(ji, jj, jpkm1)
       END DO
     END DO
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = jpk - 2, 2, - 1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -207,6 +233,8 @@ MODULE zdftke
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -214,24 +242,30 @@ MODULE zdftke
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     IF (nn_etau == 1) THEN
+      !$OMP parallel default(shared), private(ji,jj,jk)
+      !$OMP do schedule(static)
       DO jk = 2, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            en(ji, jj, jk) = en(ji, jj, jk) + rn_efr * en(ji, jj, 1) * EXP(- pdepw(ji, jj, jk) / htau(ji, jj)) * MAX(0., 1._wp - &
-&rn_eice * fr_i(ji, jj)) * wmask(ji, jj, jk) * tmask(ji, jj, 1)
+            en(ji, jj, jk) = en(ji, jj, jk) + rn_efr * en(ji, jj, 1) * EXP(- pdepw(ji, jj, jk) / htau(ji, jj)) * MAX(0., 1._wp - rn_eice * fr_i(ji, jj)) * wmask(ji, jj, jk) * tmask(ji, jj, 1)
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     ELSE IF (nn_etau == 2) THEN
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           jk = nmln(ji, jj)
-          en(ji, jj, jk) = en(ji, jj, jk) + rn_efr * en(ji, jj, 1) * EXP(- pdepw(ji, jj, jk) / htau(ji, jj)) * MAX(0., 1._wp - &
-&rn_eice * fr_i(ji, jj)) * wmask(ji, jj, jk) * tmask(ji, jj, 1)
+          en(ji, jj, jk) = en(ji, jj, jk) + rn_efr * en(ji, jj, 1) * EXP(- pdepw(ji, jj, jk) / htau(ji, jj)) * MAX(0., 1._wp - rn_eice * fr_i(ji, jj)) * wmask(ji, jj, jk) * tmask(ji, jj, 1)
         END DO
       END DO
     ELSE IF (nn_etau == 3) THEN
+      !$OMP parallel default(shared), private(ji,jj,jk,zdif,ztau,ztx2,zty2)
+      !$OMP do schedule(static)
       DO jk = 2, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -240,11 +274,12 @@ MODULE zdftke
             ztau = 0.5_wp * SQRT(ztx2 * ztx2 + zty2 * zty2) * tmask(ji, jj, 1)
             zdif = taum(ji, jj) - ztau
             zdif = rhftau_scl * MAX(0._wp, zdif + rhftau_add)
-            en(ji, jj, jk) = en(ji, jj, jk) + zbbrau * zdif * EXP(- pdepw(ji, jj, jk) / htau(ji, jj)) * MAX(0., 1._wp - rn_eice * &
-&fr_i(ji, jj)) * wmask(ji, jj, jk) * tmask(ji, jj, 1)
+            en(ji, jj, jk) = en(ji, jj, jk) + zbbrau * zdif * EXP(- pdepw(ji, jj, jk) / htau(ji, jj)) * MAX(0., 1._wp - rn_eice * fr_i(ji, jj)) * wmask(ji, jj, jk) * tmask(ji, jj, 1)
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END IF
   END SUBROUTINE tke_tke
   SUBROUTINE tke_avn(pdepw, p_e3t, p_e3w, p_avm, p_avt)
@@ -269,6 +304,8 @@ MODULE zdftke
     ELSE
       zmxlm(:, :, 1) = rn_mxl0
     END IF
+    !$OMP parallel default(shared), private(ji,jj,jk,zrn2)
+    !$OMP do schedule(static)
     DO jk = 2, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -277,21 +314,28 @@ MODULE zdftke
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     zmxld(:, :, 1) = zmxlm(:, :, 1)
     zmxld(:, :, jpk) = rmxl_min
     SELECT CASE (nn_mxl)
     CASE (0)
+      !$OMP parallel default(shared), private(ji,jj,jk,zemxl)
+      !$OMP do schedule(static)
       DO jk = 2, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zemxl = MIN(pdepw(ji, jj, jk) - pdepw(ji, jj, mikt(ji, jj)), zmxlm(ji, jj, jk), pdepw(ji, jj, mbkt(ji, jj) + 1) - &
-&pdepw(ji, jj, jk))
+            zemxl = MIN(pdepw(ji, jj, jk) - pdepw(ji, jj, mikt(ji, jj)), zmxlm(ji, jj, jk), pdepw(ji, jj, mbkt(ji, jj) + 1) - pdepw(ji, jj, jk))
             zmxlm(ji, jj, jk) = zemxl * wmask(ji, jj, jk) + MIN(zmxlm(ji, jj, jk), p_e3w(ji, jj, jk)) * (1 - wmask(ji, jj, jk))
             zmxld(ji, jj, jk) = zemxl * wmask(ji, jj, jk) + MIN(zmxlm(ji, jj, jk), p_e3w(ji, jj, jk)) * (1 - wmask(ji, jj, jk))
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     CASE (1)
+      !$OMP parallel default(shared), private(ji,jj,jk,zemxl)
+      !$OMP do schedule(static)
       DO jk = 2, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -301,7 +345,11 @@ MODULE zdftke
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     CASE (2)
+      ! !$OMP parallel default(shared), private(ji,jj,jk,zemxl)
+      ! !$OMP do schedule(static) ! CDe race condition on zmxlm
       DO jk = 2, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -309,6 +357,8 @@ MODULE zdftke
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP do schedule(static)
       DO jk = jpkm1, 2, - 1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -318,7 +368,11 @@ MODULE zdftke
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
     CASE (3)
+      ! !$OMP parallel default(shared), private(ji,jj,jk,zemlm,zemlp)
+      ! !$OMP do schedule(static)
       DO jk = 2, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -326,6 +380,8 @@ MODULE zdftke
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP do schedule(static)
       DO jk = jpkm1, 2, - 1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -333,6 +389,8 @@ MODULE zdftke
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP do schedule(static)
       DO jk = 2, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -343,7 +401,11 @@ MODULE zdftke
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
     END SELECT
+    !$OMP parallel default(shared), private(ji,jj,jk,zav,zsqen)
+    !$OMP do schedule(static)
     DO jk = 1, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -355,7 +417,11 @@ MODULE zdftke
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     IF (nn_pdl == 1) THEN
+      !$OMP parallel default(shared), private(ji,jj,jk)
+      !$OMP do schedule(static)
       DO jk = 2, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -363,6 +429,8 @@ MODULE zdftke
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END IF
     IF (ln_ctl) THEN
       CALL prt_ctl(tab3d_1 = en, clinfo1 = ' tke  - e: ', tab3d_2 = p_avt, clinfo2 = ' t: ', kdim = jpk)
@@ -373,8 +441,7 @@ MODULE zdftke
     USE zdf_oce, ONLY: ln_zdfiwm
     INTEGER :: ji, jj, jk
     INTEGER :: ios
-    NAMELIST /namzdf_tke/ rn_ediff, rn_ediss, rn_ebb, rn_emin, rn_emin0, rn_bshear, nn_mxl, ln_mxl0, rn_mxl0, nn_pdl, ln_drg, &
-&ln_lc, rn_lc, nn_etau, nn_htau, rn_efr, rn_eice
+    NAMELIST /namzdf_tke/ rn_ediff, rn_ediss, rn_ebb, rn_emin, rn_emin0, rn_bshear, nn_mxl, ln_mxl0, rn_mxl0, nn_pdl, ln_drg, ln_lc, rn_lc, nn_etau, nn_htau, rn_efr, rn_eice
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, namzdf_tke, IOSTAT = ios, ERR = 901)
 901 IF (ios /= 0) CALL ctl_nam(ios, 'namzdf_tke in reference namelist', lwp)

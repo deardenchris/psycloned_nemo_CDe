@@ -50,8 +50,8 @@ MODULE diaptr
     IF (PRESENT(pvtr)) THEN
       IF (iom_use("zomsfglo")) THEN
         z3d(1, :, :) = ptr_sjk(pvtr(:, :, :))
-        ! !$OMP parallel default(shared), private(jk) ! CDe race condition?
-        ! !$OMP do schedule(static)
+        ! !$OMP parallel default(shared), private(jk)
+        ! !$OMP do schedule(static) ! CDe race condition
         DO jk = 2, jpkm1
           z3d(1, :, jk) = z3d(1, :, jk - 1) + z3d(1, :, jk)
         END DO
@@ -64,8 +64,8 @@ MODULE diaptr
         CALL iom_put(cl1, z3d * rc_sv)
         DO jn = 2, nptr
           z3d(1, :, :) = ptr_sjk(pvtr(:, :, :), btmsk(:, :, jn) * btm30(:, :))
-          ! !$OMP parallel default(shared), private(jk) ! CDe race condition?
-          ! !$OMP do schedule(static)
+          ! !$OMP parallel default(shared), private(jk)
+          ! !$OMP do schedule(static) ! CDe race condition
           DO jk = 2, jpkm1
             z3d(1, :, jk) = z3d(1, :, jk - 1) + z3d(1, :, jk)
           END DO
@@ -443,8 +443,7 @@ MODULE diaptr
     INTEGER :: dia_ptr_alloc
     INTEGER, DIMENSION(3) :: ierr
     ierr(:) = 0
-    ALLOCATE(btmsk(jpi, jpj, nptr), htr_adv(jpj, nptr), str_adv(jpj, nptr), htr_eiv(jpj, nptr), str_eiv(jpj, nptr), htr_ove(jpj, &
-&nptr), str_ove(jpj, nptr), htr_btr(jpj, nptr), str_btr(jpj, nptr), htr_ldf(jpj, nptr), str_ldf(jpj, nptr), STAT = ierr(1))
+    ALLOCATE(btmsk(jpi, jpj, nptr), htr_adv(jpj, nptr), str_adv(jpj, nptr), htr_eiv(jpj, nptr), str_eiv(jpj, nptr), htr_ove(jpj, nptr), str_ove(jpj, nptr), htr_btr(jpj, nptr), str_btr(jpj, nptr), htr_ldf(jpj, nptr), str_ldf(jpj, nptr), STAT = ierr(1))
     ALLOCATE(p_fval1d(jpj), p_fval2d(jpj, jpk), STAT = ierr(2))
     ALLOCATE(btm30(jpi, jpj), STAT = ierr(3))
     dia_ptr_alloc = MAXVAL(ierr)
@@ -460,6 +459,8 @@ MODULE diaptr
     ijpj = jpj
     p_fval(:) = 0._wp
     IF (PRESENT(pmsk)) THEN
+      ! !$OMP parallel default(shared), private(ji,jj,jk)
+      ! !$OMP do schedule(static) ! CDe race condition
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -467,7 +468,11 @@ MODULE diaptr
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
     ELSE
+      ! !$OMP parallel default(shared), private(ji,jj,jk)
+      ! !$OMP do schedule(static) ! CDe race condition
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -475,6 +480,8 @@ MODULE diaptr
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
     END IF
     CALL mpp_sum('diaptr', p_fval, ijpj, ncomm_znl)
   END FUNCTION ptr_sj_3d
@@ -515,6 +522,8 @@ MODULE diaptr
     p_fval => p_fval2d
     p_fval(:, :) = 0._wp
     IF (PRESENT(pmsk)) THEN
+      !$OMP parallel default(shared), private(ji,jj,jk)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = nldi, nlei
@@ -522,7 +531,11 @@ MODULE diaptr
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     ELSE
+      !$OMP parallel default(shared), private(ji,jj,jk)
+      !$OMP do schedule(static)
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = nldi, nlei
@@ -530,6 +543,8 @@ MODULE diaptr
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END IF
     ijpjjpk = jpj * jpk
     ish(1) = ijpjjpk

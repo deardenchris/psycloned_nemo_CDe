@@ -37,8 +37,7 @@ MODULE zdfphy
   SUBROUTINE zdf_phy_init
     INTEGER :: jk
     INTEGER :: ioptio, ios
-    NAMELIST /namzdf/ ln_zdfcst, ln_zdfric, ln_zdftke, ln_zdfgls, ln_zdfosm, ln_zdfevd, nn_evdm, rn_evd, ln_zdfnpc, nn_npc, &
-&nn_npcp, ln_zdfddm, rn_avts, rn_hsbfr, ln_zdfswm, ln_zdfiwm, ln_zdftmx, ln_zad_Aimp, rn_avm0, rn_avt0, nn_avb, nn_havtb
+    NAMELIST /namzdf/ ln_zdfcst, ln_zdfric, ln_zdftke, ln_zdfgls, ln_zdfosm, ln_zdfevd, nn_evdm, rn_evd, ln_zdfnpc, nn_npc, nn_npcp, ln_zdfddm, rn_avts, rn_hsbfr, ln_zdfswm, ln_zdfiwm, ln_zdftmx, ln_zad_Aimp, rn_avm0, rn_avt0, nn_avb, nn_havtb
     IF (lwp) THEN
       WRITE(numout, FMT = *)
       WRITE(numout, FMT = *) 'zdf_phy_init: ocean vertical physics'
@@ -197,9 +196,13 @@ MODULE zdfphy
     avt(:, :, 2 : jpkm1) = avt_k(:, :, 2 : jpkm1)
     avm(:, :, 2 : jpkm1) = avm_k(:, :, 2 : jpkm1)
     IF (ln_rnf_mouth) THEN
+      !$OMP parallel default(shared), private(jk)
+      !$OMP do schedule(static)
       DO jk = 2, nkrnf
         avt(:, :, jk) = avt(:, :, jk) + 2._wp * rn_avt_rnf * rnfmsk(:, :) * wmask(:, :, jk)
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END IF
     IF (ln_zdfevd) CALL zdf_evd(kt, avm, avt)
     IF (ln_zdfddm) THEN

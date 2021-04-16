@@ -46,16 +46,14 @@ MODULE traadv_fct
       IF (lwp) WRITE(numout, FMT = *) 'tra_adv_fct : FCT advection scheme on ', cdtype
       IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~'
       ALLOCATE(zbetup(jpi, jpj, jpk), zbetdo(jpi, jpj, jpk), zbup(jpi, jpj, jpk), zbdo(jpi, jpj, jpk))
-      ALLOCATE(zwi(jpi, jpj, jpk), zwx(jpi, jpj, jpk), zwy(jpi, jpj, jpk), zwz(jpi, jpj, jpk), ztu(jpi, jpj, jpk), ztv(jpi, jpj, &
-&jpk), zltu(jpi, jpj, jpk), zltv(jpi, jpj, jpk), ztw(jpi, jpj, jpk))
+      ALLOCATE(zwi(jpi, jpj, jpk), zwx(jpi, jpj, jpk), zwy(jpi, jpj, jpk), zwz(jpi, jpj, jpk), ztu(jpi, jpj, jpk), ztv(jpi, jpj, jpk), zltu(jpi, jpj, jpk), zltv(jpi, jpj, jpk), ztw(jpi, jpj, jpk))
     END IF
     l_trd = .FALSE.
     l_hst = .FALSE.
     l_ptr = .FALSE.
     IF ((cdtype == 'TRA' .AND. l_trdtra) .OR. (cdtype == 'TRC' .AND. l_trdtrc)) l_trd = .TRUE.
     IF (cdtype == 'TRA' .AND. ln_diaptr) l_ptr = .TRUE.
-    IF (cdtype == 'TRA' .AND. (iom_use("uadv_heattr") .OR. iom_use("vadv_heattr") .OR. iom_use("uadv_salttr") .OR. &
-&iom_use("vadv_salttr"))) l_hst = .TRUE.
+    IF (cdtype == 'TRA' .AND. (iom_use("uadv_heattr") .OR. iom_use("vadv_heattr") .OR. iom_use("uadv_salttr") .OR. iom_use("vadv_salttr"))) l_hst = .TRUE.
     IF (l_trd .OR. l_hst) THEN
       ALLOCATE(ztrdx(jpi, jpj, jpk), ztrdy(jpi, jpj, jpk), ztrdz(jpi, jpj, jpk))
       ztrdx(:, :, :) = 0._wp
@@ -115,8 +113,7 @@ MODULE traadv_fct
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            ztra = - (zwx(ji, jj, jk) - zwx(ji - 1, jj, jk) + zwy(ji, jj, jk) - zwy(ji, jj - 1, jk) + zwz(ji, jj, jk) - zwz(ji, &
-&jj, jk + 1)) * r1_e1e2t(ji, jj)
+            ztra = - (zwx(ji, jj, jk) - zwx(ji - 1, jj, jk) + zwy(ji, jj, jk) - zwy(ji, jj - 1, jk) + zwz(ji, jj, jk) - zwz(ji, jj, jk + 1)) * r1_e1e2t(ji, jj)
             pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) + ztra / e3t_n(ji, jj, jk) * tmask(ji, jj, jk)
             zwi(ji, jj, jk) = (e3t_b(ji, jj, jk) * ptb(ji, jj, jk, jn) + p2dt * ztra) / e3t_a(ji, jj, jk) * tmask(ji, jj, jk)
           END DO
@@ -147,8 +144,8 @@ MODULE traadv_fct
       CASE (4)
         zltu(:, :, jpk) = 0._wp
         zltv(:, :, jpk) = 0._wp
-        !$OMP parallel default(shared), private(ji,jj,jk)
-        !$OMP do schedule(static)
+        ! !$OMP parallel default(shared), private(ji,jj,jk)
+        ! !$OMP do schedule(static) ! CDe race condition on zltu and v?
         DO jk = 1, jpkm1
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
@@ -163,8 +160,8 @@ MODULE traadv_fct
             END DO
           END DO
         END DO
-        !$OMP end do
-        !$OMP end parallel
+        ! !$OMP end do
+        ! !$OMP end parallel
         CALL lbc_lnk_multi('traadv_fct', zltu, 'T', 1., zltv, 'T', 1.)
         !$OMP parallel default(shared), private(ji,jj,jk,zc2t_u,zc2t_v)
         !$OMP do schedule(static)
@@ -220,8 +217,7 @@ MODULE traadv_fct
         DO jk = 2, jpkm1
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
-              zwz(ji, jj, jk) = (pwn(ji, jj, jk) * 0.5_wp * (ptn(ji, jj, jk, jn) + ptn(ji, jj, jk - 1, jn)) - zwz(ji, jj, jk)) * &
-&wmask(ji, jj, jk)
+              zwz(ji, jj, jk) = (pwn(ji, jj, jk) * 0.5_wp * (ptn(ji, jj, jk, jn) + ptn(ji, jj, jk - 1, jn)) - zwz(ji, jj, jk)) * wmask(ji, jj, jk)
             END DO
           END DO
         END DO
@@ -251,8 +247,7 @@ MODULE traadv_fct
       DO jk = 1, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (zwx(ji, jj, jk) - zwx(ji - 1, jj, jk) + zwy(ji, jj, jk) - zwy(ji, jj - 1, &
-&jk) + zwz(ji, jj, jk) - zwz(ji, jj, jk + 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
+            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (zwx(ji, jj, jk) - zwx(ji - 1, jj, jk) + zwy(ji, jj, jk) - zwy(ji, jj - 1, jk) + zwz(ji, jj, jk) - zwz(ji, jj, jk + 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
           END DO
         END DO
       END DO
@@ -295,25 +290,27 @@ MODULE traadv_fct
     zbetdo(:, :, :) = 0._wp
     zbup = MAX(pbef * tmask - zbig * (1._wp - tmask), paft * tmask - zbig * (1._wp - tmask))
     zbdo = MIN(pbef * tmask + zbig * (1._wp - tmask), paft * tmask + zbig * (1._wp - tmask))
+    !$OMP parallel default(shared), private(ikm1,ji,jj,jk,zbt,zdo,zneg,zpos,zup)
+    !$OMP do schedule(static)
     DO jk = 1, jpkm1
       ikm1 = MAX(jk - 1, 1)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          zup = MAX(zbup(ji, jj, jk), zbup(ji - 1, jj, jk), zbup(ji + 1, jj, jk), zbup(ji, jj - 1, jk), zbup(ji, jj + 1, jk), &
-&zbup(ji, jj, ikm1), zbup(ji, jj, jk + 1))
-          zdo = MIN(zbdo(ji, jj, jk), zbdo(ji - 1, jj, jk), zbdo(ji + 1, jj, jk), zbdo(ji, jj - 1, jk), zbdo(ji, jj + 1, jk), &
-&zbdo(ji, jj, ikm1), zbdo(ji, jj, jk + 1))
-          zpos = MAX(0., paa(ji - 1, jj, jk)) - MIN(0., paa(ji, jj, jk)) + MAX(0., pbb(ji, jj - 1, jk)) - MIN(0., pbb(ji, jj, jk)) &
-&+ MAX(0., pcc(ji, jj, jk + 1)) - MIN(0., pcc(ji, jj, jk))
-          zneg = MAX(0., paa(ji, jj, jk)) - MIN(0., paa(ji - 1, jj, jk)) + MAX(0., pbb(ji, jj, jk)) - MIN(0., pbb(ji, jj - 1, jk)) &
-&+ MAX(0., pcc(ji, jj, jk)) - MIN(0., pcc(ji, jj, jk + 1))
+          zup = MAX(zbup(ji, jj, jk), zbup(ji - 1, jj, jk), zbup(ji + 1, jj, jk), zbup(ji, jj - 1, jk), zbup(ji, jj + 1, jk), zbup(ji, jj, ikm1), zbup(ji, jj, jk + 1))
+          zdo = MIN(zbdo(ji, jj, jk), zbdo(ji - 1, jj, jk), zbdo(ji + 1, jj, jk), zbdo(ji, jj - 1, jk), zbdo(ji, jj + 1, jk), zbdo(ji, jj, ikm1), zbdo(ji, jj, jk + 1))
+          zpos = MAX(0., paa(ji - 1, jj, jk)) - MIN(0., paa(ji, jj, jk)) + MAX(0., pbb(ji, jj - 1, jk)) - MIN(0., pbb(ji, jj, jk)) + MAX(0., pcc(ji, jj, jk + 1)) - MIN(0., pcc(ji, jj, jk))
+          zneg = MAX(0., paa(ji, jj, jk)) - MIN(0., paa(ji - 1, jj, jk)) + MAX(0., pbb(ji, jj, jk)) - MIN(0., pbb(ji, jj - 1, jk)) + MAX(0., pcc(ji, jj, jk)) - MIN(0., pcc(ji, jj, jk + 1))
           zbt = e1e2t(ji, jj) * e3t_n(ji, jj, jk) / p2dt
           zbetup(ji, jj, jk) = (zup - paft(ji, jj, jk)) / (zpos + zrtrn) * zbt
           zbetdo(ji, jj, jk) = (paft(ji, jj, jk) - zdo) / (zneg + zrtrn) * zbt
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     CALL lbc_lnk_multi('traadv_fct', zbetup, 'T', 1., zbetdo, 'T', 1.)
+    !$OMP parallel default(shared), private(ji,jj,jk,za,zau,zav,zb,zbu,zbv,zc,zcu,zcv)
+    !$OMP do schedule(static)
     DO jk = 1, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -332,6 +329,8 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     CALL lbc_lnk_multi('traadv_fct', paa, 'U', - 1., pbb, 'V', - 1.)
   END SUBROUTINE nonosc
   SUBROUTINE interp_4th_cpt_org(pt_in, pt_out)
@@ -339,6 +338,8 @@ MODULE traadv_fct
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk), INTENT(OUT) :: pt_out
     INTEGER :: ji, jj, jk
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zwd, zwi, zws, zwrm, zwt
+    !$OMP parallel default(shared), private(ji,jj,jk)
+    !$OMP do schedule(static)
     DO jk = 3, jpkm1
       DO jj = 1, jpj
         DO ji = 1, jpi
@@ -355,6 +356,8 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     jk = 2
     DO jj = 1, jpj
       DO ji = 1, jpi
@@ -369,6 +372,8 @@ MODULE traadv_fct
         zwt(ji, jj, 2) = zwd(ji, jj, 2)
       END DO
     END DO
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = 3, jpkm1
       DO jj = 1, jpj
         DO ji = 1, jpi
@@ -376,11 +381,15 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 1, jpj
       DO ji = 1, jpi
         pt_out(ji, jj, 2) = zwrm(ji, jj, 2)
       END DO
     END DO
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = 3, jpkm1
       DO jj = 1, jpj
         DO ji = 1, jpi
@@ -388,11 +397,15 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 1, jpj
       DO ji = 1, jpi
         pt_out(ji, jj, jpkm1) = pt_out(ji, jj, jpkm1) / zwt(ji, jj, jpkm1)
       END DO
     END DO
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = jpk - 2, 2, - 1
       DO jj = 1, jpj
         DO ji = 1, jpi
@@ -400,6 +413,8 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
   END SUBROUTINE interp_4th_cpt_org
   SUBROUTINE interp_4th_cpt(pt_in, pt_out)
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk), INTENT(IN) :: pt_in
@@ -407,6 +422,8 @@ MODULE traadv_fct
     INTEGER :: ji, jj, jk
     INTEGER :: ikt, ikb
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zwd, zwi, zws, zwrm, zwt
+    !$OMP parallel default(shared), private(ji,jj,jk)
+    !$OMP do schedule(static)
     DO jk = 3, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -417,6 +434,8 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
     IF (ln_isfcav) THEN
       zwd(:, :, 2) = 1._wp
       zwi(:, :, 2) = 0._wp
@@ -442,6 +461,8 @@ MODULE traadv_fct
         zwt(ji, jj, 2) = zwd(ji, jj, 2)
       END DO
     END DO
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = 3, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -449,11 +470,15 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         pt_out(ji, jj, 2) = zwrm(ji, jj, 2)
       END DO
     END DO
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = 3, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -461,11 +486,15 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         pt_out(ji, jj, jpkm1) = pt_out(ji, jj, jpkm1) / zwt(ji, jj, jpkm1)
       END DO
     END DO
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = jpk - 2, 2, - 1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -473,6 +502,8 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
   END SUBROUTINE interp_4th_cpt
   SUBROUTINE tridia_solver(pD, pU, pL, pRHS, pt_out, klev)
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(IN) :: pD, pU, PL
@@ -488,6 +519,8 @@ MODULE traadv_fct
         zwt(ji, jj, kstart) = pD(ji, jj, kstart)
       END DO
     END DO
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = kstart + 1, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -495,11 +528,15 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         pt_out(ji, jj, kstart) = pRHS(ji, jj, kstart)
       END DO
     END DO
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = kstart + 1, jpkm1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -507,11 +544,15 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         pt_out(ji, jj, jpkm1) = pt_out(ji, jj, jpkm1) / zwt(ji, jj, jpkm1)
       END DO
     END DO
+    ! !$OMP parallel default(shared), private(ji,jj,jk)
+    ! !$OMP do schedule(static) ! CDe race condition
     DO jk = jpk - 2, kstart, - 1
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
@@ -519,5 +560,7 @@ MODULE traadv_fct
         END DO
       END DO
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
   END SUBROUTINE tridia_solver
 END MODULE traadv_fct

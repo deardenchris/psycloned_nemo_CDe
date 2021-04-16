@@ -61,8 +61,8 @@ MODULE icevar
       tm_i(:, :) = 0._wp
       tm_s(:, :) = 0._wp
       DO jl = 1, jpl
-        ! !$OMP parallel default(shared), private(jk) ! CDe race condition??
-        ! !$OMP do schedule(static)
+        ! !$OMP parallel default(shared), private(jk)
+        ! !$OMP do schedule(static) ! CDe race condition 
         DO jk = 1, nlay_i
           tm_i(:, :) = tm_i(:, :) + r1_nlay_i * t_i(:, :, jk, jl) * v_i(:, :, jl) * z1_vt_i(:, :)
         END DO
@@ -126,6 +126,8 @@ MODULE icevar
     CALL ice_var_salprof
     zlay_i = REAL(nlay_i, wp)
     DO jl = 1, jpl
+      !$OMP parallel default(shared), private(ji,jj,jk,zbbb,zccc,ze_i,ztmelts)
+      !$OMP do schedule(static)
       DO jk = 1, nlay_i
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -141,16 +143,21 @@ MODULE icevar
           END DO
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END DO
     zlay_s = REAL(nlay_s, wp)
+    ! !$OMP parallel default(shared), private(jk,widx1_4,widx2_4,widx3_3)
+    ! !$OMP do schedule(static)
     DO jk = 1, nlay_s
       WHERE (v_s(:, :, :) > epsi20)
-        t_s(:, :, jk, :) = rt0 + MAX(- 100._wp, MIN(r1_rcpi * (- r1_rhos * (e_s(:, :, jk, :) / v_s(:, :, :) * zlay_s) + rLfus), &
-&0._wp))
+        t_s(:, :, jk, :) = rt0 + MAX(- 100._wp, MIN(r1_rcpi * (- r1_rhos * (e_s(:, :, jk, :) / v_s(:, :, :) * zlay_s) + rLfus), 0._wp))
       ELSEWHERE
         t_s(:, :, jk, :) = rt0
       END WHERE
     END DO
+    ! !$OMP end do
+    ! !$OMP end parallel
     vt_i(:, :) = SUM(v_i, dim = 3)
     vt_s(:, :) = SUM(v_s, dim = 3)
     at_i(:, :) = SUM(a_i, dim = 3)
@@ -175,9 +182,13 @@ MODULE icevar
     CASE (2)
       ALLOCATE(z_slope_s(jpi, jpj, jpl), zalpha(jpi, jpj, jpl))
       DO jl = 1, jpl
+        !$OMP parallel default(shared), private(jk)
+        !$OMP do schedule(static)
         DO jk = 1, nlay_i
           sz_i(:, :, jk, jl) = s_i(:, :, jl)
         END DO
+        !$OMP end do
+        !$OMP end parallel
       END DO
       WHERE (h_i(:, :, :) > epsi20)
         z_slope_s(:, :, :) = 2._wp * s_i(:, :, :) / h_i(:, :, :)
@@ -194,6 +205,8 @@ MODULE icevar
         END DO
       END DO
       DO jl = 1, jpl
+        !$OMP parallel default(shared), private(ji,jj,jk,zs,zs0)
+        !$OMP do schedule(static)
         DO jk = 1, nlay_i
           DO jj = 1, jpj
             DO ji = 1, jpi
@@ -203,15 +216,21 @@ MODULE icevar
             END DO
           END DO
         END DO
+        !$OMP end do
+        !$OMP end parallel
       END DO
       DEALLOCATE(z_slope_s, zalpha)
     CASE (3)
       s_i(:, :, :) = 2.30_wp
       DO jl = 1, jpl
+        !$OMP parallel default(shared), private(jk,zargtemp)
+        !$OMP do schedule(static)
         DO jk = 1, nlay_i
           zargtemp = (REAL(jk, wp) - 0.5_wp) * r1_nlay_i
           sz_i(:, :, jk, jl) = 1.6_wp * (1._wp - COS(rpi * zargtemp ** (0.407_wp / (0.573_wp + zargtemp))))
         END DO
+        !$OMP end do
+        !$OMP end parallel
       END DO
     END SELECT
   END SUBROUTINE ice_var_salprof
@@ -237,6 +256,8 @@ MODULE icevar
         zalpha(ji) = MAX(0._wp, MIN((zsi1 - s_i_1d(ji)) * z1_dS, 1._wp))
         IF (2._wp * s_i_1d(ji) >= sss_1d(ji)) zalpha(ji) = 0._wp
       END DO
+      !$OMP parallel default(shared), private(ji,jk,zs,zs0)
+      !$OMP do schedule(static)
       DO jk = 1, nlay_i
         DO ji = 1, npti
           zs0 = z_slope_s(ji) * (REAL(jk, wp) - 0.5_wp) * h_i_1d(ji) * r1_nlay_i
@@ -244,9 +265,13 @@ MODULE icevar
           sz_i_1d(ji, jk) = MIN(rn_simax, MAX(zs, rn_simin))
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
       DEALLOCATE(z_slope_s, zalpha)
     CASE (3)
       s_i_1d(1 : npti) = 2.30_wp
+      !$OMP parallel default(shared), private(ji,jk,zargtemp,zsal)
+      !$OMP do schedule(static)
       DO jk = 1, nlay_i
         zargtemp = (REAL(jk, wp) - 0.5_wp) * r1_nlay_i
         zsal = 1.6_wp * (1._wp - COS(rpi * zargtemp ** (0.407_wp / (0.573_wp + zargtemp))))
@@ -254,6 +279,8 @@ MODULE icevar
           sz_i_1d(ji, jk) = zsal
         END DO
       END DO
+      !$OMP end do
+      !$OMP end parallel
     END SELECT
   END SUBROUTINE ice_var_salprof1d
   SUBROUTINE ice_var_zapsmall
@@ -270,6 +297,8 @@ MODULE icevar
       ELSEWHERE
         zswitch(:, :) = 1._wp
       END WHERE
+      ! !$OMP parallel default(shared), private(ji,jj,jk)
+      ! !$OMP do schedule(static) ! CDe race condition on hfx_res
       DO jk = 1, nlay_i
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -279,6 +308,8 @@ MODULE icevar
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP do schedule(static)
       DO jk = 1, nlay_s
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -288,6 +319,8 @@ MODULE icevar
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
       DO jj = 1, jpj
         DO ji = 1, jpi
           sfx_res(ji, jj) = sfx_res(ji, jj) + (1._wp - zswitch(ji, jj)) * sv_i(ji, jj, jl) * rhoi * r1_rdtice
@@ -327,6 +360,8 @@ MODULE icevar
     z1_dt = 1._wp / pdt
     DO jl = 1, jpl
       WHERE (pv_i(:, :, :) <= 0._wp) pa_i(:, :, :) = 0._wp
+      ! !$OMP parallel default(shared), private(ji,jj,jk)
+      ! !$OMP do schedule(static) ! CDe race condition on hfx_res
       DO jk = 1, nlay_i
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -337,6 +372,8 @@ MODULE icevar
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP do schedule(static)
       DO jk = 1, nlay_s
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -347,6 +384,8 @@ MODULE icevar
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
       DO jj = 1, jpj
         DO ji = 1, jpi
           IF (pv_i(ji, jj, jl) < 0._wp .OR. pa_i(ji, jj, jl) <= 0._wp) THEN
@@ -544,11 +583,15 @@ MODULE icevar
     INTEGER :: ji, jj, jk, jl
     bv_i(:, :, :) = 0._wp
     DO jl = 1, jpl
+      ! !$OMP parallel default(shared), private(jk,widx1,widx2)
+      ! !$OMP do schedule(static)
       DO jk = 1, nlay_i
         WHERE (t_i(:, :, jk, jl) < rt0 - epsi10)
           bv_i(:, :, jl) = bv_i(:, :, jl) - rTmlt * sz_i(:, :, jk, jl) * r1_nlay_i / (t_i(:, :, jk, jl) - rt0)
         END WHERE
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
     END DO
     WHERE (vt_i(:, :) > epsi20)
       bvm_i(:, :) = SUM(bv_i(:, :, :) * v_i(:, :, :), dim = 3) / vt_i(:, :)
@@ -559,19 +602,24 @@ MODULE icevar
   SUBROUTINE ice_var_enthalpy
     INTEGER :: ji, jk
     REAL(KIND = wp) :: ztmelts
+    !$OMP parallel default(shared), private(ji,jk,ztmelts)
+    !$OMP do schedule(static)
     DO jk = 1, nlay_i
       DO ji = 1, npti
         ztmelts = - rTmlt * sz_i_1d(ji, jk)
         t_i_1d(ji, jk) = MIN(t_i_1d(ji, jk), ztmelts + rt0)
-        e_i_1d(ji, jk) = rhoi * (rcpi * (ztmelts - (t_i_1d(ji, jk) - rt0)) + rLfus * (1._wp - ztmelts / (t_i_1d(ji, jk) - rt0)) - &
-&rcp * ztmelts)
+        e_i_1d(ji, jk) = rhoi * (rcpi * (ztmelts - (t_i_1d(ji, jk) - rt0)) + rLfus * (1._wp - ztmelts / (t_i_1d(ji, jk) - rt0)) - rcp * ztmelts)
       END DO
     END DO
+    !$OMP end do
+    !$OMP do schedule(static)
     DO jk = 1, nlay_s
       DO ji = 1, npti
         e_s_1d(ji, jk) = rhos * (rcpi * (rt0 - t_s_1d(ji, jk)) + rLfus)
       END DO
     END DO
+    !$OMP end do
+    !$OMP end parallel
   END SUBROUTINE ice_var_enthalpy
   FUNCTION ice_var_sshdyn(pssh, psnwice_mass, psnwice_mass_b)
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: pssh

@@ -45,10 +45,8 @@ MODULE trazdf
       !$OMP parallel default(shared), private(jk)
       !$OMP do schedule(static)
       DO jk = 1, jpkm1
-        ztrdt(:, :, jk) = ((tsa(:, :, jk, jp_tem) * e3t_a(:, :, jk) - tsb(:, :, jk, jp_tem) * e3t_b(:, :, jk)) / (e3t_n(:, :, jk) &
-&* r2dt)) - ztrdt(:, :, jk)
-        ztrds(:, :, jk) = ((tsa(:, :, jk, jp_sal) * e3t_a(:, :, jk) - tsb(:, :, jk, jp_sal) * e3t_b(:, :, jk)) / (e3t_n(:, :, jk) &
-&* r2dt)) - ztrds(:, :, jk)
+        ztrdt(:, :, jk) = ((tsa(:, :, jk, jp_tem) * e3t_a(:, :, jk) - tsb(:, :, jk, jp_tem) * e3t_b(:, :, jk)) / (e3t_n(:, :, jk) * r2dt)) - ztrdt(:, :, jk)
+        ztrds(:, :, jk) = ((tsa(:, :, jk, jp_sal) * e3t_a(:, :, jk) - tsb(:, :, jk, jp_sal) * e3t_b(:, :, jk)) / (e3t_n(:, :, jk) * r2dt)) - ztrds(:, :, jk)
       END DO
       !$OMP end do
       !$OMP end parallel
@@ -57,8 +55,7 @@ MODULE trazdf
       CALL trd_tra(kt, 'TRA', jp_sal, jptra_zdf, ztrds)
       DEALLOCATE(ztrdt, ztrds)
     END IF
-    IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsa(:, :, :, jp_tem), clinfo1 = ' zdf  - Ta: ', mask1 = tmask, tab3d_2 = tsa(:, :, :, &
-&jp_sal), clinfo2 = ' Sa: ', mask2 = tmask, clinfo3 = 'tra')
+    IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsa(:, :, :, jp_tem), clinfo1 = ' zdf  - Ta: ', mask1 = tmask, tab3d_2 = tsa(:, :, :, jp_sal), clinfo2 = ' Sa: ', mask2 = tmask, clinfo3 = 'tra')
     IF (ln_timing) CALL timing_stop('tra_zdf')
   END SUBROUTINE tra_zdf
   SUBROUTINE tra_zdf_imp(kt, kit000, cdtype, p2dt, ptb, pta, kjpt)
@@ -82,6 +79,8 @@ MODULE trazdf
         zwt(:, :, 1) = 0._wp
         IF (l_ldfslp) THEN
           IF (ln_traldf_msc) THEN
+            !$OMP parallel default(shared), private(ji,jj,jk)
+            !$OMP do schedule(static)
             DO jk = 2, jpkm1
               DO jj = 2, jpjm1
                 DO ji = 2, jpim1
@@ -89,7 +88,11 @@ MODULE trazdf
                 END DO
               END DO
             END DO
+            !$OMP end do
+            !$OMP end parallel
           ELSE
+            !$OMP parallel default(shared), private(ji,jj,jk)
+            !$OMP do schedule(static)
             DO jk = 2, jpkm1
               DO jj = 2, jpjm1
                 DO ji = 2, jpim1
@@ -97,22 +100,29 @@ MODULE trazdf
                 END DO
               END DO
             END DO
+            !$OMP end do
+            !$OMP end parallel
           END IF
         END IF
         IF (ln_zad_Aimp) THEN
+          !$OMP parallel default(shared), private(ji,jj,jk,zzwi,zzws)
+          !$OMP do schedule(static)
           DO jk = 1, jpkm1
             DO jj = 2, jpjm1
               DO ji = 2, jpim1
                 zzwi = - p2dt * zwt(ji, jj, jk) / e3w_n(ji, jj, jk)
                 zzws = - p2dt * zwt(ji, jj, jk + 1) / e3w_n(ji, jj, jk + 1)
-                zwd(ji, jj, jk) = e3t_a(ji, jj, jk) - zzwi - zzws + p2dt * (MAX(wi(ji, jj, jk), 0._wp) - MIN(wi(ji, jj, jk + 1), &
-&0._wp))
+                zwd(ji, jj, jk) = e3t_a(ji, jj, jk) - zzwi - zzws + p2dt * (MAX(wi(ji, jj, jk), 0._wp) - MIN(wi(ji, jj, jk + 1), 0._wp))
                 zwi(ji, jj, jk) = zzwi + p2dt * MIN(wi(ji, jj, jk), 0._wp)
                 zws(ji, jj, jk) = zzws - p2dt * MAX(wi(ji, jj, jk + 1), 0._wp)
               END DO
             END DO
           END DO
+          !$OMP end do
+          !$OMP end parallel
         ELSE
+          !$OMP parallel default(shared), private(ji,jj,jk)
+          !$OMP do schedule(static)
           DO jk = 1, jpkm1
             DO jj = 2, jpjm1
               DO ji = 2, jpim1
@@ -122,12 +132,16 @@ MODULE trazdf
               END DO
             END DO
           END DO
+          !$OMP end do
+          !$OMP end parallel
         END IF
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zwt(ji, jj, 1) = zwd(ji, jj, 1)
           END DO
         END DO
+        ! !$OMP parallel default(shared), private(ji,jj,jk)
+        ! !$OMP do schedule(static) ! CDe race condition
         DO jk = 2, jpkm1
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
@@ -135,12 +149,16 @@ MODULE trazdf
             END DO
           END DO
         END DO
+        ! !$OMP end do
+        ! !$OMP end parallel
       END IF
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           pta(ji, jj, 1, jn) = e3t_b(ji, jj, 1) * ptb(ji, jj, 1, jn) + p2dt * e3t_n(ji, jj, 1) * pta(ji, jj, 1, jn)
         END DO
       END DO
+      ! !$OMP parallel default(shared), private(ji,jj,jk,zrhs)
+      ! !$OMP do schedule(static)
       DO jk = 2, jpkm1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
@@ -149,19 +167,24 @@ MODULE trazdf
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           pta(ji, jj, jpkm1, jn) = pta(ji, jj, jpkm1, jn) / zwt(ji, jj, jpkm1) * tmask(ji, jj, jpkm1)
         END DO
       END DO
+      ! !$OMP parallel default(shared), private(ji,jj,jk)
+      ! !$OMP do schedule(static)
       DO jk = jpk - 2, 1, - 1
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            pta(ji, jj, jk, jn) = (pta(ji, jj, jk, jn) - zws(ji, jj, jk) * pta(ji, jj, jk + 1, jn)) / zwt(ji, jj, jk) * tmask(ji, &
-&jj, jk)
+            pta(ji, jj, jk, jn) = (pta(ji, jj, jk, jn) - zws(ji, jj, jk) * pta(ji, jj, jk + 1, jn)) / zwt(ji, jj, jk) * tmask(ji, jj, jk)
           END DO
         END DO
       END DO
+      ! !$OMP end do
+      ! !$OMP end parallel
     END DO
   END SUBROUTINE tra_zdf_imp
 END MODULE trazdf

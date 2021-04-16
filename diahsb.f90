@@ -105,8 +105,7 @@ MODULE diahsb
     !$OMP parallel default(shared), private(jk)
     !$OMP do schedule(static)
     DO jk = 1, jpkm1
-      zwrk(:, :, jk) = (surf(:, :) * e3t_n(:, :, jk) * tsn(:, :, jk, jp_tem) - surf_ini(:, :) * hc_loc_ini(:, :, jk)) * tmask(:, &
-&:, jk)
+      zwrk(:, :, jk) = (surf(:, :) * e3t_n(:, :, jk) * tsn(:, :, jk, jp_tem) - surf_ini(:, :) * hc_loc_ini(:, :, jk)) * tmask(:, :, jk)
     END DO
     !$OMP end do
     !$OMP end parallel
@@ -114,8 +113,7 @@ MODULE diahsb
     !$OMP parallel default(shared), private(jk)
     !$OMP do schedule(static)
     DO jk = 1, jpkm1
-      zwrk(:, :, jk) = (surf(:, :) * e3t_n(:, :, jk) * tsn(:, :, jk, jp_sal) - surf_ini(:, :) * sc_loc_ini(:, :, jk)) * tmask(:, &
-&:, jk)
+      zwrk(:, :, jk) = (surf(:, :) * e3t_n(:, :, jk) * tsn(:, :, jk, jp_sal) - surf_ini(:, :) * sc_loc_ini(:, :, jk)) * tmask(:, :, jk)
     END DO
     !$OMP end do
     !$OMP end parallel
@@ -203,11 +201,15 @@ MODULE diahsb
         IF (lwp) WRITE(numout, FMT = *)
         surf_ini(:, :) = e1e2t(:, :) * tmask_i(:, :)
         ssh_ini(:, :) = sshn(:, :)
+        !$OMP parallel default(shared), private(jk)
+        !$OMP do schedule(static)
         DO jk = 1, jpk
           e3t_ini(:, :, jk) = e3t_n(:, :, jk) * tmask(:, :, jk)
           hc_loc_ini(:, :, jk) = tsn(:, :, jk, jp_tem) * e3t_n(:, :, jk) * tmask(:, :, jk)
           sc_loc_ini(:, :, jk) = tsn(:, :, jk, jp_sal) * e3t_n(:, :, jk) * tmask(:, :, jk)
         END DO
+        !$OMP end do
+        !$OMP end parallel
         frc_v = 0._wp
         frc_t = 0._wp
         frc_s = 0._wp
@@ -287,8 +289,7 @@ MODULE diahsb
         CALL iom_set_rstw_var_active('frc_wn_s')
       END IF
     END IF
-    ALLOCATE(hc_loc_ini(jpi, jpj, jpk), sc_loc_ini(jpi, jpj, jpk), surf_ini(jpi, jpj), e3t_ini(jpi, jpj, jpk), surf(jpi, jpj), &
-&ssh_ini(jpi, jpj), STAT = ierror)
+    ALLOCATE(hc_loc_ini(jpi, jpj, jpk), sc_loc_ini(jpi, jpj, jpk), surf_ini(jpi, jpj), e3t_ini(jpi, jpj, jpk), surf(jpi, jpj), ssh_ini(jpi, jpj), STAT = ierror)
     IF (ierror > 0) THEN
       CALL ctl_stop('dia_hsb_init: unable to allocate hc_loc_ini')
       RETURN
