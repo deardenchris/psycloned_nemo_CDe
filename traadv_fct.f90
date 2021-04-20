@@ -144,8 +144,8 @@ MODULE traadv_fct
       CASE (4)
         zltu(:, :, jpk) = 0._wp
         zltv(:, :, jpk) = 0._wp
-        ! !$OMP parallel default(shared), private(ji,jj,jk)
-        ! !$OMP do schedule(static) ! CDe race condition on zltu and v?
+        !$OMP parallel default(shared), private(ji,jj,jk)
+        !$OMP do schedule(static)
         DO jk = 1, jpkm1
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
@@ -160,8 +160,8 @@ MODULE traadv_fct
             END DO
           END DO
         END DO
-        ! !$OMP end do
-        ! !$OMP end parallel
+        !$OMP end do
+        !$OMP end parallel
         CALL lbc_lnk_multi('traadv_fct', zltu, 'T', 1., zltv, 'T', 1.)
         !$OMP parallel default(shared), private(ji,jj,jk,zc2t_u,zc2t_v)
         !$OMP do schedule(static)
