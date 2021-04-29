@@ -30,43 +30,43 @@ MODULE domain
     INTEGER, DIMENSION(jpi, jpj) :: ik_top, ik_bot
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: z1_hu_0, z1_hv_0
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dom_init : domain initialization'
-      WRITE(numout, FMT = *) '~~~~~~~~'
-      WRITE(numout, FMT = *) '   Domain info'
-      WRITE(numout, FMT = *) '      dimension of model:'
-      WRITE(numout, FMT = *) '             Local domain      Global domain       Data domain '
+      WRITE(numout, *)
+      WRITE(numout, *) 'dom_init : domain initialization'
+      WRITE(numout, *) '~~~~~~~~'
+      WRITE(numout, *) '   Domain info'
+      WRITE(numout, *) '      dimension of model:'
+      WRITE(numout, *) '             Local domain      Global domain       Data domain '
       WRITE(numout, cform) '        ', '   jpi     : ', jpi, '   jpiglo  : ', jpiglo
       WRITE(numout, cform) '        ', '   jpj     : ', jpj, '   jpjglo  : ', jpjglo
       WRITE(numout, cform) '        ', '   jpk     : ', jpk, '   jpkglo  : ', jpkglo
       WRITE(numout, cform) '       ', '   jpij    : ', jpij
-      WRITE(numout, FMT = *) '      mpp local domain info (mpp):'
-      WRITE(numout, FMT = *) '              jpni    : ', jpni, '   nn_hls  : ', nn_hls
-      WRITE(numout, FMT = *) '              jpnj    : ', jpnj, '   nn_hls  : ', nn_hls
-      WRITE(numout, FMT = *) '              jpnij   : ', jpnij
-      WRITE(numout, FMT = *) '      lateral boundary of the Global domain : jperio  = ', jperio
+      WRITE(numout, *) '      mpp local domain info (mpp):'
+      WRITE(numout, *) '              jpni    : ', jpni, '   nn_hls  : ', nn_hls
+      WRITE(numout, *) '              jpnj    : ', jpnj, '   nn_hls  : ', nn_hls
+      WRITE(numout, *) '              jpnij   : ', jpnij
+      WRITE(numout, *) '      lateral boundary of the Global domain : jperio  = ', jperio
       SELECT CASE (jperio)
       CASE (0)
-        WRITE(numout, FMT = *) '         (i.e. closed)'
+        WRITE(numout, *) '         (i.e. closed)'
       CASE (1)
-        WRITE(numout, FMT = *) '         (i.e. cyclic east-west)'
+        WRITE(numout, *) '         (i.e. cyclic east-west)'
       CASE (2)
-        WRITE(numout, FMT = *) '         (i.e. equatorial symmetric)'
+        WRITE(numout, *) '         (i.e. equatorial symmetric)'
       CASE (3)
-        WRITE(numout, FMT = *) '         (i.e. north fold with T-point pivot)'
+        WRITE(numout, *) '         (i.e. north fold with T-point pivot)'
       CASE (4)
-        WRITE(numout, FMT = *) '         (i.e. cyclic east-west and north fold with T-point pivot)'
+        WRITE(numout, *) '         (i.e. cyclic east-west and north fold with T-point pivot)'
       CASE (5)
-        WRITE(numout, FMT = *) '         (i.e. north fold with F-point pivot)'
+        WRITE(numout, *) '         (i.e. north fold with F-point pivot)'
       CASE (6)
-        WRITE(numout, FMT = *) '         (i.e. cyclic east-west and north fold with F-point pivot)'
+        WRITE(numout, *) '         (i.e. cyclic east-west and north fold with F-point pivot)'
       CASE (7)
-        WRITE(numout, FMT = *) '         (i.e. cyclic east-west and north-south)'
+        WRITE(numout, *) '         (i.e. cyclic east-west and north-south)'
       CASE DEFAULT
         CALL ctl_stop('jperio is out of range')
       END SELECT
-      WRITE(numout, FMT = *) '      Ocean model configuration used:'
-      WRITE(numout, FMT = *) '         cn_cfg = ', TRIM(cn_cfg), '   nn_cfg = ', nn_cfg
+      WRITE(numout, *) '      Ocean model configuration used:'
+      WRITE(numout, *) '         cn_cfg = ', TRIM(cn_cfg), '   nn_cfg = ', nn_cfg
     END IF
     lwxios = .FALSE.
     ln_xios_read = .FALSE.
@@ -78,7 +78,7 @@ MODULE domain
     END IF
     IF (cdstr == 'SAS') THEN
       IF (lrxios) THEN
-        IF (lwp) WRITE(numout, FMT = *) 'Disable reading restart file using XIOS for SAS'
+        IF (lwp) WRITE(numout, *) 'Disable reading restart file using XIOS for SAS'
         lrxios = .FALSE.
       END IF
     END IF
@@ -87,7 +87,7 @@ MODULE domain
     CALL dom_msk(ik_top, ik_bot)
     IF (ln_closea) CALL dom_clo
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         ik = mikt(ji, jj)
@@ -97,14 +97,12 @@ MODULE domain
     ht_0(:, :) = 0._wp
     hu_0(:, :) = 0._wp
     hv_0(:, :) = 0._wp
-    !$ACC END KERNELS
     DO jk = 1, jpk
-      !$ACC KERNELS
       ht_0(:, :) = ht_0(:, :) + e3t_0(:, :, jk) * tmask(:, :, jk)
       hu_0(:, :) = hu_0(:, :) + e3u_0(:, :, jk) * umask(:, :, jk)
       hv_0(:, :) = hv_0(:, :) + e3v_0(:, :, jk) * vmask(:, :, jk)
-      !$ACC END KERNELS
     END DO
+    !$ACC END KERNELS
     IF (ln_linssh) THEN
       !$ACC KERNELS
       gdept_b = gdept_0
@@ -153,10 +151,10 @@ MODULE domain
     IF (.NOT. ln_rstart) CALL dom_ctl
     IF (ln_write_cfg) CALL cfg_write
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dom_init :   ==>>>   END of domain initialization'
-      WRITE(numout, FMT = *) '~~~~~~~~'
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
+      WRITE(numout, *) 'dom_init :   ==>>>   END of domain initialization'
+      WRITE(numout, *) '~~~~~~~~'
+      WRITE(numout, *)
     END IF
   END SUBROUTINE dom_init
   SUBROUTINE dom_glo
@@ -181,31 +179,31 @@ MODULE domain
     !$ACC END KERNELS
     CALL profile_psy_data0 % PreStart('dom_glo', 'r0', 0, 0)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dom_glo : domain: global <<==>> local '
-      WRITE(numout, FMT = *) '~~~~~~~ '
-      WRITE(numout, FMT = *) '   global domain:   jpiglo = ', jpiglo, ' jpjglo = ', jpjglo, ' jpkglo = ', jpkglo
-      WRITE(numout, FMT = *) '   local  domain:   jpi    = ', jpi, ' jpj    = ', jpj, ' jpk    = ', jpk
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '   conversion from local to global domain indices (and vise versa) done'
+      WRITE(numout, *)
+      WRITE(numout, *) 'dom_glo : domain: global <<==>> local '
+      WRITE(numout, *) '~~~~~~~ '
+      WRITE(numout, *) '   global domain:   jpiglo = ', jpiglo, ' jpjglo = ', jpjglo, ' jpkglo = ', jpkglo
+      WRITE(numout, *) '   local  domain:   jpi    = ', jpi, ' jpj    = ', jpj, ' jpk    = ', jpk
+      WRITE(numout, *)
+      WRITE(numout, *) '   conversion from local to global domain indices (and vise versa) done'
       IF (nn_print >= 1) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '          conversion local  ==> global i-index domain (mig)'
+        WRITE(numout, *)
+        WRITE(numout, *) '          conversion local  ==> global i-index domain (mig)'
         WRITE(numout, 25) (mig(ji), ji = 1, jpi)
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '          conversion global ==> local  i-index domain'
-        WRITE(numout, FMT = *) '             starting index (mi0)'
+        WRITE(numout, *)
+        WRITE(numout, *) '          conversion global ==> local  i-index domain'
+        WRITE(numout, *) '             starting index (mi0)'
         WRITE(numout, 25) (mi0(ji), ji = 1, jpiglo)
-        WRITE(numout, FMT = *) '             ending index (mi1)'
+        WRITE(numout, *) '             ending index (mi1)'
         WRITE(numout, 25) (mi1(ji), ji = 1, jpiglo)
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '          conversion local  ==> global j-index domain (mjg)'
+        WRITE(numout, *)
+        WRITE(numout, *) '          conversion local  ==> global j-index domain (mjg)'
         WRITE(numout, 25) (mjg(jj), jj = 1, jpj)
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '          conversion global ==> local  j-index domain'
-        WRITE(numout, FMT = *) '             starting index (mj0)'
+        WRITE(numout, *)
+        WRITE(numout, *) '          conversion global ==> local  j-index domain'
+        WRITE(numout, *) '             starting index (mj0)'
         WRITE(numout, 25) (mj0(jj), jj = 1, jpjglo)
-        WRITE(numout, FMT = *) '             ending index (mj1)'
+        WRITE(numout, *) '             ending index (mj1)'
         WRITE(numout, 25) (mj1(jj), jj = 1, jpjglo)
       END IF
     END IF
@@ -216,16 +214,14 @@ MODULE domain
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     USE ioipsl
     INTEGER :: ios
-    NAMELIST /namrun/ cn_ocerst_indir, cn_ocerst_outdir, nn_stocklist, ln_rst_list, nn_no, cn_exp, cn_ocerst_in, cn_ocerst_out, &
-&ln_rstart, nn_rstctl, nn_it000, nn_itend, nn_date0, nn_time0, nn_leapy, nn_istate, nn_stock, nn_write, ln_mskland, ln_clobber, &
-&nn_chunksz, nn_euler, ln_cfmeta, ln_iscpl, ln_xios_read, nn_wxios, ln_rstdate
+    NAMELIST /namrun/ cn_ocerst_indir, cn_ocerst_outdir, nn_stocklist, ln_rst_list, nn_no, cn_exp, cn_ocerst_in, cn_ocerst_out, ln_rstart, nn_rstctl, nn_it000, nn_itend, nn_date0, nn_time0, nn_leapy, nn_istate, nn_stock, nn_write, ln_mskland, ln_clobber, nn_chunksz, nn_euler, ln_cfmeta, ln_iscpl, ln_xios_read, nn_wxios, ln_rstdate
     NAMELIST /namdom/ ln_linssh, rn_isfhmin, rn_rdt, rn_atfp, ln_crs, ln_meshmask
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('dom_nam', 'r0', 0, 0)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dom_nam : domain initialization through namelist read'
-      WRITE(numout, FMT = *) '~~~~~~~ '
+      WRITE(numout, *)
+      WRITE(numout, *) 'dom_nam : domain initialization through namelist read'
+      WRITE(numout, *) '~~~~~~~ '
     END IF
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, namrun, IOSTAT = ios, ERR = 901)
@@ -235,40 +231,40 @@ MODULE domain
 902 IF (ios > 0) CALL ctl_nam(ios, 'namrun in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namrun)
     IF (lwp) THEN
-      WRITE(numout, FMT = *) '   Namelist : namrun   ---   run parameters'
-      WRITE(numout, FMT = *) '      Assimilation cycle              nn_no           = ', nn_no
-      WRITE(numout, FMT = *) '      experiment name for output      cn_exp          = ', TRIM(cn_exp)
-      WRITE(numout, FMT = *) '      file prefix restart input       cn_ocerst_in    = ', TRIM(cn_ocerst_in)
-      WRITE(numout, FMT = *) '      restart input directory         cn_ocerst_indir = ', TRIM(cn_ocerst_indir)
-      WRITE(numout, FMT = *) '      file prefix restart output      cn_ocerst_out   = ', TRIM(cn_ocerst_out)
-      WRITE(numout, FMT = *) '      restart output directory        cn_ocerst_outdir= ', TRIM(cn_ocerst_outdir)
-      WRITE(numout, FMT = *) '      restart logical                 ln_rstart       = ', ln_rstart
-      WRITE(numout, FMT = *) '      start with forward time step    nn_euler        = ', nn_euler
-      WRITE(numout, FMT = *) '      control of time step            nn_rstctl       = ', nn_rstctl
-      WRITE(numout, FMT = *) '      number of the first time step   nn_it000        = ', nn_it000
-      WRITE(numout, FMT = *) '      number of the last time step    nn_itend        = ', nn_itend
-      WRITE(numout, FMT = *) '      initial calendar date aammjj    nn_date0        = ', nn_date0
-      WRITE(numout, FMT = *) '      initial time of day in hhmm     nn_time0        = ', nn_time0
-      WRITE(numout, FMT = *) '      leap year calendar (0/1)        nn_leapy        = ', nn_leapy
-      WRITE(numout, FMT = *) '      initial state output            nn_istate       = ', nn_istate
+      WRITE(numout, *) '   Namelist : namrun   ---   run parameters'
+      WRITE(numout, *) '      Assimilation cycle              nn_no           = ', nn_no
+      WRITE(numout, *) '      experiment name for output      cn_exp          = ', TRIM(cn_exp)
+      WRITE(numout, *) '      file prefix restart input       cn_ocerst_in    = ', TRIM(cn_ocerst_in)
+      WRITE(numout, *) '      restart input directory         cn_ocerst_indir = ', TRIM(cn_ocerst_indir)
+      WRITE(numout, *) '      file prefix restart output      cn_ocerst_out   = ', TRIM(cn_ocerst_out)
+      WRITE(numout, *) '      restart output directory        cn_ocerst_outdir= ', TRIM(cn_ocerst_outdir)
+      WRITE(numout, *) '      restart logical                 ln_rstart       = ', ln_rstart
+      WRITE(numout, *) '      start with forward time step    nn_euler        = ', nn_euler
+      WRITE(numout, *) '      control of time step            nn_rstctl       = ', nn_rstctl
+      WRITE(numout, *) '      number of the first time step   nn_it000        = ', nn_it000
+      WRITE(numout, *) '      number of the last time step    nn_itend        = ', nn_itend
+      WRITE(numout, *) '      initial calendar date aammjj    nn_date0        = ', nn_date0
+      WRITE(numout, *) '      initial time of day in hhmm     nn_time0        = ', nn_time0
+      WRITE(numout, *) '      leap year calendar (0/1)        nn_leapy        = ', nn_leapy
+      WRITE(numout, *) '      initial state output            nn_istate       = ', nn_istate
       IF (ln_rst_list) THEN
-        WRITE(numout, FMT = *) '      list of restart dump times      nn_stocklist    =', nn_stocklist
+        WRITE(numout, *) '      list of restart dump times      nn_stocklist    =', nn_stocklist
       ELSE
-        WRITE(numout, FMT = *) '      frequency of restart file       nn_stock        = ', nn_stock
+        WRITE(numout, *) '      frequency of restart file       nn_stock        = ', nn_stock
       END IF
-      WRITE(numout, FMT = *) '      frequency of output file        nn_write        = ', nn_write
-      WRITE(numout, FMT = *) '      mask land points                ln_mskland      = ', ln_mskland
-      WRITE(numout, FMT = *) '      date-stamp restart files        ln_rstdate = ', ln_rstdate
-      WRITE(numout, FMT = *) '      additional CF standard metadata ln_cfmeta       = ', ln_cfmeta
-      WRITE(numout, FMT = *) '      overwrite an existing file      ln_clobber      = ', ln_clobber
-      WRITE(numout, FMT = *) '      NetCDF chunksize (bytes)        nn_chunksz      = ', nn_chunksz
-      WRITE(numout, FMT = *) '      IS coupling at the restart step ln_iscpl        = ', ln_iscpl
+      WRITE(numout, *) '      frequency of output file        nn_write        = ', nn_write
+      WRITE(numout, *) '      mask land points                ln_mskland      = ', ln_mskland
+      WRITE(numout, *) '      date-stamp restart files        ln_rstdate = ', ln_rstdate
+      WRITE(numout, *) '      additional CF standard metadata ln_cfmeta       = ', ln_cfmeta
+      WRITE(numout, *) '      overwrite an existing file      ln_clobber      = ', ln_clobber
+      WRITE(numout, *) '      NetCDF chunksize (bytes)        nn_chunksz      = ', nn_chunksz
+      WRITE(numout, *) '      IS coupling at the restart step ln_iscpl        = ', ln_iscpl
       IF (TRIM(Agrif_CFixed()) == '0') THEN
-        WRITE(numout, FMT = *) '      READ restart for a single file using XIOS ln_xios_read =', ln_xios_read
-        WRITE(numout, FMT = *) '      Write restart using XIOS        nn_wxios   = ', nn_wxios
+        WRITE(numout, *) '      READ restart for a single file using XIOS ln_xios_read =', ln_xios_read
+        WRITE(numout, *) '      Write restart using XIOS        nn_wxios   = ', nn_wxios
       ELSE
-        WRITE(numout, FMT = *) "      AGRIF: nn_wxios will be ingored. See setting for parent"
-        WRITE(numout, FMT = *) "      AGRIF: ln_xios_read will be ingored. See setting for parent"
+        WRITE(numout, *) "      AGRIF: nn_wxios will be ingored. See setting for parent"
+        WRITE(numout, *) "      AGRIF: ln_xios_read will be ingored. See setting for parent"
       END IF
     END IF
     cexper = cn_exp
@@ -283,32 +279,32 @@ MODULE domain
     nwrite = nn_write
     neuler = nn_euler
     IF (neuler == 1 .AND. .NOT. ln_rstart) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   Start from rest (ln_rstart=F)'
-      IF (lwp) WRITE(numout, FMT = *) '           an Euler initial time step is used : nn_euler is forced to 0 '
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   Start from rest (ln_rstart=F)'
+      IF (lwp) WRITE(numout, *) '           an Euler initial time step is used : nn_euler is forced to 0 '
       neuler = 0
     END IF
     IF (nstock == 0 .OR. nstock > nitend) THEN
-      WRITE(ctmp1, FMT = *) 'nstock = ', nstock, ' it is forced to ', nitend
+      WRITE(ctmp1, *) 'nstock = ', nstock, ' it is forced to ', nitend
       CALL ctl_warn(ctmp1)
       nstock = nitend
     END IF
     IF (nwrite == 0) THEN
-      WRITE(ctmp1, FMT = *) 'nwrite = ', nwrite, ' it is forced to ', nitend
+      WRITE(ctmp1, *) 'nwrite = ', nwrite, ' it is forced to ', nitend
       CALL ctl_warn(ctmp1)
       nwrite = nitend
     END IF
-    IF (lwp) WRITE(numout, FMT = *)
+    IF (lwp) WRITE(numout, *)
     SELECT CASE (nleapy)
     CASE (1)
       CALL ioconf_calendar('gregorian')
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   The IOIPSL calendar is "gregorian", i.e. leap year'
+      IF (lwp) WRITE(numout, *) '   ==>>>   The IOIPSL calendar is "gregorian", i.e. leap year'
     CASE (0)
       CALL ioconf_calendar('noleap')
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   The IOIPSL calendar is "noleap", i.e. no leap year'
+      IF (lwp) WRITE(numout, *) '   ==>>>   The IOIPSL calendar is "noleap", i.e. no leap year'
     CASE (30)
       CALL ioconf_calendar('360d')
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   The IOIPSL calendar is "360d", i.e. 360 days in a year'
+      IF (lwp) WRITE(numout, *) '   ==>>>   The IOIPSL calendar is "360d", i.e. 360 days in a year'
     END SELECT
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, namdom, IOSTAT = ios, ERR = 903)
@@ -318,14 +314,14 @@ MODULE domain
 904 IF (ios > 0) CALL ctl_nam(ios, 'namdom in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namdom)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '   Namelist : namdom   ---   space & time domain'
-      WRITE(numout, FMT = *) '      linear free surface (=T)                ln_linssh   = ', ln_linssh
-      WRITE(numout, FMT = *) '      create mesh/mask file                   ln_meshmask = ', ln_meshmask
-      WRITE(numout, FMT = *) '      treshold to open the isf cavity         rn_isfhmin  = ', rn_isfhmin, ' [m]'
-      WRITE(numout, FMT = *) '      ocean time step                         rn_rdt      = ', rn_rdt
-      WRITE(numout, FMT = *) '      asselin time filter parameter           rn_atfp     = ', rn_atfp
-      WRITE(numout, FMT = *) '      online coarsening of dynamical fields   ln_crs      = ', ln_crs
+      WRITE(numout, *)
+      WRITE(numout, *) '   Namelist : namdom   ---   space & time domain'
+      WRITE(numout, *) '      linear free surface (=T)                ln_linssh   = ', ln_linssh
+      WRITE(numout, *) '      create mesh/mask file                   ln_meshmask = ', ln_meshmask
+      WRITE(numout, *) '      treshold to open the isf cavity         rn_isfhmin  = ', rn_isfhmin, ' [m]'
+      WRITE(numout, *) '      ocean time step                         rn_rdt      = ', rn_rdt
+      WRITE(numout, *) '      asselin time filter parameter           rn_atfp     = ', rn_atfp
+      WRITE(numout, *) '      online coarsening of dynamical fields   ln_crs      = ', ln_crs
     END IF
     atfp = rn_atfp
     rdt = rn_rdt
@@ -368,9 +364,9 @@ MODULE domain
       ima2(2) = iloc(2) + njmpp - 1
     END IF
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dom_ctl : extrema of the masked scale factors'
-      WRITE(numout, FMT = *) '~~~~~~~'
+      WRITE(numout, *)
+      WRITE(numout, *) 'dom_ctl : extrema of the masked scale factors'
+      WRITE(numout, *) '~~~~~~~'
       WRITE(numout, "(14x,'e1t maxi: ',1f10.2,' at i = ',i5,' j= ',i5)") ze1max, ima1(1), ima1(2)
       WRITE(numout, "(14x,'e1t mini: ',1f10.2,' at i = ',i5,' j= ',i5)") ze1min, imi1(1), imi1(2)
       WRITE(numout, "(14x,'e2t maxi: ',1f10.2,' at i = ',i5,' j= ',i5)") ze2max, ima2(1), ima2(2)
@@ -391,22 +387,22 @@ MODULE domain
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('domain_cfg', 'r0', 0, 0)
     ii = 1
-    WRITE(ldtxt(ii), FMT = *) '           '
+    WRITE(ldtxt(ii), *) '           '
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) 'domain_cfg : domain size read in ', TRIM(cn_domcfg), ' file'
+    WRITE(ldtxt(ii), *) 'domain_cfg : domain size read in ', TRIM(cn_domcfg), ' file'
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '~~~~~~~~~~ '
+    WRITE(ldtxt(ii), *) '~~~~~~~~~~ '
     ii = ii + 1
     CALL iom_open(cn_domcfg, inum)
     IF (iom_varid(inum, 'ORCA', ldstop = .FALSE.) > 0 .AND. iom_varid(inum, 'ORCA_index', ldstop = .FALSE.) > 0) THEN
       cd_cfg = 'ORCA'
       CALL iom_get(inum, 'ORCA_index', zorca_res)
       kk_cfg = NINT(zorca_res)
-      WRITE(ldtxt(ii), FMT = *) '   .'
+      WRITE(ldtxt(ii), *) '   .'
       ii = ii + 1
-      WRITE(ldtxt(ii), FMT = *) '   ==>>>   ORCA configuration '
+      WRITE(ldtxt(ii), *) '   ==>>>   ORCA configuration '
       ii = ii + 1
-      WRITE(ldtxt(ii), FMT = *) '   .'
+      WRITE(ldtxt(ii), *) '   .'
       ii = ii + 1
     ELSE
       cd_cfg = 'UNKNOWN'
@@ -425,15 +421,15 @@ MODULE domain
     CALL iom_get(inum, 'jperio', zperio)
     kperio = NINT(zperio)
     CALL iom_close(inum)
-    WRITE(ldtxt(ii), FMT = *) '      cn_cfg = ', TRIM(cd_cfg), '   nn_cfg = ', kk_cfg
+    WRITE(ldtxt(ii), *) '      cn_cfg = ', TRIM(cd_cfg), '   nn_cfg = ', kk_cfg
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '      jpiglo = ', kpi
+    WRITE(ldtxt(ii), *) '      jpiglo = ', kpi
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '      jpjglo = ', kpj
+    WRITE(ldtxt(ii), *) '      jpjglo = ', kpj
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '      jpkglo = ', kpk
+    WRITE(ldtxt(ii), *) '      jpkglo = ', kpk
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '      type of global domain lateral boundary   jperio = ', kperio
+    WRITE(ldtxt(ii), *) '      type of global domain lateral boundary   jperio = ', kperio
     ii = ii + 1
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE domain_cfg
@@ -446,9 +442,9 @@ MODULE domain
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: z2d
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('cfg_write', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) 'cfg_write : create the domain configuration file (', TRIM(cn_domcfg_out), '.nc)'
-    IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) 'cfg_write : create the domain configuration file (', TRIM(cn_domcfg_out), '.nc)'
+    IF (lwp) WRITE(numout, *) '~~~~~~~~~'
     clnam = cn_domcfg_out
     CALL iom_open(TRIM(clnam), inum, ldwrt = .TRUE.)
     IF (cn_cfg == "ORCA") THEN

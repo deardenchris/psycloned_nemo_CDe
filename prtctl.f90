@@ -161,15 +161,15 @@ MODULE prtctl
     DO jn = sind, eind
       j_id = numid(jn - narea + 1)
       IF (PRESENT(ivar1) .AND. PRESENT(clinfo2) .AND. PRESENT(ivar2)) THEN
-        WRITE(j_id, FMT = *) clinfo1, ivar1, clinfo2, ivar2
+        WRITE(j_id, *) clinfo1, ivar1, clinfo2, ivar2
       ELSE IF (PRESENT(ivar1) .AND. PRESENT(clinfo2) .AND. .NOT. PRESENT(ivar2)) THEN
-        WRITE(j_id, FMT = *) clinfo1, ivar1, clinfo2
+        WRITE(j_id, *) clinfo1, ivar1, clinfo2
       ELSE IF (PRESENT(ivar1) .AND. .NOT. PRESENT(clinfo2) .AND. PRESENT(ivar2)) THEN
-        WRITE(j_id, FMT = *) clinfo1, ivar1, ivar2
+        WRITE(j_id, *) clinfo1, ivar1, ivar2
       ELSE IF (PRESENT(ivar1) .AND. .NOT. PRESENT(clinfo2) .AND. .NOT. PRESENT(ivar2)) THEN
-        WRITE(j_id, FMT = *) clinfo1, ivar1
+        WRITE(j_id, *) clinfo1, ivar1
       ELSE
-        WRITE(j_id, FMT = *) clinfo1
+        WRITE(j_id, *) clinfo1
       END IF
     END DO
     CALL profile_psy_data1 % PostEnd
@@ -179,8 +179,7 @@ MODULE prtctl
     CHARACTER(LEN = 28) :: clfile_out
     CHARACTER(LEN = 23) :: clb_name
     CHARACTER(LEN = 19) :: cl_run
-    ALLOCATE(nlditl(ijsplt), nleitl(ijsplt), nimpptl(ijsplt), ibonitl(ijsplt), nldjtl(ijsplt), nlejtl(ijsplt), njmpptl(ijsplt), &
-&ibonjtl(ijsplt), nlcitl(ijsplt), t_ctll(ijsplt), u_ctll(ijsplt), nlcjtl(ijsplt), s_ctll(ijsplt), v_ctll(ijsplt))
+    ALLOCATE(nlditl(ijsplt), nleitl(ijsplt), nimpptl(ijsplt), ibonitl(ijsplt), nldjtl(ijsplt), nlejtl(ijsplt), njmpptl(ijsplt), ibonjtl(ijsplt), nlcitl(ijsplt), t_ctll(ijsplt), u_ctll(ijsplt), nlcjtl(ijsplt), s_ctll(ijsplt), v_ctll(ijsplt))
     !$ACC KERNELS
     t_ctll(:) = 0.E0
     s_ctll(:) = 0.E0
@@ -217,14 +216,14 @@ MODULE prtctl
       WRITE(clfile_out, FMT = clb_name) jn - 1
       CALL ctl_opn(numid(jn - narea + 1), clfile_out, 'REPLACE', 'FORMATTED', 'SEQUENTIAL', 1, numout, .FALSE.)
       j_id = numid(jn - narea + 1)
-      WRITE(j_id, FMT = *)
-      WRITE(j_id, FMT = *) '                 L O D Y C - I P S L'
-      WRITE(j_id, FMT = *) '                     O P A model'
-      WRITE(j_id, FMT = *) '            Ocean General Circulation Model'
-      WRITE(j_id, FMT = *) '               version OPA 9.0  (2005) '
-      WRITE(j_id, FMT = *)
-      WRITE(j_id, FMT = *) '                   PROC number: ', jn
-      WRITE(j_id, FMT = *)
+      WRITE(j_id, *)
+      WRITE(j_id, *) '                 L O D Y C - I P S L'
+      WRITE(j_id, *) '                     O P A model'
+      WRITE(j_id, *) '            Ocean General Circulation Model'
+      WRITE(j_id, *) '               version OPA 9.0  (2005) '
+      WRITE(j_id, *)
+      WRITE(j_id, *) '                   PROC number: ', jn
+      WRITE(j_id, *)
       WRITE(j_id, FMT = "(19x,a20)") cl_run
       IF (.NOT. lsp_area) THEN
         nictls = nimpptl(jn) + nlditl(jn) - 1
@@ -232,10 +231,10 @@ MODULE prtctl
         njctls = njmpptl(jn) + nldjtl(jn) - 1
         njctle = njmpptl(jn) + nlejtl(jn) - 1
       END IF
-      WRITE(j_id, FMT = *)
-      WRITE(j_id, FMT = *) 'prt_ctl :  Sum control indices'
-      WRITE(j_id, FMT = *) '~~~~~~~'
-      WRITE(j_id, FMT = *)
+      WRITE(j_id, *)
+      WRITE(j_id, *) 'prt_ctl :  Sum control indices'
+      WRITE(j_id, *) '~~~~~~~'
+      WRITE(j_id, *)
       WRITE(j_id, 9000) '                                nlej   = ', nlejtl(jn), '              '
       WRITE(j_id, 9000) '                  ------------- njctle = ', njctle, ' -------------'
       WRITE(j_id, 9001) '                  |                                       |'
@@ -248,8 +247,8 @@ MODULE prtctl
       WRITE(j_id, 9001) '                  |                                       |'
       WRITE(j_id, 9004) '  njmpp  = ', njmpptl(jn), '   ------------- njctls = ', njctls, ' -------------'
       WRITE(j_id, 9003) '           nimpp  = ', nimpptl(jn), '        nldj   = ', nldjtl(jn), '              '
-      WRITE(j_id, FMT = *)
-      WRITE(j_id, FMT = *)
+      WRITE(j_id, *)
+      WRITE(j_id, *)
 9000  FORMAT(A41, I4.4, A14)
 9001  FORMAT(A59)
 9002  FORMAT(A20, I4.4, A36, I3.3)
@@ -298,8 +297,8 @@ MODULE prtctl
     END DO
     !$ACC END KERNELS
     CALL profile_psy_data0 % PreStart('sub_dom', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) ' sum ilcitl(i,1) = ', zidom, ' jpiglo = ', jpiglo
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) ' sum ilcitl(i,1) = ', zidom, ' jpiglo = ', jpiglo
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     zjdom = nrecjl
@@ -308,14 +307,14 @@ MODULE prtctl
     END DO
     !$ACC END KERNELS
     CALL profile_psy_data1 % PreStart('sub_dom', 'r1', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *) ' sum ilcitl(1,j) = ', zjdom, ' jpjglo = ', jpjglo
-    IF (lwp) WRITE(numout, FMT = *)
+    IF (lwp) WRITE(numout, *) ' sum ilcitl(1,j) = ', zjdom, ' jpjglo = ', jpjglo
+    IF (lwp) WRITE(numout, *)
     CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     iimpptl(:, :) = 1
     ijmpptl(:, :) = 1
     IF (isplt > 1) THEN
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jsplt
         DO ji = 2, isplt
           iimpptl(ji, jj) = iimpptl(ji - 1, jj) + ilcitl(ji - 1, jj) - nrecil
@@ -323,7 +322,7 @@ MODULE prtctl
       END DO
     END IF
     IF (jsplt > 1) THEN
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jsplt
         DO ji = 1, isplt
           ijmpptl(ji, jj) = ijmpptl(ji, jj - 1) + ilcjtl(ji, jj - 1) - nrecjl
@@ -366,10 +365,9 @@ MODULE prtctl
     CALL profile_psy_data2 % PreStart('sub_dom', 'r2', 0, 0)
     IF (lwp) THEN
       CALL ctl_opn(inum, 'layout_prtctl.dat', 'REPLACE', 'FORMATTED', 'SEQUENTIAL', - 1, numout, .FALSE., narea)
-      WRITE(inum, FMT = '(a)') 'nproc nlcil nlcjl nldil nldjl nleil nlejl nimpptl njmpptl ibonitl ibonjtl'
+      WRITE(inum, '(a)') 'nproc nlcil nlcjl nldil nldjl nleil nlejl nimpptl njmpptl ibonitl ibonjtl'
       DO jn = 1, ijsplt
-        WRITE(inum, FMT = '(i5,6i6,4i8)') jn - 1, nlcitl(jn), nlcjtl(jn), nlditl(jn), nldjtl(jn), nleitl(jn), nlejtl(jn), &
-&nimpptl(jn), njmpptl(jn), ibonitl(jn), ibonjtl(jn)
+        WRITE(inum, '(i5,6i6,4i8)') jn - 1, nlcitl(jn), nlcjtl(jn), nlditl(jn), nldjtl(jn), nleitl(jn), nlejtl(jn), nimpptl(jn), njmpptl(jn), ibonitl(jn), ibonjtl(jn)
       END DO
       CLOSE(UNIT = inum)
     END IF

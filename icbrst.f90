@@ -43,11 +43,12 @@ MODULE icbrst
         CALL iom_get(ncid, 'yj', localpt % yj, ktime = jn)
         ii = INT(localpt % xi + 0.5)
         ij = INT(localpt % yj + 0.5)
-        IF (ii .GE. nldi + nimpp - 1 .AND. ii .LE. nlei + nimpp - 1 .AND. ij .GE. nldj + njmpp - 1 .AND. ij .LE. nlej + njmpp - 1) &
-&THEN
+        IF (ii .GE. nldi + nimpp - 1 .AND. ii .LE. nlei + nimpp - 1 .AND. ij .GE. nldj + njmpp - 1 .AND. ij .LE. nlej + njmpp - 1) THEN
           CALL iom_get(ncid, jpdom_unknown, 'number', zdata(:), ktime = jn, kstart = (/1/), kcount = (/nkounts/))
+          !$ACC KERNELS
           localberg % number(:) = INT(zdata(:))
           imax_icb = MAX(imax_icb, INT(zdata(1)))
+          !$ACC END KERNELS
           CALL iom_get(ncid, 'mass_scaling', localberg % mass_scaling, ktime = jn)
           CALL iom_get(ncid, 'lon', localpt % lon, ktime = jn)
           CALL iom_get(ncid, 'lat', localpt % lat, ktime = jn)
@@ -73,17 +74,17 @@ MODULE icbrst
     CALL iom_get(ncid, jpdom_autoglo, 'stored_heat', berg_grid % stored_heat)
     CALL iom_get(ncid, jpdom_autoglo_xy, 'stored_ice', berg_grid % stored_ice, kstart = (/1, 1, 1/), kcount = (/1, 1, nclasses/))
     CALL iom_get(ncid, jpdom_unknown, 'kount', zdata(:))
+    !$ACC KERNELS
     num_bergs(:) = INT(zdata(:))
+    !$ACC END KERNELS
     CALL iom_close(ncid)
     jn = icb_utl_count()
-    IF (lwp .AND. nn_verbose_level >= 0) WRITE(numout, FMT = '(2(a,i5))') 'icebergs, read_restart_bergs: # bergs =', jn, ' on PE', &
-&narea - 1
+    IF (lwp .AND. nn_verbose_level >= 0) WRITE(numout, '(2(a,i5))') 'icebergs, read_restart_bergs: # bergs =', jn, ' on PE', narea - 1
     IF (lk_mpp) THEN
       IF (INDEX(iom_file(ncid) % name, 'icebergs.nc') .EQ. 0) CALL mpp_sum('icbrst', ibergs_in_file)
       CALL mpp_sum('icbrst', jn)
     END IF
-    IF (lwp) WRITE(numout, FMT = '(a,i5,a,i5,a)') 'icebergs, icb_rst_read: there were', ibergs_in_file, ' bergs in the restart &
-&file and', jn, ' bergs have been read'
+    IF (lwp) WRITE(numout, '(a,i5,a,i5,a)') 'icebergs, icb_rst_read: there were', ibergs_in_file, ' bergs in the restart file and', jn, ' bergs have been read'
     ibase_err = 0
     IF (num_bergs(1) < 0 .AND. num_bergs(1) /= narea - jpnij) THEN
       ibase_err = 1
@@ -99,7 +100,7 @@ MODULE icbrst
       END IF
       num_bergs(1) = imax_icb - jpnij + narea
     END IF
-    IF (lwp .AND. nn_verbose_level >= 0) WRITE(numout, FMT = '(a)') 'icebergs, icb_rst_read: completed'
+    IF (lwp .AND. nn_verbose_level >= 0) WRITE(numout, '(a)') 'icebergs, icb_rst_read: completed'
   END SUBROUTINE icb_rst_read
   SUBROUTINE icb_rst_write(kt)
     INTEGER, INTENT(IN) :: kt
@@ -121,21 +122,20 @@ MODULE icbrst
         zfjulday = fjulday + rdt / rday
         IF (ABS(zfjulday - REAL(NINT(zfjulday), wp)) < 0.1 / rday) zfjulday = REAL(NINT(zfjulday), wp)
         CALL ju2ymds(zfjulday, iyear, imonth, iday, zsec)
-        WRITE(clkt, FMT = '(i4.4,2i2.2)') iyear, imonth, iday
+        WRITE(clkt, '(i4.4,2i2.2)') iyear, imonth, iday
       ELSE
         IF (kt > 999999999) THEN
-          WRITE(clkt, FMT = *) kt
+          WRITE(clkt, *) kt
         ELSE
-          WRITE(clkt, FMT = '(i8.8)') kt
+          WRITE(clkt, '(i8.8)') kt
         END IF
       END IF
       IF (lk_mpp) THEN
-        WRITE(cl_filename, FMT = '(A,"_icebergs_",A,"_restart_",I6.6,".nc")') TRIM(cexper), TRIM(ADJUSTL(clkt)), narea - 1
+        WRITE(cl_filename, '(A,"_icebergs_",A,"_restart_",I6.6,".nc")') TRIM(cexper), TRIM(ADJUSTL(clkt)), narea - 1
       ELSE
-        WRITE(cl_filename, FMT = '(A,"_icebergs_",A,"_restart.nc")') TRIM(cexper), TRIM(ADJUSTL(clkt))
+        WRITE(cl_filename, '(A,"_icebergs_",A,"_restart.nc")') TRIM(cexper), TRIM(ADJUSTL(clkt))
       END IF
-      IF (lwp .AND. nn_verbose_level >= 0) WRITE(numout, FMT = '(2a)') 'icebergs, write_restart: creating ', TRIM(cl_path) // &
-&TRIM(cl_filename)
+      IF (lwp .AND. nn_verbose_level >= 0) WRITE(numout, '(2a)') 'icebergs, write_restart: creating ', TRIM(cl_path) // TRIM(cl_filename)
       nret = NF90_CREATE(TRIM(cl_path) // TRIM(cl_filename), NF90_CLOBBER, ncid)
       IF (nret .NE. NF90_NOERR) CALL ctl_stop('icebergs, write_restart: nf_create failed')
       nret = NF90_DEF_DIM(ncid, 'x', jpi, ix_dim)
@@ -232,25 +232,27 @@ MODULE icbrst
       nlngth3(2) = jpj
       nlngth3(3) = 1
       DO jn = 1, nclasses
+        !$ACC KERNELS
         griddata(:, :, 1) = berg_grid % stored_ice(:, :, jn)
         nstrt3(3) = jn
         nret = NF90_PUT_VAR(ncid, nsiceid, griddata, nstrt3, nlngth3)
+        !$ACC END KERNELS
         IF (nret .NE. NF90_NOERR) THEN
-          IF (lwp) WRITE(numout, FMT = *) TRIM(NF90_STRERROR(nret))
+          IF (lwp) WRITE(numout, *) TRIM(NF90_STRERROR(nret))
           CALL ctl_stop('icebergs, write_restart: nf_put_var stored_ice failed')
         END IF
       END DO
-      IF (lwp) WRITE(numout, FMT = *) 'file: ', TRIM(cl_path) // TRIM(cl_filename), ' var: stored_ice  written'
+      IF (lwp) WRITE(numout, *) 'file: ', TRIM(cl_path) // TRIM(cl_filename), ' var: stored_ice  written'
       nret = NF90_PUT_VAR(ncid, nkountid, num_bergs(:))
       IF (nret .NE. NF90_NOERR) CALL ctl_stop('icebergs, write_restart: nf_put_var kount failed')
       nret = NF90_PUT_VAR(ncid, nsheatid, berg_grid % stored_heat(:, :))
       IF (nret .NE. NF90_NOERR) CALL ctl_stop('icebergs, write_restart: nf_put_var stored_heat failed')
-      IF (lwp) WRITE(numout, FMT = *) 'file: ', TRIM(cl_path) // TRIM(cl_filename), ' var: stored_heat written'
+      IF (lwp) WRITE(numout, *) 'file: ', TRIM(cl_path) // TRIM(cl_filename), ' var: stored_heat written'
       nret = NF90_PUT_VAR(ncid, ncalvid, src_calving(:, :))
       IF (nret .NE. NF90_NOERR) CALL ctl_stop('icebergs, write_restart: nf_put_var calving failed')
       nret = NF90_PUT_VAR(ncid, ncalvhid, src_calving_hflx(:, :))
       IF (nret .NE. NF90_NOERR) CALL ctl_stop('icebergs, write_restart: nf_put_var calving_hflx failed')
-      IF (lwp) WRITE(numout, FMT = *) 'file: ', TRIM(cl_path) // TRIM(cl_filename), ' var: calving written'
+      IF (lwp) WRITE(numout, *) 'file: ', TRIM(cl_path) // TRIM(cl_filename), ' var: calving written'
       IF (ASSOCIATED(first_berg)) THEN
         this => first_berg
         jn = 0
@@ -279,13 +281,11 @@ MODULE icbrst
       nret = NF90_CLOSE(ncid)
       IF (nret /= NF90_NOERR) CALL ctl_stop('icebergs, write_restart: nf_close failed')
       jn = icb_utl_count()
-      IF (lwp .AND. nn_verbose_level >= 0) WRITE(numout, FMT = '(2(a,i5))') 'icebergs, icb_rst_write: # bergs =', jn, ' on PE', &
-&narea - 1
+      IF (lwp .AND. nn_verbose_level >= 0) WRITE(numout, '(2(a,i5))') 'icebergs, icb_rst_write: # bergs =', jn, ' on PE', narea - 1
       IF (lk_mpp) THEN
         CALL mpp_sum('icbrst', jn)
       END IF
-      IF (lwp) WRITE(numout, FMT = '(a,i5,a,i5,a)') 'icebergs, icb_rst_write: ', jn, ' bergs in total have been written at &
-&timestep ', kt
+      IF (lwp) WRITE(numout, '(a,i5,a,i5,a)') 'icebergs, icb_rst_write: ', jn, ' bergs in total have been written at timestep ', kt
     END IF
   END SUBROUTINE icb_rst_write
 END MODULE icbrst

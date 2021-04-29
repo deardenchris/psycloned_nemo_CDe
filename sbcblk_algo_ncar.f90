@@ -157,15 +157,14 @@ MODULE sbcblk_algo_ncar
     INTEGER :: ji, jj
     REAL(KIND = wp) :: zx2, zx, zstab
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zx2 = SQRT(ABS(1. - 16. * pzeta(ji, jj)))
         zx2 = MAX(zx2, 1.)
         zx = SQRT(zx2)
         zstab = 0.5 + SIGN(0.5, pzeta(ji, jj))
-        psi_m(ji, jj) = zstab * (- 5. * pzeta(ji, jj)) + (1. - zstab) * (2. * LOG((1. + zx) * 0.5) + LOG((1. + zx2) * 0.5) - 2. * &
-&ATAN(zx) + rpi * 0.5)
+        psi_m(ji, jj) = zstab * (- 5. * pzeta(ji, jj)) + (1. - zstab) * (2. * LOG((1. + zx) * 0.5) + LOG((1. + zx2) * 0.5) - 2. * ATAN(zx) + rpi * 0.5)
       END DO
     END DO
     !$ACC END KERNELS
@@ -176,7 +175,7 @@ MODULE sbcblk_algo_ncar
     INTEGER :: ji, jj
     REAL(KIND = wp) :: zx2, zstab
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zx2 = SQRT(ABS(1. - 16. * pzeta(ji, jj)))

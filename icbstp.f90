@@ -28,15 +28,25 @@ MODULE icbstp
     INTEGER, INTENT(IN) :: kt
     LOGICAL :: ll_sample_traj, ll_budget, ll_verbose
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     CALL profile_psy_data0 % PreStart('icb_stp', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('icb_stp')
     nktberg = kt
+    CALL profile_psy_data0 % PostEnd
     IF (nn_test_icebergs < 0 .OR. ln_use_calving) THEN
+      CALL profile_psy_data1 % PreStart('icb_stp', 'r1', 0, 0)
       CALL fld_read(kt, 1, sf_icb)
+      CALL profile_psy_data1 % PostEnd
+      !$ACC KERNELS
       src_calving(:, :) = sf_icb(1) % fnow(:, :, 1)
       src_calving_hflx(:, :) = 0._wp
+      !$ACC END KERNELS
     END IF
+    !$ACC KERNELS
     berg_grid % floating_melt(:, :) = 0._wp
+    !$ACC END KERNELS
+    CALL profile_psy_data2 % PreStart('icb_stp', 'r2', 0, 0)
     CALL icb_dia_step
     ll_verbose = .FALSE.
     IF (nn_verbose_write > 0 .AND. MOD(kt - 1, nn_verbose_write) == 0) ll_verbose = (nn_verbose_level >= 0)
@@ -68,7 +78,7 @@ MODULE icbstp
       IF (nn_sample_rate > 0) CALL icb_trj_sync
     END IF
     IF (ln_timing) CALL timing_stop('icb_stp')
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE icb_stp
   SUBROUTINE icb_end(kt)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -76,7 +86,7 @@ MODULE icbstp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('icb_end', 'r0', 0, 0)
     IF (nn_sample_rate > 0) CALL icb_trj_end
-    IF (lwp) WRITE(numout, FMT = '(a,i6)') 'icebergs: icb_end complete', narea
+    IF (lwp) WRITE(numout, '(a,i6)') 'icebergs: icb_end complete', narea
     IF (nn_verbose_level > 0) THEN
       CALL flush(numicb)
       CLOSE(UNIT = numicb)

@@ -40,6 +40,7 @@ MODULE zdfdrg
   REAL(KIND = wp), ALLOCATABLE, SAVE, DIMENSION(:, :), PUBLIC :: rCdU_top, rCdU_bot
   CONTAINS
   SUBROUTINE zdf_drg(kt, k_mk, pCdmin, pCdmax, pz0, pke0, pCd0, pCdU)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     INTEGER, INTENT(IN) :: kt
     INTEGER, DIMENSION(:, :), INTENT(IN) :: k_mk
     REAL(KIND = wp), INTENT(IN) :: pCdmin
@@ -51,9 +52,10 @@ MODULE zdfdrg
     INTEGER :: ji, jj
     INTEGER :: imk
     REAL(KIND = wp) :: zzz, zut, zvt, zcd
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     IF (l_log_not_linssh) THEN
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           imk = k_mk(ji, jj)
@@ -68,7 +70,7 @@ MODULE zdfdrg
       !$ACC END KERNELS
     ELSE
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           imk = k_mk(ji, jj)
@@ -79,7 +81,9 @@ MODULE zdfdrg
       END DO
       !$ACC END KERNELS
     END IF
+    CALL profile_psy_data0 % PreStart('zdf_drg', 'r0', 0, 0)
     IF (ln_ctl) CALL prt_ctl(tab2d_1 = pCdU, clinfo1 = ' Cd*U ')
+    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE zdf_drg
   SUBROUTINE zdf_drg_exp(kt, pub, pvb, pua, pva)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -93,6 +97,7 @@ MODULE zdfdrg
     REAL(KIND = wp), DIMENSION(:, :, :), ALLOCATABLE :: ztrdu, ztrdv
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     CALL profile_psy_data0 % PreStart('zdf_drg_exp', 'r0', 0, 0)
     zm1_2dt = - 1._wp / (2._wp * rdt)
     CALL profile_psy_data0 % PostEnd
@@ -104,7 +109,7 @@ MODULE zdfdrg
       !$ACC END KERNELS
     END IF
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         ikbu = mbku(ji, jj)
@@ -118,7 +123,7 @@ MODULE zdfdrg
     !$ACC END KERNELS
     IF (ln_isfcav) THEN
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           ikbu = miku(ji, jj)
@@ -141,8 +146,9 @@ MODULE zdfdrg
       DEALLOCATE(ztrdu, ztrdv)
       CALL profile_psy_data1 % PostEnd
     END IF
-    IF (ln_ctl) CALL prt_ctl(tab3d_1 = pua, clinfo1 = ' bfr  - Ua: ', mask1 = umask, tab3d_2 = pva, clinfo2 = ' Va: ', mask2 = &
-&vmask, clinfo3 = 'dyn')
+    CALL profile_psy_data2 % PreStart('zdf_drg_exp', 'r2', 0, 0)
+    IF (ln_ctl) CALL prt_ctl(tab3d_1 = pua, clinfo1 = ' bfr  - Ua: ', mask1 = umask, tab3d_2 = pva, clinfo2 = ' Va: ', mask2 = vmask, clinfo3 = 'dyn')
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE zdf_drg_exp
   SUBROUTINE zdf_drg_init
     INTEGER :: ji, jj
@@ -156,15 +162,15 @@ MODULE zdfdrg
 902 IF (ios > 0) CALL ctl_nam(ios, 'namdrg in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namdrg)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'zdf_drg_init : top and/or bottom drag setting'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namdrg : top/bottom friction choices'
-      WRITE(numout, FMT = *) '      free-slip       : Cd = 0                  ln_OFF      = ', ln_OFF
-      WRITE(numout, FMT = *) '      linear  drag    : Cd = Cd0                ln_lin      = ', ln_lin
-      WRITE(numout, FMT = *) '      non-linear  drag: Cd = Cd0_nl |U|         ln_non_lin  = ', ln_non_lin
-      WRITE(numout, FMT = *) '      logarithmic drag: Cd = vkarmn/log(z/z0)   ln_loglayer = ', ln_loglayer
-      WRITE(numout, FMT = *) '      implicit friction                         ln_drgimp   = ', ln_drgimp
+      WRITE(numout, *)
+      WRITE(numout, *) 'zdf_drg_init : top and/or bottom drag setting'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist namdrg : top/bottom friction choices'
+      WRITE(numout, *) '      free-slip       : Cd = 0                  ln_OFF      = ', ln_OFF
+      WRITE(numout, *) '      linear  drag    : Cd = Cd0                ln_lin      = ', ln_lin
+      WRITE(numout, *) '      non-linear  drag: Cd = Cd0_nl |U|         ln_non_lin  = ', ln_non_lin
+      WRITE(numout, *) '      logarithmic drag: Cd = vkarmn/log(z/z0)   ln_loglayer = ', ln_loglayer
+      WRITE(numout, *) '      implicit friction                         ln_drgimp   = ', ln_drgimp
     END IF
     ioptio = 0
     IF (ln_off) THEN
@@ -238,24 +244,24 @@ MODULE zdfdrg
     IF (lwm .AND. ll_top) WRITE(numond, namdrg_top)
     IF (lwm .AND. ll_bot) WRITE(numond, namdrg_bot)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '   Namelist ', TRIM(cl_namdrg), ' : set ', TRIM(cd_topbot), ' friction parameters'
-      WRITE(numout, FMT = *) '      drag coefficient                        rn_Cd0   = ', rn_Cd0
-      WRITE(numout, FMT = *) '      characteristic velocity (linear case)   rn_Uc0   = ', rn_Uc0, ' m/s'
-      WRITE(numout, FMT = *) '      non-linear drag maximum                 rn_Cdmax = ', rn_Cdmax
-      WRITE(numout, FMT = *) '      background kinetic energy  (n-l case)   rn_ke0   = ', rn_ke0
-      WRITE(numout, FMT = *) '      bottom roughness           (n-l case)   rn_z0    = ', rn_z0
-      WRITE(numout, FMT = *) '      set a regional boost of Cd0             ln_boost = ', ln_boost
-      WRITE(numout, FMT = *) '         associated boost factor              rn_boost = ', rn_boost
+      WRITE(numout, *)
+      WRITE(numout, *) '   Namelist ', TRIM(cl_namdrg), ' : set ', TRIM(cd_topbot), ' friction parameters'
+      WRITE(numout, *) '      drag coefficient                        rn_Cd0   = ', rn_Cd0
+      WRITE(numout, *) '      characteristic velocity (linear case)   rn_Uc0   = ', rn_Uc0, ' m/s'
+      WRITE(numout, *) '      non-linear drag maximum                 rn_Cdmax = ', rn_Cdmax
+      WRITE(numout, *) '      background kinetic energy  (n-l case)   rn_ke0   = ', rn_ke0
+      WRITE(numout, *) '      bottom roughness           (n-l case)   rn_z0    = ', rn_z0
+      WRITE(numout, *) '      set a regional boost of Cd0             ln_boost = ', ln_boost
+      WRITE(numout, *) '         associated boost factor              rn_boost = ', rn_boost
     END IF
     pCdmin = rn_Cd0
     pCdmax = rn_Cdmax
     pz0 = rn_z0
     pke0 = rn_ke0
     IF (ln_boost) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   use a regional boost read in ', TRIM(cl_file), ' file'
-      IF (lwp) WRITE(numout, FMT = *) '           using enhancement factor of ', rn_boost
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   use a regional boost read in ', TRIM(cl_file), ' file'
+      IF (lwp) WRITE(numout, *) '           using enhancement factor of ', rn_boost
       CALL iom_open(TRIM(cl_file), inum)
       CALL iom_get(inum, jpdom_data, TRIM(cl_varname), zmsk_boost, 1)
       CALL iom_close(inum)
@@ -267,52 +273,49 @@ MODULE zdfdrg
       zmsk_boost(:, :) = 1._wp
       !$ACC END KERNELS
     END IF
-    !$ACC KERNELS
     IF (ll_top) zmsk_boost(:, :) = zmsk_boost(:, :) * ssmask(:, :) * (1. - tmask(:, :, 1))
     IF (ll_bot) zmsk_boost(:, :) = zmsk_boost(:, :) * ssmask(:, :)
-    !$ACC END KERNELS
     SELECT CASE (ndrg)
     CASE (np_OFF)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   ', TRIM(cd_topbot), ' free-slip, friction set to zero'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   ', TRIM(cd_topbot), ' free-slip, friction set to zero'
       !$ACC KERNELS
       l_zdfdrg = .FALSE.
       pCdU(:, :) = 0._wp
       pCd0(:, :) = 0._wp
       !$ACC END KERNELS
     CASE (np_lin)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   linear ', TRIM(cd_topbot), ' friction (constant coef = Cd0*Uc0 = ', rn_Cd0 * &
-&rn_Uc0, ')'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   linear ', TRIM(cd_topbot), ' friction (constant coef = Cd0*Uc0 = ', rn_Cd0 * rn_Uc0, ')'
       !$ACC KERNELS
       l_zdfdrg = .FALSE.
       pCd0(:, :) = rn_Cd0 * zmsk_boost(:, :)
       pCdU(:, :) = - pCd0(:, :) * rn_Uc0
       !$ACC END KERNELS
     CASE (np_non_lin)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   quadratic ', TRIM(cd_topbot), ' friction (propotional to module of the velocity)'
-      IF (lwp) WRITE(numout, FMT = *) '   with    a drag coefficient Cd0 = ', rn_Cd0, ', and'
-      IF (lwp) WRITE(numout, FMT = *) '           a background velocity module of (rn_ke0)^1/2 = ', SQRT(rn_ke0), 'm/s)'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   quadratic ', TRIM(cd_topbot), ' friction (propotional to module of the velocity)'
+      IF (lwp) WRITE(numout, *) '   with    a drag coefficient Cd0 = ', rn_Cd0, ', and'
+      IF (lwp) WRITE(numout, *) '           a background velocity module of (rn_ke0)^1/2 = ', SQRT(rn_ke0), 'm/s)'
       !$ACC KERNELS
       l_zdfdrg = .TRUE.
       pCd0(:, :) = rn_Cd0 * zmsk_boost(:, :)
       pCdU(:, :) = 0._wp
       !$ACC END KERNELS
     CASE (np_loglayer)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   quadratic ', TRIM(cd_topbot), ' drag (propotional to module of the velocity)'
-      IF (lwp) WRITE(numout, FMT = *) '   with   a logarithmic Cd0 formulation Cd0 = ( vkarman log(z/z0) )^2 ,'
-      IF (lwp) WRITE(numout, FMT = *) '          a background velocity module of (rn_ke0)^1/2 = ', SQRT(pke0), 'm/s), '
-      IF (lwp) WRITE(numout, FMT = *) '          a logarithmic formulation: a roughness of ', pz0, ' meters,   and '
-      IF (lwp) WRITE(numout, FMT = *) '          a proportionality factor bounded by min/max values of ', pCdmin, pCdmax
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   quadratic ', TRIM(cd_topbot), ' drag (propotional to module of the velocity)'
+      IF (lwp) WRITE(numout, *) '   with   a logarithmic Cd0 formulation Cd0 = ( vkarman log(z/z0) )^2 ,'
+      IF (lwp) WRITE(numout, *) '          a background velocity module of (rn_ke0)^1/2 = ', SQRT(pke0), 'm/s), '
+      IF (lwp) WRITE(numout, *) '          a logarithmic formulation: a roughness of ', pz0, ' meters,   and '
+      IF (lwp) WRITE(numout, *) '          a proportionality factor bounded by min/max values of ', pCdmin, pCdmax
       l_zdfdrg = .TRUE.
       IF (ln_linssh) THEN
-        IF (lwp) WRITE(numout, FMT = *)
-        IF (lwp) WRITE(numout, FMT = *) '   N.B.   linear free surface case, Cd0 computed one for all'
+        IF (lwp) WRITE(numout, *)
+        IF (lwp) WRITE(numout, *) '   N.B.   linear free surface case, Cd0 computed one for all'
         !$ACC KERNELS
         l_log_not_linssh = .FALSE.
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zzz = 0.5_wp * e3t_0(ji, jj, k_mk(ji, jj))
@@ -322,8 +325,8 @@ MODULE zdfdrg
         END DO
         !$ACC END KERNELS
       ELSE
-        IF (lwp) WRITE(numout, FMT = *)
-        IF (lwp) WRITE(numout, FMT = *) '   N.B.   non-linear free surface case, Cd0 updated at each time-step '
+        IF (lwp) WRITE(numout, *)
+        IF (lwp) WRITE(numout, *) '   N.B.   non-linear free surface case, Cd0 updated at each time-step '
         !$ACC KERNELS
         l_log_not_linssh = .TRUE.
         pCd0(:, :) = zmsk_boost(:, :)

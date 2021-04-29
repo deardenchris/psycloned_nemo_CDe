@@ -6,8 +6,7 @@ MODULE obs_profiles_def
   USE lib_mpp, ONLY: ctl_warn, ctl_stop
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: obs_prof, obs_prof_var, obs_prof_valid, obs_prof_alloc, obs_prof_alloc_var, obs_prof_dealloc, obs_prof_compress, &
-&obs_prof_decompress, obs_prof_staend
+  PUBLIC :: obs_prof, obs_prof_var, obs_prof_valid, obs_prof_alloc, obs_prof_alloc_var, obs_prof_dealloc, obs_prof_compress, obs_prof_decompress, obs_prof_staend
   TYPE :: obs_prof_valid
     LOGICAL, POINTER, DIMENSION(:) :: luse
   END TYPE obs_prof_valid
@@ -67,12 +66,9 @@ MODULE obs_profiles_def
       prof % nvprot(jvar) = ko3dt(jvar)
       prof % nvprotmpp(jvar) = 0
     END DO
-    ALLOCATE(prof % npvsta(kprof, kvar), prof % npvend(kprof, kvar), prof % mi(kprof, kvar), prof % mj(kprof, kvar), prof % &
-&ivqc(kprof, kvar))
+    ALLOCATE(prof % npvsta(kprof, kvar), prof % npvend(kprof, kvar), prof % mi(kprof, kvar), prof % mj(kprof, kvar), prof % ivqc(kprof, kvar))
     ALLOCATE(prof % ivqcf(idefnqcf, kprof, kvar))
-    ALLOCATE(prof % npidx(kprof), prof % npfil(kprof), prof % nyea(kprof), prof % nmon(kprof), prof % nday(kprof), prof % &
-&nhou(kprof), prof % nmin(kprof), prof % mstp(kprof), prof % nqc(kprof), prof % ipqc(kprof), prof % itqc(kprof), prof % &
-&ntyp(kprof), prof % rlam(kprof), prof % rphi(kprof), prof % cwmo(kprof), prof % npind(kprof))
+    ALLOCATE(prof % npidx(kprof), prof % npfil(kprof), prof % nyea(kprof), prof % nmon(kprof), prof % nday(kprof), prof % nhou(kprof), prof % nmin(kprof), prof % mstp(kprof), prof % nqc(kprof), prof % ipqc(kprof), prof % itqc(kprof), prof % ntyp(kprof), prof % rlam(kprof), prof % rphi(kprof), prof % cwmo(kprof), prof % npind(kprof))
     ALLOCATE(prof % nqcf(idefnqcf, kprof), prof % ipqcf(idefnqcf, kprof), prof % itqcf(idefnqcf, kprof))
     ALLOCATE(prof % var(kvar))
     DO jvar = 1, kvar
@@ -101,9 +97,7 @@ MODULE obs_profiles_def
     TYPE(obs_prof), INTENT(INOUT) :: prof
     INTEGER :: jvar
     DEALLOCATE(prof % npvsta, prof % npvend)
-    DEALLOCATE(prof % mi, prof % mj, prof % ivqc, prof % ivqcf, prof % npidx, prof % npfil, prof % nyea, prof % nmon, prof % nday, &
-&prof % nhou, prof % nmin, prof % mstp, prof % nqc, prof % ipqc, prof % itqc, prof % nqcf, prof % ipqcf, prof % itqcf, prof % &
-&ntyp, prof % rlam, prof % rphi, prof % cwmo, prof % npind)
+    DEALLOCATE(prof % mi, prof % mj, prof % ivqc, prof % ivqcf, prof % npidx, prof % npfil, prof % nyea, prof % nmon, prof % nday, prof % nhou, prof % nmin, prof % mstp, prof % nqc, prof % ipqc, prof % itqc, prof % nqcf, prof % ipqcf, prof % itqcf, prof % ntyp, prof % rlam, prof % rphi, prof % cwmo, prof % npind)
     DO jvar = 1, prof % nvar
       IF (prof % nvprot(jvar) >= 0) THEN
         CALL obs_prof_dealloc_var(prof, jvar)
@@ -120,9 +114,7 @@ MODULE obs_profiles_def
     INTEGER, INTENT(IN) :: kvar
     INTEGER, INTENT(IN) :: kext
     INTEGER, INTENT(IN) :: kobs
-    ALLOCATE(prof % var(kvar) % mvk(kobs), prof % var(kvar) % nvpidx(kobs), prof % var(kvar) % nvlidx(kobs), prof % var(kvar) % &
-&nvqc(kobs), prof % var(kvar) % idqc(kobs), prof % var(kvar) % vdep(kobs), prof % var(kvar) % vobs(kobs), prof % var(kvar) % &
-&vmod(kobs), prof % var(kvar) % nvind(kobs))
+    ALLOCATE(prof % var(kvar) % mvk(kobs), prof % var(kvar) % nvpidx(kobs), prof % var(kvar) % nvlidx(kobs), prof % var(kvar) % nvqc(kobs), prof % var(kvar) % idqc(kobs), prof % var(kvar) % vdep(kobs), prof % var(kvar) % vobs(kobs), prof % var(kvar) % vmod(kobs), prof % var(kvar) % nvind(kobs))
     ALLOCATE(prof % var(kvar) % idqcf(idefnqcf, kobs), prof % var(kvar) % nvqcf(idefnqcf, kobs))
     IF (kext > 0) THEN
       ALLOCATE(prof % var(kvar) % vext(kobs, kext))
@@ -131,9 +123,7 @@ MODULE obs_profiles_def
   SUBROUTINE obs_prof_dealloc_var(prof, kvar)
     TYPE(obs_prof), INTENT(INOUT) :: prof
     INTEGER, INTENT(IN) :: kvar
-    DEALLOCATE(prof % var(kvar) % mvk, prof % var(kvar) % nvpidx, prof % var(kvar) % nvlidx, prof % var(kvar) % nvqc, prof % &
-&var(kvar) % idqc, prof % var(kvar) % vdep, prof % var(kvar) % vobs, prof % var(kvar) % vmod, prof % var(kvar) % nvind, prof % &
-&var(kvar) % idqcf, prof % var(kvar) % nvqcf)
+    DEALLOCATE(prof % var(kvar) % mvk, prof % var(kvar) % nvpidx, prof % var(kvar) % nvlidx, prof % var(kvar) % nvqc, prof % var(kvar) % idqc, prof % var(kvar) % vdep, prof % var(kvar) % vobs, prof % var(kvar) % vmod, prof % var(kvar) % nvind, prof % var(kvar) % idqcf, prof % var(kvar) % nvqcf)
     IF (prof % next > 0) THEN
       DEALLOCATE(prof % var(kvar) % vext)
     END IF
@@ -166,8 +156,7 @@ MODULE obs_profiles_def
     ELSE IF ((.NOT. PRESENT(lvalid)) .AND. (.NOT. PRESENT(lvvalid))) THEN
       lnonepresent = .TRUE.
     ELSE
-      CALL ctl_stop('Error in obs_prof_compress:', 'Either all selection variables should be set', &
-&'or no selection variable should be set')
+      CALL ctl_stop('Error in obs_prof_compress:', 'Either all selection variables should be set', 'or no selection variable should be set')
     END IF
     IF (lallpresent) THEN
       inprof = 0

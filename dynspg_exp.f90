@@ -19,19 +19,19 @@ MODULE dynspg_exp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     IF (kt == nit000) THEN
       CALL profile_psy_data0 % PreStart('dyn_spg_exp', 'r0', 0, 0)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'dyn_spg_exp : surface pressure gradient trend'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~   (explicit free surface)'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'dyn_spg_exp : surface pressure gradient trend'
+      IF (lwp) WRITE(numout, *) '~~~~~~~~~~~   (explicit free surface)'
       CALL profile_psy_data0 % PostEnd
       !$ACC KERNELS
       spgu(:, :) = 0._wp
       spgv(:, :) = 0._wp
       !$ACC END KERNELS
-      IF (.NOT. ln_linssh .AND. lwp) WRITE(numout, FMT = *) '      non linear free surface: spg is included in dynhpg'
+      IF (.NOT. ln_linssh .AND. lwp) WRITE(numout, *) '      non linear free surface: spg is included in dynhpg'
     END IF
     IF (ln_linssh) THEN
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           spgu(ji, jj) = - grav * (sshn(ji + 1, jj) - sshn(ji, jj)) * r1_e1u(ji, jj)
@@ -39,7 +39,7 @@ MODULE dynspg_exp
         END DO
       END DO
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             ua(ji, jj, jk) = ua(ji, jj, jk) + spgu(ji, jj)

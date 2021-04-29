@@ -59,6 +59,9 @@ MODULE sbcisf
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data9
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data10
     IF (MOD(kt - 1, nn_fsbc) == 0) THEN
       SELECT CASE (nn_isf)
       CASE (1)
@@ -73,7 +76,9 @@ MODULE sbcisf
         CALL iom_put('vtbl', vtbl(:, :) * (1._wp - tmask(:, :, 1)) * ssmask(:, :))
         CALL profile_psy_data0 % PostEnd
         IF (.NOT. l_isfcpl) THEN
+          CALL profile_psy_data1 % PreStart('sbc_isf', 'r1', 0, 0)
           CALL sbc_isf_cav(kt)
+          CALL profile_psy_data1 % PostEnd
         ELSE
           !$ACC KERNELS
           qisf(:, :) = fwfisf(:, :) * rlfusisf
@@ -83,61 +88,69 @@ MODULE sbcisf
         !$ACC KERNELS
         stbl(:, :) = soce
         !$ACC END KERNELS
+        CALL profile_psy_data2 % PreStart('sbc_isf', 'r2', 0, 0)
         CALL sbc_isf_bg03(kt)
+        CALL profile_psy_data2 % PostEnd
       CASE (3)
-        CALL profile_psy_data1 % PreStart('sbc_isf', 'r1', 0, 0)
         IF (.NOT. l_isfcpl) THEN
+          CALL profile_psy_data3 % PreStart('sbc_isf', 'r3', 0, 0)
           CALL fld_read(kt, nn_fsbc, sf_rnfisf)
+          CALL profile_psy_data3 % PostEnd
+          !$ACC KERNELS
           fwfisf(:, :) = - sf_rnfisf(1) % fnow(:, :, 1)
+          !$ACC END KERNELS
         END IF
-        CALL profile_psy_data1 % PostEnd
         !$ACC KERNELS
         qisf(:, :) = fwfisf(:, :) * rLfusisf
         stbl(:, :) = soce
         !$ACC END KERNELS
       CASE (4)
-        CALL profile_psy_data2 % PreStart('sbc_isf', 'r2', 0, 0)
         IF (.NOT. l_isfcpl) THEN
+          CALL profile_psy_data4 % PreStart('sbc_isf', 'r4', 0, 0)
           CALL fld_read(kt, nn_fsbc, sf_fwfisf)
+          CALL profile_psy_data4 % PostEnd
+          !$ACC KERNELS
           fwfisf(:, :) = - sf_fwfisf(1) % fnow(:, :, 1)
+          !$ACC END KERNELS
         END IF
-        CALL profile_psy_data2 % PostEnd
         !$ACC KERNELS
         qisf(:, :) = fwfisf(:, :) * rLfusisf
         stbl(:, :) = soce
         !$ACC END KERNELS
       END SELECT
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           zdep(ji, jj) = gdepw_n(ji, jj, misfkt(ji, jj))
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data5 % PreStart('sbc_isf', 'r5', 0, 0)
       CALL eos_fzp(stbl(:, :), zt_frz(:, :), zdep(:, :))
+      CALL profile_psy_data5 % PostEnd
       !$ACC KERNELS
       risf_tsc(:, :, jp_tem) = qisf(:, :) * r1_rau0_rcp - fwfisf(:, :) * zt_frz(:, :) * r1_rau0
       risf_tsc(:, :, jp_sal) = 0.0_wp
       !$ACC END KERNELS
-      CALL profile_psy_data3 % PreStart('sbc_isf', 'r3', 0, 0)
+      CALL profile_psy_data6 % PreStart('sbc_isf', 'r6', 0, 0)
       CALL lbc_lnk_multi('sbcisf', risf_tsc(:, :, jp_tem), 'T', 1., risf_tsc(:, :, jp_sal), 'T', 1., fwfisf, 'T', 1., qisf, 'T', 1.)
       IF (iom_use('iceshelf_cea')) CALL iom_put('iceshelf_cea', - fwfisf(:, :))
       IF (iom_use('hflx_isf_cea')) CALL iom_put('hflx_isf_cea', risf_tsc(:, :, jp_tem) * rau0 * rcp)
       IF (iom_use('qlatisf')) CALL iom_put('qlatisf', qisf(:, :))
       IF (iom_use('fwfisf')) CALL iom_put('fwfisf', fwfisf(:, :))
-      CALL profile_psy_data3 % PostEnd
+      CALL profile_psy_data6 % PostEnd
       IF (iom_use('fwfisf3d') .OR. iom_use('qlatisf3d') .OR. iom_use('qhcisf3d') .OR. iom_use('qhcisf')) THEN
-        CALL profile_psy_data4 % PreStart('sbc_isf', 'r4', 0, 0)
+        CALL profile_psy_data7 % PreStart('sbc_isf', 'r7', 0, 0)
         ALLOCATE(zfwfisf3d(jpi, jpj, jpk), zqhcisf3d(jpi, jpj, jpk), zqlatisf3d(jpi, jpj, jpk))
         ALLOCATE(zqhcisf2d(jpi, jpj))
-        CALL profile_psy_data4 % PostEnd
+        CALL profile_psy_data7 % PostEnd
         !$ACC KERNELS
         zfwfisf3d(:, :, :) = 0._wp
         zqhcisf3d(:, :, :) = 0._wp
         zqlatisf3d(:, :, :) = 0._wp
         zqhcisf2d(:, :) = fwfisf(:, :) * zt_frz * rcp
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             ikt = misfkt(ji, jj)
@@ -147,33 +160,30 @@ MODULE sbcisf
               zqhcisf3d(ji, jj, jk) = zqhcisf3d(ji, jj, jk) + zqhcisf2d(ji, jj) * r1_hisf_tbl(ji, jj) * e3t_n(ji, jj, jk)
               zqlatisf3d(ji, jj, jk) = zqlatisf3d(ji, jj, jk) + qisf(ji, jj) * r1_hisf_tbl(ji, jj) * e3t_n(ji, jj, jk)
             END DO
-            zfwfisf3d(ji, jj, jk) = zfwfisf3d(ji, jj, jk) + fwfisf(ji, jj) * r1_hisf_tbl(ji, jj) * ralpha(ji, jj) * e3t_n(ji, jj, &
-&jk)
-            zqhcisf3d(ji, jj, jk) = zqhcisf3d(ji, jj, jk) + zqhcisf2d(ji, jj) * r1_hisf_tbl(ji, jj) * ralpha(ji, jj) * e3t_n(ji, &
-&jj, jk)
-            zqlatisf3d(ji, jj, jk) = zqlatisf3d(ji, jj, jk) + qisf(ji, jj) * r1_hisf_tbl(ji, jj) * ralpha(ji, jj) * e3t_n(ji, jj, &
-&jk)
+            zfwfisf3d(ji, jj, jk) = zfwfisf3d(ji, jj, jk) + fwfisf(ji, jj) * r1_hisf_tbl(ji, jj) * ralpha(ji, jj) * e3t_n(ji, jj, jk)
+            zqhcisf3d(ji, jj, jk) = zqhcisf3d(ji, jj, jk) + zqhcisf2d(ji, jj) * r1_hisf_tbl(ji, jj) * ralpha(ji, jj) * e3t_n(ji, jj, jk)
+            zqlatisf3d(ji, jj, jk) = zqlatisf3d(ji, jj, jk) + qisf(ji, jj) * r1_hisf_tbl(ji, jj) * ralpha(ji, jj) * e3t_n(ji, jj, jk)
           END DO
         END DO
         !$ACC END KERNELS
-        CALL profile_psy_data5 % PreStart('sbc_isf', 'r5', 0, 0)
+        CALL profile_psy_data8 % PreStart('sbc_isf', 'r8', 0, 0)
         CALL iom_put('fwfisf3d', zfwfisf3d(:, :, :))
         CALL iom_put('qlatisf3d', zqlatisf3d(:, :, :))
         CALL iom_put('qhcisf3d', zqhcisf3d(:, :, :))
         CALL iom_put('qhcisf', zqhcisf2d(:, :))
         DEALLOCATE(zfwfisf3d, zqhcisf3d, zqlatisf3d)
         DEALLOCATE(zqhcisf2d)
-        CALL profile_psy_data5 % PostEnd
+        CALL profile_psy_data8 % PostEnd
       END IF
     END IF
     IF (kt == nit000) THEN
       IF (ln_rstart .AND. iom_varid(numror, 'fwf_isf_b', ldstop = .FALSE.) > 0) THEN
-        CALL profile_psy_data6 % PreStart('sbc_isf', 'r6', 0, 0)
-        IF (lwp) WRITE(numout, FMT = *) '          nit000-1 isf tracer content forcing fields read in the restart file'
+        CALL profile_psy_data9 % PreStart('sbc_isf', 'r9', 0, 0)
+        IF (lwp) WRITE(numout, *) '          nit000-1 isf tracer content forcing fields read in the restart file'
         CALL iom_get(numror, jpdom_autoglo, 'fwf_isf_b', fwfisf_b(:, :), ldxios = lrxios)
         CALL iom_get(numror, jpdom_autoglo, 'isf_sc_b', risf_tsc_b(:, :, jp_sal), ldxios = lrxios)
         CALL iom_get(numror, jpdom_autoglo, 'isf_hc_b', risf_tsc_b(:, :, jp_tem), ldxios = lrxios)
-        CALL profile_psy_data6 % PostEnd
+        CALL profile_psy_data9 % PostEnd
       ELSE
         !$ACC KERNELS
         fwfisf_b(:, :) = fwfisf(:, :)
@@ -181,26 +191,23 @@ MODULE sbcisf
         !$ACC END KERNELS
       END IF
     END IF
-    CALL profile_psy_data7 % PreStart('sbc_isf', 'r7', 0, 0)
+    CALL profile_psy_data10 % PreStart('sbc_isf', 'r10', 0, 0)
     IF (lrst_oce) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'sbc : isf surface tracer content forcing fields written in ocean restart file ', 'at it= ', &
-&kt, ' date= ', ndastp
-      IF (lwp) WRITE(numout, FMT = *) '~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'sbc : isf surface tracer content forcing fields written in ocean restart file ', 'at it= ', kt, ' date= ', ndastp
+      IF (lwp) WRITE(numout, *) '~~~~'
       IF (lwxios) CALL iom_swap(cwxios_context)
       CALL iom_rstput(kt, nitrst, numrow, 'fwf_isf_b', fwfisf(:, :), ldxios = lwxios)
       CALL iom_rstput(kt, nitrst, numrow, 'isf_hc_b', risf_tsc(:, :, jp_tem), ldxios = lwxios)
       CALL iom_rstput(kt, nitrst, numrow, 'isf_sc_b', risf_tsc(:, :, jp_sal), ldxios = lwxios)
       IF (lwxios) CALL iom_swap(cxios_context)
     END IF
-    CALL profile_psy_data7 % PostEnd
+    CALL profile_psy_data10 % PostEnd
   END SUBROUTINE sbc_isf
   INTEGER FUNCTION sbc_isf_alloc()
     sbc_isf_alloc = 0
     IF (.NOT. ALLOCATED(qisf)) THEN
-      ALLOCATE(risf_tsc(jpi, jpj, jpts), risf_tsc_b(jpi, jpj, jpts), qisf(jpi, jpj), rhisf_tbl(jpi, jpj), r1_hisf_tbl(jpi, jpj), &
-&rzisf_tbl(jpi, jpj), ttbl(jpi, jpj), stbl(jpi, jpj), utbl(jpi, jpj), vtbl(jpi, jpj), risfLeff(jpi, jpj), rhisf_tbl_0(jpi, jpj), &
-&ralpha(jpi, jpj), misfkt(jpi, jpj), misfkb(jpi, jpj), STAT = sbc_isf_alloc)
+      ALLOCATE(risf_tsc(jpi, jpj, jpts), risf_tsc_b(jpi, jpj, jpts), qisf(jpi, jpj), rhisf_tbl(jpi, jpj), r1_hisf_tbl(jpi, jpj), rzisf_tbl(jpi, jpj), ttbl(jpi, jpj), stbl(jpi, jpj), utbl(jpi, jpj), vtbl(jpi, jpj), risfLeff(jpi, jpj), rhisf_tbl_0(jpi, jpj), ralpha(jpi, jpj), misfkt(jpi, jpj), misfkb(jpi, jpj), STAT = sbc_isf_alloc)
       CALL mpp_sum('sbcisf', sbc_isf_alloc)
       IF (sbc_isf_alloc /= 0) CALL ctl_stop('STOP', 'sbc_isf_alloc: failed to allocate arrays.')
     END IF
@@ -214,8 +221,7 @@ MODULE sbcisf
     REAL(KIND = wp) :: zhk
     CHARACTER(LEN = 256) :: cvarzisf, cvarhisf
     CHARACTER(LEN = 32) :: cvarLeff
-    NAMELIST /namsbc_isf/ nn_isfblk, rn_hisf_tbl, rn_gammat0, rn_gammas0, nn_gammablk, nn_isf, sn_fwfisf, sn_rnfisf, &
-&sn_depmax_isf, sn_depmin_isf, sn_Leff_isf
+    NAMELIST /namsbc_isf/ nn_isfblk, rn_hisf_tbl, rn_gammat0, rn_gammas0, nn_gammablk, nn_isf, sn_fwfisf, sn_rnfisf, sn_depmax_isf, sn_depmin_isf, sn_Leff_isf
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, namsbc_isf, IOSTAT = ios, ERR = 901)
 901 IF (ios /= 0) CALL ctl_nam(ios, 'namsbc_isf in reference namelist', lwp)
@@ -223,17 +229,17 @@ MODULE sbcisf
     READ(numnam_cfg, namsbc_isf, IOSTAT = ios, ERR = 902)
 902 IF (ios > 0) CALL ctl_nam(ios, 'namsbc_isf in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namsbc_isf)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) 'sbc_isf_init : heat flux of the ice shelf'
-    IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-    IF (lwp) WRITE(numout, FMT = *) '   Namelist namsbc_isf :'
-    IF (lwp) WRITE(numout, FMT = *) '      type ice shelf melting/freezing         nn_isf      = ', nn_isf
-    IF (lwp) WRITE(numout, FMT = *) '      bulk formulation (nn_isf=1 only)        nn_isfblk   = ', nn_isfblk
-    IF (lwp) WRITE(numout, FMT = *) '      thickness of the top boundary layer     rn_hisf_tbl = ', rn_hisf_tbl
-    IF (lwp) WRITE(numout, FMT = *) '      gamma formulation                       nn_gammablk = ', nn_gammablk
-    IF (lwp) WRITE(numout, FMT = *) '      gammat coefficient                      rn_gammat0  = ', rn_gammat0
-    IF (lwp) WRITE(numout, FMT = *) '      gammas coefficient                      rn_gammas0  = ', rn_gammas0
-    IF (lwp) WRITE(numout, FMT = *) '      top drag coef. used (from namdrg_top)   rn_Cd0      = ', r_Cdmin_top
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) 'sbc_isf_init : heat flux of the ice shelf'
+    IF (lwp) WRITE(numout, *) '~~~~~~~~~~~~'
+    IF (lwp) WRITE(numout, *) '   Namelist namsbc_isf :'
+    IF (lwp) WRITE(numout, *) '      type ice shelf melting/freezing         nn_isf      = ', nn_isf
+    IF (lwp) WRITE(numout, *) '      bulk formulation (nn_isf=1 only)        nn_isfblk   = ', nn_isfblk
+    IF (lwp) WRITE(numout, *) '      thickness of the top boundary layer     rn_hisf_tbl = ', rn_hisf_tbl
+    IF (lwp) WRITE(numout, *) '      gamma formulation                       nn_gammablk = ', nn_gammablk
+    IF (lwp) WRITE(numout, *) '      gammat coefficient                      rn_gammat0  = ', rn_gammat0
+    IF (lwp) WRITE(numout, *) '      gammas coefficient                      rn_gammas0  = ', rn_gammas0
+    IF (lwp) WRITE(numout, *) '      top drag coef. used (from namdrg_top)   rn_Cd0      = ', r_Cdmin_top
     IF (sbc_isf_alloc() /= 0) CALL ctl_stop('STOP', 'sbc_isf : unable to allocate arrays')
     !$ACC KERNELS
     qisf(:, :) = 0._wp
@@ -243,8 +249,8 @@ MODULE sbcisf
     !$ACC END KERNELS
     SELECT CASE (nn_isf)
     CASE (1)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '      ==>>>   presence of under iceshelf seas (nn_isf = 1)'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '      ==>>>   presence of under iceshelf seas (nn_isf = 1)'
       !$ACC KERNELS
       rhisf_tbl(:, :) = rn_hisf_tbl
       misfkt(:, :) = mikt(:, :)
@@ -256,16 +262,16 @@ MODULE sbcisf
         CALL fld_fill(sf_rnfisf, (/sn_rnfisf/), cn_dirisf, 'sbc_isf_init', 'read fresh water flux isf data', 'namsbc_isf')
       END IF
       IF (nn_isf == 2) THEN
-        IF (lwp) WRITE(numout, FMT = *)
-        IF (lwp) WRITE(numout, FMT = *) '      ==>>>   bg03 parametrisation (nn_isf = 2)'
+        IF (lwp) WRITE(numout, *)
+        IF (lwp) WRITE(numout, *) '      ==>>>   bg03 parametrisation (nn_isf = 2)'
         CALL iom_open(sn_Leff_isf % clname, inum)
         cvarLeff = TRIM(sn_Leff_isf % clvar)
         CALL iom_get(inum, jpdom_data, cvarLeff, risfLeff, 1)
         CALL iom_close(inum)
         risfLeff = risfLeff * 1000.0_wp
       ELSE
-        IF (lwp) WRITE(numout, FMT = *)
-        IF (lwp) WRITE(numout, FMT = *) '      ==>>>   rnf file for isf (nn_isf = 3)'
+        IF (lwp) WRITE(numout, *)
+        IF (lwp) WRITE(numout, *) '      ==>>>   rnf file for isf (nn_isf = 3)'
       END IF
       CALL iom_open(sn_depmax_isf % clname, inum)
       cvarhisf = TRIM(sn_depmax_isf % clvar)
@@ -288,8 +294,8 @@ MODULE sbcisf
         END DO
       END DO
     CASE (4)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '      ==>>>   specified fresh water flux in ISF (nn_isf = 4)'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '      ==>>>   specified fresh water flux in ISF (nn_isf = 4)'
       !$ACC KERNELS
       rhisf_tbl(:, :) = rn_hisf_tbl
       misfkt(:, :) = mikt(:, :)
@@ -304,7 +310,7 @@ MODULE sbcisf
     END SELECT
     !$ACC KERNELS
     rhisf_tbl_0(:, :) = rhisf_tbl(:, :)
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         ikt = misfkt(ji, jj)
@@ -518,8 +524,7 @@ MODULE sbcisf
             zmols = SIGN(1._wp, zmob) * MIN(ABS(zmob), zhmax) * tmask(ji, jj, ikt)
             zetastar = 1._wp / (SQRT(1._wp + MAX(zxsiN * zustar(ji, jj) / (ABS(ff_f(ji, jj)) * zmols * zRc), 0._wp)))
             zhnu = 5 * znu / zustar(ji, jj)
-            zgturb = 1._wp / vkarmn * LOG(zustar(ji, jj) * zxsiN * zetastar * zetastar / (ABS(ff_f(ji, jj)) * zhnu)) + 1._wp / (2 &
-&* zxsiN * zetastar) - 1._wp / vkarmn
+            zgturb = 1._wp / vkarmn * LOG(zustar(ji, jj) * zxsiN * zetastar * zetastar / (ABS(ff_f(ji, jj)) * zhnu)) + 1._wp / (2 * zxsiN * zetastar) - 1._wp / vkarmn
             pgt(ji, jj) = zustar(ji, jj) / (zgturb + zgmolet)
             pgs(ji, jj) = zustar(ji, jj) / (zgturb + zgmoles)
           END IF
@@ -530,6 +535,7 @@ MODULE sbcisf
     END SELECT
   END SUBROUTINE sbc_isf_gammats
   SUBROUTINE sbc_isf_tbl(pvarin, pvarout, cd_ptin)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(IN) :: pvarin
     REAL(KIND = wp), DIMENSION(:, :), INTENT(OUT) :: pvarout
     CHARACTER(LEN = 1), INTENT(IN) :: cd_ptin
@@ -537,13 +543,15 @@ MODULE sbcisf
     INTEGER :: ikt, ikb
     REAL(KIND = wp) :: ze3, zhk
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zhisf_tbl
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     !$ACC KERNELS
     pvarout(:, :) = 0._wp
     !$ACC END KERNELS
     SELECT CASE (cd_ptin)
     CASE ('U')
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           ikt = miku(ji, jj)
@@ -561,17 +569,19 @@ MODULE sbcisf
           pvarout(ji, jj) = pvarout(ji, jj) + pvarin(ji, jj, ikb) * (1._wp - zhk)
         END DO
       END DO
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpj
         DO ji = 2, jpi
           pvarout(ji, jj) = 0.5_wp * (pvarout(ji, jj) + pvarout(ji - 1, jj))
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data0 % PreStart('sbc_isf_tbl', 'r0', 0, 0)
       CALL lbc_lnk('sbcisf', pvarout, 'T', - 1.)
+      CALL profile_psy_data0 % PostEnd
     CASE ('V')
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           ikt = mikv(ji, jj)
@@ -589,17 +599,19 @@ MODULE sbcisf
           pvarout(ji, jj) = pvarout(ji, jj) + pvarin(ji, jj, ikb) * (1._wp - zhk)
         END DO
       END DO
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpj
         DO ji = 2, jpi
           pvarout(ji, jj) = 0.5_wp * (pvarout(ji, jj) + pvarout(ji, jj - 1))
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data1 % PreStart('sbc_isf_tbl', 'r1', 0, 0)
       CALL lbc_lnk('sbcisf', pvarout, 'T', - 1.)
+      CALL profile_psy_data1 % PostEnd
     CASE ('T')
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           ikt = misfkt(ji, jj)
@@ -631,7 +643,7 @@ MODULE sbcisf
     CALL profile_psy_data0 % PostEnd
     IF (.NOT. ln_linssh) THEN
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           ikt = misfkt(ji, jj)
@@ -650,7 +662,7 @@ MODULE sbcisf
       !$ACC END KERNELS
     END IF
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         ikt = misfkt(ji, jj)
@@ -658,8 +670,7 @@ MODULE sbcisf
         DO jk = ikt, ikb - 1
           phdivn(ji, jj, jk) = phdivn(ji, jj, jk) + (fwfisf(ji, jj) + fwfisf_b(ji, jj)) * r1_hisf_tbl(ji, jj) * r1_rau0 * zfact
         END DO
-        phdivn(ji, jj, ikb) = phdivn(ji, jj, ikb) + (fwfisf(ji, jj) + fwfisf_b(ji, jj)) * r1_hisf_tbl(ji, jj) * r1_rau0 * zfact * &
-&ralpha(ji, jj)
+        phdivn(ji, jj, ikb) = phdivn(ji, jj, ikb) + (fwfisf(ji, jj) + fwfisf_b(ji, jj)) * r1_hisf_tbl(ji, jj) * r1_rau0 * zfact * ralpha(ji, jj)
       END DO
     END DO
     !$ACC END KERNELS

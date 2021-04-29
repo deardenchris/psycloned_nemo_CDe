@@ -6,8 +6,7 @@ MODULE obs_inter_h2d
   USE obs_utils
   USE lib_mpp, ONLY: ctl_warn, ctl_stop
   IMPLICIT NONE
-  PRIVATE :: obs_int_h2d_ds1, obs_int_h2d_ds2, obs_int_h2d_bil, obs_int_h2d_bir, obs_int_h2d_pol, lu_invmat, lu_decomp, lu_backsb, &
-&bil_wgt
+  PRIVATE :: obs_int_h2d_ds1, obs_int_h2d_ds2, obs_int_h2d_bil, obs_int_h2d_bir, obs_int_h2d_pol, lu_invmat, lu_decomp, lu_backsb, bil_wgt
   PUBLIC :: obs_int_h2d, obs_int_h2d_init
   CONTAINS
   SUBROUTINE obs_int_h2d_init(kpk, kpk2, k2dint, plam, pphi, pglam, pgphi, pmask, pweig, pobsmask, iminpoints)
@@ -38,8 +37,7 @@ MODULE obs_inter_h2d
     zlammp = pglam(1, 2)
     zlampm = pglam(2, 1)
     zlampp = pglam(2, 2)
-    DO WHILE ((zlammm < 0.0_wp) .OR. (zlammm > 360.0_wp) .OR. (zlampm < 0.0_wp) .OR. (zlampm > 360.0_wp) .OR. (zlampp < 0.0_wp) &
-&.OR. (zlampp > 360.0_wp) .OR. (zlammp < 0.0_wp) .OR. (zlammp > 360.0_wp))
+    DO WHILE ((zlammm < 0.0_wp) .OR. (zlammm > 360.0_wp) .OR. (zlampm < 0.0_wp) .OR. (zlampm > 360.0_wp) .OR. (zlampp < 0.0_wp) .OR. (zlampp > 360.0_wp) .OR. (zlammp < 0.0_wp) .OR. (zlammp > 360.0_wp))
       IF (zlammm < 0.0_wp) zlammm = zlammm + 360.0_wp
       IF (zlammm > 360.0_wp) zlammm = zlammm - 360.0_wp
       IF (zlammp < 0.0_wp) zlammp = zlammp + 360.0_wp
@@ -105,28 +103,23 @@ MODULE obs_inter_h2d
       z2dpp = 0.0_wp
       SELECT CASE (k2dint)
       CASE (0)
-        CALL obs_int_h2d_ds1(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, &
-&z2dmm, z2dmp, z2dpm, z2dpp)
+        CALL obs_int_h2d_ds1(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, z2dmm, z2dmp, z2dpm, z2dpp)
       CASE (1)
-        CALL obs_int_h2d_ds2(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, &
-&z2dmm, z2dmp, z2dpm, z2dpp)
+        CALL obs_int_h2d_ds2(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, z2dmm, z2dmp, z2dpm, z2dpp)
       CASE (2)
         CALL obs_int_h2d_bil(kpk2, ikmax, pphi, plam, pmask, zlammp, zphipm, zphipp, zlampp, z2dmm, z2dmp, z2dpm, z2dpp)
       CASE (3)
-        CALL obs_int_h2d_bir(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, &
-&z2dmm, z2dmp, z2dpm, z2dpp, ll_fail)
+        CALL obs_int_h2d_bir(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, z2dmm, z2dmp, z2dpm, z2dpp, ll_fail)
         IF (ll_fail) THEN
           IF (lwp) THEN
-            WRITE(numout, FMT = *) 'Bilinear weight computation failed'
-            WRITE(numout, FMT = *) 'Switching to great circle distance'
-            WRITE(numout, FMT = *)
+            WRITE(numout, *) 'Bilinear weight computation failed'
+            WRITE(numout, *) 'Switching to great circle distance'
+            WRITE(numout, *)
           END IF
-          CALL obs_int_h2d_ds1(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, &
-&z2dmm, z2dmp, z2dpm, z2dpp)
+          CALL obs_int_h2d_ds1(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, z2dmm, z2dmp, z2dpm, z2dpp)
         END IF
       CASE (4)
-        CALL obs_int_h2d_pol(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, &
-&z2dmm, z2dmp, z2dpm, z2dpp)
+        CALL obs_int_h2d_pol(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, z2dmm, z2dmp, z2dpm, z2dpp)
       END SELECT
     END IF
     pobsmask(:) = 0.0_wp
@@ -142,15 +135,11 @@ MODULE obs_inter_h2d
         pweig(1, 2, jk) = z2dmp(jk)
         pweig(2, 1, jk) = z2dpm(jk)
         pweig(2, 2, jk) = z2dpp(jk)
-        IF (((z2dmm(jk) > 0.0_wp) .AND. (pmask(1, 1, jk) == 1.0_wp)) .OR. ((z2dmp(jk) > 0.0_wp) .AND. (pmask(1, 2, jk) == 1.0_wp)) &
-&.OR. ((z2dpm(jk) > 0.0_wp) .AND. (pmask(2, 1, jk) == 1.0_wp)) .OR. ((z2dpp(jk) > 0.0_wp) .AND. (pmask(2, 2, jk) == 1.0_wp))) &
-&pobsmask(jk) = 1.0_wp
+        IF (((z2dmm(jk) > 0.0_wp) .AND. (pmask(1, 1, jk) == 1.0_wp)) .OR. ((z2dmp(jk) > 0.0_wp) .AND. (pmask(1, 2, jk) == 1.0_wp)) .OR. ((z2dpm(jk) > 0.0_wp) .AND. (pmask(2, 1, jk) == 1.0_wp)) .OR. ((z2dpp(jk) > 0.0_wp) .AND. (pmask(2, 2, jk) == 1.0_wp))) pobsmask(jk) = 1.0_wp
       ELSE
-        IF ((pmask(1, 1, jk) /= 0.0_wp) .OR. (pmask(1, 2, jk) /= 0.0_wp) .OR. (pmask(2, 1, jk) /= 0.0_wp) .OR. (pmask(2, 2, jk) /= &
-&0.0_wp)) THEN
+        IF ((pmask(1, 1, jk) /= 0.0_wp) .OR. (pmask(1, 2, jk) /= 0.0_wp) .OR. (pmask(2, 1, jk) /= 0.0_wp) .OR. (pmask(2, 2, jk) /= 0.0_wp)) THEN
           IF (.NOT. ll_ds1) THEN
-            CALL obs_int_h2d_ds1(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, &
-&z2dmmt, z2dmpt, z2dpmt, z2dppt)
+            CALL obs_int_h2d_ds1(kpk2, ikmax, pphi, plam, pmask, zphimm, zlammm, zphimp, zlammp, zphipm, zlampm, zphipp, zlampp, z2dmmt, z2dmpt, z2dpmt, z2dppt)
             ll_ds1 = .TRUE.
           END IF
           zsum(jk) = z2dmmt(jk) + z2dmpt(jk) + z2dpmt(jk) + z2dppt(jk)
@@ -159,9 +148,7 @@ MODULE obs_inter_h2d
             pweig(1, 2, jk) = z2dmpt(jk)
             pweig(2, 1, jk) = z2dpmt(jk)
             pweig(2, 2, jk) = z2dppt(jk)
-            IF (((z2dmmt(jk) > 0.0_wp) .AND. (pmask(1, 1, jk) == 1.0_wp)) .OR. ((z2dmpt(jk) > 0.0_wp) .AND. (pmask(1, 2, jk) == &
-&1.0_wp)) .OR. ((z2dpmt(jk) > 0.0_wp) .AND. (pmask(2, 1, jk) == 1.0_wp)) .OR. ((z2dppt(jk) > 0.0_wp) .AND. (pmask(2, 2, jk) == &
-&1.0_wp))) pobsmask(jk) = 1.0_wp
+            IF (((z2dmmt(jk) > 0.0_wp) .AND. (pmask(1, 1, jk) == 1.0_wp)) .OR. ((z2dmpt(jk) > 0.0_wp) .AND. (pmask(1, 2, jk) == 1.0_wp)) .OR. ((z2dpmt(jk) > 0.0_wp) .AND. (pmask(2, 1, jk) == 1.0_wp)) .OR. ((z2dppt(jk) > 0.0_wp) .AND. (pmask(2, 2, jk) == 1.0_wp))) pobsmask(jk) = 1.0_wp
           END IF
         END IF
       END IF
@@ -187,23 +174,19 @@ MODULE obs_inter_h2d
     DO jk = 1, ikmax
       zsum = pweig(1, 1, jk) + pweig(1, 2, jk) + pweig(2, 1, jk) + pweig(2, 2, jk)
       IF (zsum /= 0.0_wp) THEN
-        pobsk(jk) = (pweig(1, 1, jk) * pmod(1, 1, jk) + pweig(1, 2, jk) * pmod(1, 2, jk) + pweig(2, 1, jk) * pmod(2, 1, jk) + &
-&pweig(2, 2, jk) * pmod(2, 2, jk)) / zsum
+        pobsk(jk) = (pweig(1, 1, jk) * pmod(1, 1, jk) + pweig(1, 2, jk) * pmod(1, 2, jk) + pweig(2, 1, jk) * pmod(2, 1, jk) + pweig(2, 2, jk) * pmod(2, 2, jk)) / zsum
       END IF
     END DO
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE obs_int_h2d
-  SUBROUTINE obs_int_h2d_ds1(kpk2, kmax, pphi, plam, pmask, pphimm, plammm, pphimp, plammp, pphipm, plampm, pphipp, plampp, p2dmm, &
-&p2dmp, p2dpm, p2dpp)
+  SUBROUTINE obs_int_h2d_ds1(kpk2, kmax, pphi, plam, pmask, pphimm, plammm, pphimp, plammp, pphipm, plampm, pphipp, plampp, p2dmm, p2dmp, p2dpm, p2dpp)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     INTEGER, INTENT(IN) :: kpk2, kmax
     REAL(KIND = wp), INTENT(IN) :: pphi, plam, pphimm, pphimp, pphipm, pphipp, plammm, plammp, plampm, plampp
     REAL(KIND = wp), DIMENSION(2, 2, kpk2), INTENT(IN) :: pmask
     REAL(KIND = wp), DIMENSION(kpk2), INTENT(OUT) :: p2dmm, p2dmp, p2dpm, p2dpp
     INTEGER :: jk
-    REAL(KIND = wp) :: zphi2, zlam2, zcola, za2, zb2, zc2, zphimm2, zphimp2, zphipm2, zphipp2, zlammm2, zlammp2, zlampm2, zlampp2, &
-&za1mm, za1mp, za1pm, za1pp, zcomm, zcomp, zcopm, zcopp, zb1mm, zb1mp, zb1pm, zb1pp, zc1mm, zc1mp, zc1pm, zc1pp, zsopmpp, zsommmp, &
-&zsomm, zsomp, zsopm, zsopp
+    REAL(KIND = wp) :: zphi2, zlam2, zcola, za2, zb2, zc2, zphimm2, zphimp2, zphipm2, zphipp2, zlammm2, zlammp2, zlampm2, zlampp2, za1mm, za1mp, za1pm, za1pp, zcomm, zcomp, zcopm, zcopp, zb1mm, zb1mp, zb1pm, zb1pp, zc1mm, zc1mp, zc1pm, zc1pp, zsopmpp, zsommmp, zsomm, zsomp, zsopm, zsopp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('obs_int_h2d_ds1', 'r0', 0, 0)
     zphi2 = pphi * rad
@@ -250,8 +233,7 @@ MODULE obs_inter_h2d
     END DO
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE obs_int_h2d_ds1
-  SUBROUTINE obs_int_h2d_ds2(kpk2, kmax, pphi, plam, pmask, pphimm, plammm, pphimp, plammp, pphipm, plampm, pphipp, plampp, p2dmm, &
-&p2dmp, p2dpm, p2dpp)
+  SUBROUTINE obs_int_h2d_ds2(kpk2, kmax, pphi, plam, pmask, pphimm, plammm, pphimp, plammp, pphipm, plampm, pphipp, plampp, p2dmm, p2dmp, p2dpm, p2dpp)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     INTEGER, INTENT(IN) :: kpk2, kmax
     REAL(KIND = wp), INTENT(IN) :: pphi, plam, pphimm, pphimp, pphipm, pphipp, plammm, plammp, plampm, plampp
@@ -306,8 +288,7 @@ MODULE obs_inter_h2d
     END DO
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE obs_int_h2d_bil
-  SUBROUTINE obs_int_h2d_bir(kpk2, kmax, pphi, plam, pmask, pphimm, plammm, pphimp, plammp, pphipm, plampm, pphipp, plampp, p2dmm, &
-&p2dmp, p2dpm, p2dpp, ldfail)
+  SUBROUTINE obs_int_h2d_bir(kpk2, kmax, pphi, plam, pmask, pphimm, plammm, pphimp, plammp, pphipm, plampm, pphipp, plampp, p2dmm, p2dmp, p2dpm, p2dpp, ldfail)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     INTEGER, INTENT(IN) :: kpk2, kmax
     REAL(KIND = wp), INTENT(IN) :: pphi, plam, pphimm, pphimp, pphipm, pphipp, plammm, plammp, plampm, plampp
@@ -329,8 +310,7 @@ MODULE obs_inter_h2d
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE obs_int_h2d_bir
-  SUBROUTINE obs_int_h2d_pol(kpk2, kmax, pphi, plam, pmask, pphimm, plammm, pphimp, plammp, pphipm, plampm, pphipp, plampp, p2dmm, &
-&p2dmp, p2dpm, p2dpp)
+  SUBROUTINE obs_int_h2d_pol(kpk2, kmax, pphi, plam, pmask, pphimm, plammm, pphimp, plammp, pphipm, plampm, pphipp, plampp, p2dmm, p2dmp, p2dpm, p2dpp)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     INTEGER, INTENT(IN) :: kpk2, kmax
     REAL(KIND = wp), INTENT(IN) :: pphi, plam, pphimm, pphimp, pphipm, pphipp, plammm, plammp, plampm, plampp
@@ -367,16 +347,14 @@ MODULE obs_inter_h2d
     END DO
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE obs_int_h2d_pol
-  SUBROUTINE bil_wgt(pphimm, pphimp, pphipm, pphipp, plammm, plammp, plampm, plampp, pbiwmm, pbiwmp, pbiwpm, pbiwpp, pphi, plam, &
-&ldfail)
+  SUBROUTINE bil_wgt(pphimm, pphimp, pphipm, pphipp, plammm, plammp, plampm, plampp, pbiwmm, pbiwmp, pbiwpm, pbiwpp, pphi, plam, ldfail)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), INTENT(IN) :: pphi, plam, pphimm, pphimp, pphipm, pphipp, plammm, plammp, plampm, plampp
     REAL(KIND = wp), INTENT(OUT) :: pbiwmm, pbiwmp, pbiwpm, pbiwpp
     LOGICAL, INTENT(OUT) :: ldfail
     INTEGER :: jiter
     INTEGER :: itermax
-    REAL(KIND = wp) :: zphi, zlam, zphimm, zphimp, zphipm, zphipp, zlammm, zlammp, zlampm, zlampp, zdth1, zdth2, zdth3, zdthp, &
-&zdph1, zdph2, zdph3, zdphp, zmat1, zmat2, zmat3, zmat4, zdeli, zdelj, ziguess, zjguess, zeps, zdeterm, z2pi, zhpi
+    REAL(KIND = wp) :: zphi, zlam, zphimm, zphimp, zphipm, zphipp, zlammm, zlammp, zlampm, zlampp, zdth1, zdth2, zdth3, zdthp, zdph1, zdph2, zdph3, zdphp, zmat1, zmat2, zmat3, zmat4, zdeli, zdelj, ziguess, zjguess, zeps, zdeterm, z2pi, zhpi
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('bil_wgt', 'r0', 0, 0)
     zphi = pphi * rad
@@ -441,15 +419,15 @@ MODULE obs_inter_h2d
       pbiwpp = ziguess * zjguess
     ELSE IF (jiter > itermax) THEN
       IF (lwp) THEN
-        WRITE(numout, FMT = *) 'Obs lat/lon  : ', pphi, plam
-        WRITE(numout, FMT = *) 'Grid lats    : ', pphimm, pphimp, pphipm, pphipp
-        WRITE(numout, FMT = *) 'Grid lons    : ', plammm, plammp, plampm, plampp
-        WRITE(numout, FMT = *) 'Current i,j  : ', ziguess, zjguess
-        WRITE(numout, FMT = *) 'jiter        = ', jiter
-        WRITE(numout, FMT = *) 'zeps         = ', zeps
-        WRITE(numout, FMT = *) 'zdeli, zdelj = ', zdeli, zdelj
-        WRITE(numout, FMT = *) ' Iterations for i,j exceed max iteration count!'
-        WRITE(numout, FMT = *)
+        WRITE(numout, *) 'Obs lat/lon  : ', pphi, plam
+        WRITE(numout, *) 'Grid lats    : ', pphimm, pphimp, pphipm, pphipp
+        WRITE(numout, *) 'Grid lons    : ', plammm, plammp, plampm, plampp
+        WRITE(numout, *) 'Current i,j  : ', ziguess, zjguess
+        WRITE(numout, *) 'jiter        = ', jiter
+        WRITE(numout, *) 'zeps         = ', zeps
+        WRITE(numout, *) 'zdeli, zdelj = ', zdeli, zdelj
+        WRITE(numout, *) ' Iterations for i,j exceed max iteration count!'
+        WRITE(numout, *)
         ldfail = .TRUE.
       END IF
     END IF

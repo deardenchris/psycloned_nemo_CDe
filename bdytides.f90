@@ -40,9 +40,9 @@ MODULE bdytides
     TYPE(MAP_POINTER), DIMENSION(jpbgrd) :: ibmap_ptr
     NAMELIST /nambdy_tide/ filtide, ln_bdytide_2ddta, ln_bdytide_conj
     IF (nb_bdy > 0) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'bdytide_init : initialization of tidal harmonic forcing at open boundaries'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'bdytide_init : initialization of tidal harmonic forcing at open boundaries'
+      IF (lwp) WRITE(numout, *) '~~~~~~~~~~~~'
     END IF
     REWIND(UNIT = numnam_cfg)
     DO ib_bdy = 1, nb_bdy
@@ -50,34 +50,28 @@ MODULE bdytides
         td => tides(ib_bdy)
         nblen => idx_bdy(ib_bdy) % nblen
         nblenrim => idx_bdy(ib_bdy) % nblenrim
-        !$ACC KERNELS
         filtide(:) = ''
-        !$ACC END KERNELS
         READ(numnam_ref, nambdy_tide, IOSTAT = ios, ERR = 901)
 901     IF (ios /= 0) CALL ctl_nam(ios, 'nambdy_tide in reference namelist', lwp)
         READ(numnam_cfg, nambdy_tide, IOSTAT = ios, ERR = 902)
 902     IF (ios > 0) CALL ctl_nam(ios, 'nambdy_tide in configuration namelist', lwp)
         IF (lwm) WRITE(numond, nambdy_tide)
-        IF (lwp) WRITE(numout, FMT = *) '  '
-        IF (lwp) WRITE(numout, FMT = *) '          Namelist nambdy_tide : tidal harmonic forcing at open boundaries'
-        IF (lwp) WRITE(numout, FMT = *) '             read tidal data in 2d files: ', ln_bdytide_2ddta
-        IF (lwp) WRITE(numout, FMT = *) '             assume complex conjugate   : ', ln_bdytide_conj
-        IF (lwp) WRITE(numout, FMT = *) '             Number of tidal components to read: ', nb_harmo
+        IF (lwp) WRITE(numout, *) '  '
+        IF (lwp) WRITE(numout, *) '          Namelist nambdy_tide : tidal harmonic forcing at open boundaries'
+        IF (lwp) WRITE(numout, *) '             read tidal data in 2d files: ', ln_bdytide_2ddta
+        IF (lwp) WRITE(numout, *) '             assume complex conjugate   : ', ln_bdytide_conj
+        IF (lwp) WRITE(numout, *) '             Number of tidal components to read: ', nb_harmo
         IF (lwp) THEN
-          WRITE(numout, FMT = *) '             Tidal components: '
+          WRITE(numout, *) '             Tidal components: '
           DO itide = 1, nb_harmo
-            WRITE(numout, FMT = *) '                 ', Wave(ntide(itide)) % cname_tide
+            WRITE(numout, *) '                 ', Wave(ntide(itide)) % cname_tide
           END DO
         END IF
-        IF (lwp) WRITE(numout, FMT = *) ' '
+        IF (lwp) WRITE(numout, *) ' '
         IF (cn_dyn2d(ib_bdy) == 'frs') THEN
-          !$ACC KERNELS
           ilen0(:) = nblen(:)
-          !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS
           ilen0(:) = nblenrim(:)
-          !$ACC END KERNELS
         END IF
         ALLOCATE(td % ssh0(ilen0(1), nb_harmo, 2))
         ALLOCATE(td % ssh(ilen0(1), nb_harmo, 2))
@@ -197,7 +191,6 @@ MODULE bdytides
     REAL(KIND = wp) :: z_arg, z_sarg, zflag, zramp
     REAL(KIND = wp), DIMENSION(jpmax_harmo) :: z_sist, z_cost
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('bdytide_update', 'r0', 0, 0)
     ilen0(1) = SIZE(td % ssh(:, 1, 1))
     ilen0(2) = SIZE(td % u(:, 1, 1))
@@ -209,9 +202,9 @@ MODULE bdytides
     IF ((nsec_day == NINT(0.5_wp * rdt) .OR. kt == nit000) .AND. zflag == 1) THEN
       kt_tide = kt - (nsec_day - 0.5_wp * rdt) / rdt
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) 'bdytide_update : (re)Initialization of the tidal bdy forcing at kt=', kt
-        WRITE(numout, FMT = *) '~~~~~~~~~~~~~~ '
+        WRITE(numout, *)
+        WRITE(numout, *) 'bdytide_update : (re)Initialization of the tidal bdy forcing at kt=', kt
+        WRITE(numout, *) '~~~~~~~~~~~~~~ '
       END IF
       CALL tide_init_elevation(idx, td)
       CALL tide_init_velocities(idx, td)
@@ -234,8 +227,6 @@ MODULE bdytides
       z_cost(itide) = COS(z_sarg)
       z_sist(itide) = SIN(z_sarg)
     END DO
-    !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('bdytide_update', 'r1', 0, 0)
     DO itide = 1, nb_harmo
       igrd = 1
       DO ib = 1, ilen0(igrd)
@@ -250,7 +241,7 @@ MODULE bdytides
         dta % v2d(ib) = dta % v2d(ib) + zramp * (td % v(ib, itide, 1) * z_cost(itide) + td % v(ib, itide, 2) * z_sist(itide))
       END DO
     END DO
-    CALL profile_psy_data1 % PostEnd
+    !$ACC END KERNELS
   END SUBROUTINE bdytide_update
   SUBROUTINE bdy_dta_tides(kt, kit, time_offset)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -285,10 +276,10 @@ MODULE bdytides
     CALL profile_psy_data0 % PostEnd
     DO ib_bdy = 1, nb_bdy
       IF (nn_dyn2d_dta(ib_bdy) >= 2) THEN
-        CALL profile_psy_data1 % PreStart('bdy_dta_tides', 'r1', 0, 0)
+        !$ACC KERNELS
         nblen(1 : jpbgrd) = idx_bdy(ib_bdy) % nblen(1 : jpbgrd)
         nblenrim(1 : jpbgrd) = idx_bdy(ib_bdy) % nblenrim(1 : jpbgrd)
-        CALL profile_psy_data1 % PostEnd
+        !$ACC END KERNELS
         IF (cn_dyn2d(ib_bdy) == 'frs') THEN
           !$ACC KERNELS
           ilen0(:) = nblen(:)
@@ -298,13 +289,13 @@ MODULE bdytides
           ilen0(:) = nblenrim(:)
           !$ACC END KERNELS
         END IF
-        CALL profile_psy_data2 % PreStart('bdy_dta_tides', 'r2', 0, 0)
+        CALL profile_psy_data1 % PreStart('bdy_dta_tides', 'r1', 0, 0)
         IF ((nsec_day == NINT(0.5_wp * rdt) .OR. kt == nit000) .AND. lk_first_btstp) THEN
           kt_tide = kt - (nsec_day - 0.5_wp * rdt) / rdt
           IF (lwp) THEN
-            WRITE(numout, FMT = *)
-            WRITE(numout, FMT = *) 'bdy_tide_dta : Refresh nodal factors for tidal open bdy data at kt=', kt
-            WRITE(numout, FMT = *) '~~~~~~~~~~~~~~ '
+            WRITE(numout, *)
+            WRITE(numout, *) 'bdy_tide_dta : Refresh nodal factors for tidal open bdy data at kt=', kt
+            WRITE(numout, *) '~~~~~~~~~~~~~~ '
           END IF
           CALL tide_init_elevation(idx = idx_bdy(ib_bdy), td = tides(ib_bdy))
           CALL tide_init_velocities(idx = idx_bdy(ib_bdy), td = tides(ib_bdy))
@@ -315,33 +306,38 @@ MODULE bdytides
           IF (dta_bdy(ib_bdy) % ll_u2d) dta_bdy(ib_bdy) % u2d(1 : ilen0(2)) = dta_bdy_s(ib_bdy) % u2d(1 : ilen0(2))
           IF (dta_bdy(ib_bdy) % ll_v2d) dta_bdy(ib_bdy) % v2d(1 : ilen0(3)) = dta_bdy_s(ib_bdy) % v2d(1 : ilen0(3))
         END IF
+        CALL profile_psy_data1 % PostEnd
         DO itide = 1, nb_harmo
+          CALL profile_psy_data2 % PreStart('bdy_dta_tides', 'r2', 0, 0)
           z_sarg = (z_arg + zoff) * omega_tide(itide)
           z_cost = zramp * COS(z_sarg)
           z_sist = zramp * SIN(z_sarg)
+          CALL profile_psy_data2 % PostEnd
           IF (dta_bdy(ib_bdy) % ll_ssh) THEN
+            !$ACC KERNELS
             igrd = 1
             DO ib = 1, ilen0(igrd)
-              dta_bdy(ib_bdy) % ssh(ib) = dta_bdy(ib_bdy) % ssh(ib) + (tides(ib_bdy) % ssh(ib, itide, 1) * z_cost + tides(ib_bdy) &
-&% ssh(ib, itide, 2) * z_sist)
+              dta_bdy(ib_bdy) % ssh(ib) = dta_bdy(ib_bdy) % ssh(ib) + (tides(ib_bdy) % ssh(ib, itide, 1) * z_cost + tides(ib_bdy) % ssh(ib, itide, 2) * z_sist)
             END DO
+            !$ACC END KERNELS
           END IF
           IF (dta_bdy(ib_bdy) % ll_u2d) THEN
+            !$ACC KERNELS
             igrd = 2
             DO ib = 1, ilen0(igrd)
-              dta_bdy(ib_bdy) % u2d(ib) = dta_bdy(ib_bdy) % u2d(ib) + (tides(ib_bdy) % u(ib, itide, 1) * z_cost + tides(ib_bdy) % &
-&u(ib, itide, 2) * z_sist)
+              dta_bdy(ib_bdy) % u2d(ib) = dta_bdy(ib_bdy) % u2d(ib) + (tides(ib_bdy) % u(ib, itide, 1) * z_cost + tides(ib_bdy) % u(ib, itide, 2) * z_sist)
             END DO
+            !$ACC END KERNELS
           END IF
           IF (dta_bdy(ib_bdy) % ll_v2d) THEN
+            !$ACC KERNELS
             igrd = 3
             DO ib = 1, ilen0(igrd)
-              dta_bdy(ib_bdy) % v2d(ib) = dta_bdy(ib_bdy) % v2d(ib) + (tides(ib_bdy) % v(ib, itide, 1) * z_cost + tides(ib_bdy) % &
-&v(ib, itide, 2) * z_sist)
+              dta_bdy(ib_bdy) % v2d(ib) = dta_bdy(ib_bdy) % v2d(ib) + (tides(ib_bdy) % v(ib, itide, 1) * z_cost + tides(ib_bdy) % v(ib, itide, 2) * z_sist)
             END DO
+            !$ACC END KERNELS
           END IF
         END DO
-        CALL profile_psy_data2 % PostEnd
       END IF
     END DO
   END SUBROUTINE bdy_dta_tides
@@ -364,11 +360,11 @@ MODULE bdytides
         mod_tide(ib) = mod_tide(ib) * ftide(itide)
         phi_tide(ib) = phi_tide(ib) + v0tide(itide) + utide(itide)
       END DO
-      !$ACC END KERNELS
       DO ib = 1, ilen0(igrd)
         td % ssh(ib, itide, 1) = mod_tide(ib) * COS(phi_tide(ib))
         td % ssh(ib, itide, 2) = - mod_tide(ib) * SIN(phi_tide(ib))
       END DO
+      !$ACC END KERNELS
     END DO
     DEALLOCATE(mod_tide, phi_tide)
   END SUBROUTINE tide_init_elevation
@@ -392,11 +388,11 @@ MODULE bdytides
         mod_tide(ib) = mod_tide(ib) * ftide(itide)
         phi_tide(ib) = phi_tide(ib) + v0tide(itide) + utide(itide)
       END DO
-      !$ACC END KERNELS
       DO ib = 1, ilen0(igrd)
         td % u(ib, itide, 1) = mod_tide(ib) * COS(phi_tide(ib))
         td % u(ib, itide, 2) = - mod_tide(ib) * SIN(phi_tide(ib))
       END DO
+      !$ACC END KERNELS
     END DO
     DEALLOCATE(mod_tide, phi_tide)
     igrd = 3
@@ -411,11 +407,11 @@ MODULE bdytides
         mod_tide(ib) = mod_tide(ib) * ftide(itide)
         phi_tide(ib) = phi_tide(ib) + v0tide(itide) + utide(itide)
       END DO
-      !$ACC END KERNELS
       DO ib = 1, ilen0(igrd)
         td % v(ib, itide, 1) = mod_tide(ib) * COS(phi_tide(ib))
         td % v(ib, itide, 2) = - mod_tide(ib) * SIN(phi_tide(ib))
       END DO
+      !$ACC END KERNELS
     END DO
     DEALLOCATE(mod_tide, phi_tide)
   END SUBROUTINE tide_init_velocities

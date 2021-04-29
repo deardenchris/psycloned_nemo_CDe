@@ -31,8 +31,7 @@ MODULE wet_dry
   CONTAINS
   SUBROUTINE wad_init
     INTEGER :: ios, ierr
-    NAMELIST /namwad/ ln_wd_il, ln_wd_dl, rn_wdmin0, rn_wdmin1, rn_wdmin2, rn_wdld, nn_wdit, ln_wd_dl_bc, ln_wd_dl_rmp, &
-&rn_wd_sbcdep, rn_wd_sbcfra
+    NAMELIST /namwad/ ln_wd_il, ln_wd_dl, rn_wdmin0, rn_wdmin1, rn_wdmin2, rn_wdld, nn_wdit, ln_wd_dl_bc, ln_wd_dl_rmp, rn_wd_sbcdep, rn_wd_sbcfra
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, namwad, IOSTAT = ios, ERR = 905)
 905 IF (ios /= 0) CALL ctl_nam(ios, 'namwad in reference namelist', .TRUE.)
@@ -42,24 +41,24 @@ MODULE wet_dry
     IF (lwm) WRITE(numond, namwad)
     IF (rn_wd_sbcfra >= 1) CALL ctl_stop('STOP', 'rn_wd_sbcfra >=1 : must be < 1')
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'wad_init : Wetting and drying initialization through namelist read'
-      WRITE(numout, FMT = *) '~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namwad'
-      WRITE(numout, FMT = *) '      Logical for Iter Lim wd option   ln_wd_il     = ', ln_wd_il
-      WRITE(numout, FMT = *) '      Logical for Dir. Lim wd option   ln_wd_dl     = ', ln_wd_dl
-      WRITE(numout, FMT = *) '      Depth at which wet/drying starts rn_wdmin0    = ', rn_wdmin0
-      WRITE(numout, FMT = *) '      Minimum wet depth on dried cells rn_wdmin1    = ', rn_wdmin1
-      WRITE(numout, FMT = *) '      Tolerance of min wet depth       rn_wdmin2    = ', rn_wdmin2
-      WRITE(numout, FMT = *) '      land elevation threshold         rn_wdld      = ', rn_wdld
-      WRITE(numout, FMT = *) '      Max iteration for W/D limiter    nn_wdit      = ', nn_wdit
-      WRITE(numout, FMT = *) '      T => baroclinic u,v=0 at dry pts: ln_wd_dl_bc = ', ln_wd_dl_bc
-      WRITE(numout, FMT = *) '      use a ramp for rwd limiter:  ln_wd_dl_rwd_rmp = ', ln_wd_dl_rmp
-      WRITE(numout, FMT = *) '      cut off depth sbc for wd   rn_wd_sbcdep       = ', rn_wd_sbcdep
-      WRITE(numout, FMT = *) '      fraction to start sbc wgt rn_wd_sbcfra        = ', rn_wd_sbcfra
+      WRITE(numout, *)
+      WRITE(numout, *) 'wad_init : Wetting and drying initialization through namelist read'
+      WRITE(numout, *) '~~~~~~~~'
+      WRITE(numout, *) '   Namelist namwad'
+      WRITE(numout, *) '      Logical for Iter Lim wd option   ln_wd_il     = ', ln_wd_il
+      WRITE(numout, *) '      Logical for Dir. Lim wd option   ln_wd_dl     = ', ln_wd_dl
+      WRITE(numout, *) '      Depth at which wet/drying starts rn_wdmin0    = ', rn_wdmin0
+      WRITE(numout, *) '      Minimum wet depth on dried cells rn_wdmin1    = ', rn_wdmin1
+      WRITE(numout, *) '      Tolerance of min wet depth       rn_wdmin2    = ', rn_wdmin2
+      WRITE(numout, *) '      land elevation threshold         rn_wdld      = ', rn_wdld
+      WRITE(numout, *) '      Max iteration for W/D limiter    nn_wdit      = ', nn_wdit
+      WRITE(numout, *) '      T => baroclinic u,v=0 at dry pts: ln_wd_dl_bc = ', ln_wd_dl_bc
+      WRITE(numout, *) '      use a ramp for rwd limiter:  ln_wd_dl_rwd_rmp = ', ln_wd_dl_rmp
+      WRITE(numout, *) '      cut off depth sbc for wd   rn_wd_sbcdep       = ', rn_wd_sbcdep
+      WRITE(numout, *) '      fraction to start sbc wgt rn_wd_sbcfra        = ', rn_wd_sbcfra
     END IF
     IF (.NOT. ln_read_cfg) THEN
-      IF (lwp) WRITE(numout, FMT = *) '      No configuration file so seting ssh_ref to zero  '
+      IF (lwp) WRITE(numout, *) '      No configuration file so seting ssh_ref to zero  '
       ssh_ref = 0._wp
     END IF
     r_rn_wdmin1 = 1 / rn_wdmin1
@@ -89,14 +88,15 @@ MODULE wet_dry
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    CALL profile_psy_data0 % PreStart('wad_lmt', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('wad_lmt')
+    CALL profile_psy_data0 % PostEnd
+    !$ACC KERNELS
     DO jk = 1, jpkm1
-      !$ACC KERNELS
       un(:, :, jk) = un(:, :, jk) * zwdlmtu(:, :)
       vn(:, :, jk) = vn(:, :, jk) * zwdlmtv(:, :)
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
     jflag = 0
     zdepwd = 50._wp
     zflxp(:, :) = 0._wp
@@ -105,27 +105,21 @@ MODULE wet_dry
     zflxv(:, :) = 0._wp
     zwdlmtu(:, :) = 1._wp
     zwdlmtv(:, :) = 1._wp
-    !$ACC END KERNELS
     DO jk = 1, jpkm1
-      !$ACC KERNELS
       zflxu(:, :) = zflxu(:, :) + e3u_n(:, :, jk) * un(:, :, jk) * umask(:, :, jk)
       zflxv(:, :) = zflxv(:, :) + e3v_n(:, :, jk) * vn(:, :, jk) * vmask(:, :, jk)
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
     zflxu(:, :) = zflxu(:, :) * e2u(:, :)
     zflxv(:, :) = zflxv(:, :) * e1v(:, :)
     wdmask(:, :) = 1._wp
     !$ACC END KERNELS
-    CALL profile_psy_data0 % PreStart('wad_lmt', 'r0', 0, 0)
+    CALL profile_psy_data1 % PreStart('wad_lmt', 'r1', 0, 0)
     DO jj = 2, jpj
       DO ji = 2, jpi
         IF (tmask(ji, jj, 1) < 0.5_wp) CYCLE
         IF (ht_0(ji, jj) - ssh_ref > zdepwd) CYCLE
-        zflxp(ji, jj) = MAX(zflxu(ji, jj), 0._wp) - MIN(zflxu(ji - 1, jj), 0._wp) + MAX(zflxv(ji, jj), 0._wp) - MIN(zflxv(ji, jj - &
-&1), 0._wp)
-        zflxn(ji, jj) = MIN(zflxu(ji, jj), 0._wp) - MAX(zflxu(ji - 1, jj), 0._wp) + MIN(zflxv(ji, jj), 0._wp) - MAX(zflxv(ji, jj - &
-&1), 0._wp)
+        zflxp(ji, jj) = MAX(zflxu(ji, jj), 0._wp) - MIN(zflxu(ji - 1, jj), 0._wp) + MAX(zflxv(ji, jj), 0._wp) - MIN(zflxv(ji, jj - 1), 0._wp)
+        zflxn(ji, jj) = MIN(zflxu(ji, jj), 0._wp) - MAX(zflxu(ji - 1, jj), 0._wp) + MIN(zflxv(ji, jj), 0._wp) - MAX(zflxv(ji, jj - 1), 0._wp)
         zdep2 = ht_0(ji, jj) + sshb1(ji, jj) - rn_wdmin1
         IF (zdep2 <= 0._wp) THEN
           sshb1(ji, jj) = rn_wdmin1 - ht_0(ji, jj)
@@ -137,10 +131,10 @@ MODULE wet_dry
         END IF
       END DO
     END DO
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     wdramp(:, :) = MIN((ht_0(:, :) + sshb1(:, :) - rn_wdmin1) / (rn_wdmin0 - rn_wdmin1), 1.0_wp)
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpjm1
       DO ji = 1, jpim1
         wdrampu(ji, jj) = MIN(wdramp(ji, jj), wdramp(ji + 1, jj))
@@ -154,16 +148,14 @@ MODULE wet_dry
       zflxv1(:, :) = zflxv(:, :) * zwdlmtv(:, :)
       jflag = 0
       !$ACC END KERNELS
-      CALL profile_psy_data1 % PreStart('wad_lmt', 'r1', 0, 0)
+      CALL profile_psy_data2 % PreStart('wad_lmt', 'r2', 0, 0)
       DO jj = 2, jpj
         DO ji = 2, jpi
           IF (tmask(ji, jj, 1) < 0.5_wp) CYCLE
           IF (ht_0(ji, jj) > zdepwd) CYCLE
           ztmp = e1e2t(ji, jj)
-          zzflxp = MAX(zflxu1(ji, jj), 0._wp) - MIN(zflxu1(ji - 1, jj), 0._wp) + MAX(zflxv1(ji, jj), 0._wp) - MIN(zflxv1(ji, jj - &
-&1), 0._wp)
-          zzflxn = MIN(zflxu1(ji, jj), 0._wp) - MAX(zflxu1(ji - 1, jj), 0._wp) + MIN(zflxv1(ji, jj), 0._wp) - MAX(zflxv1(ji, jj - &
-&1), 0._wp)
+          zzflxp = MAX(zflxu1(ji, jj), 0._wp) - MIN(zflxu1(ji - 1, jj), 0._wp) + MAX(zflxv1(ji, jj), 0._wp) - MIN(zflxv1(ji, jj - 1), 0._wp)
+          zzflxn = MIN(zflxu1(ji, jj), 0._wp) - MAX(zflxu1(ji - 1, jj), 0._wp) + MIN(zflxv1(ji, jj), 0._wp) - MAX(zflxv1(ji, jj - 1), 0._wp)
           zdep1 = (zzflxp + zzflxn) * z2dt / ztmp
           zdep2 = ht_0(ji, jj) + sshb1(ji, jj) - rn_wdmin1 - z2dt * sshemp(ji, jj)
           IF (zdep1 > zdep2) THEN
@@ -185,24 +177,22 @@ MODULE wet_dry
       CALL lbc_lnk_multi('wet_dry', zwdlmtu, 'U', 1., zwdlmtv, 'V', 1.)
       CALL mpp_max('wet_dry', jflag)
       IF (jflag == 0) EXIT
-      CALL profile_psy_data1 % PostEnd
-    END DO
-    DO jk = 1, jpkm1
-      !$ACC KERNELS
-      un(:, :, jk) = un(:, :, jk) * zwdlmtu(:, :)
-      vn(:, :, jk) = vn(:, :, jk) * zwdlmtv(:, :)
-      !$ACC END KERNELS
+      CALL profile_psy_data2 % PostEnd
     END DO
     !$ACC KERNELS
+    DO jk = 1, jpkm1
+      un(:, :, jk) = un(:, :, jk) * zwdlmtu(:, :)
+      vn(:, :, jk) = vn(:, :, jk) * zwdlmtv(:, :)
+    END DO
     un_b(:, :) = un_b(:, :) * zwdlmtu(:, :)
     vn_b(:, :) = vn_b(:, :) * zwdlmtv(:, :)
     !$ACC END KERNELS
-    CALL profile_psy_data2 % PreStart('wad_lmt', 'r2', 0, 0)
+    CALL profile_psy_data3 % PreStart('wad_lmt', 'r3', 0, 0)
     CALL lbc_lnk_multi('wet_dry', un, 'U', - 1., vn, 'V', - 1.)
     CALL lbc_lnk_multi('wet_dry', un_b, 'U', - 1., vn_b, 'V', - 1.)
-    IF (jflag == 1 .AND. lwp) WRITE(numout, FMT = *) 'Need more iterations in wad_lmt!!!'
+    IF (jflag == 1 .AND. lwp) WRITE(numout, *) 'Need more iterations in wad_lmt!!!'
     IF (ln_timing) CALL timing_stop('wad_lmt')
-    CALL profile_psy_data2 % PostEnd
+    CALL profile_psy_data3 % PostEnd
   END SUBROUTINE wad_lmt
   SUBROUTINE wad_lmt_bt(zflxu, zflxv, sshn_e, zssh_frc, rdtbt)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -221,7 +211,10 @@ MODULE wet_dry
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    CALL profile_psy_data0 % PreStart('wad_lmt_bt', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('wad_lmt_bt')
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     jflag = 0
     zdepwd = 50._wp
@@ -231,15 +224,13 @@ MODULE wet_dry
     zwdlmtu(:, :) = 1._wp
     zwdlmtv(:, :) = 1._wp
     !$ACC END KERNELS
-    CALL profile_psy_data0 % PreStart('wad_lmt_bt', 'r0', 0, 0)
+    CALL profile_psy_data1 % PreStart('wad_lmt_bt', 'r1', 0, 0)
     DO jj = 2, jpj
       DO ji = 2, jpi
         IF (tmask(ji, jj, 1) < 0.5_wp) CYCLE
         IF (ht_0(ji, jj) > zdepwd) CYCLE
-        zflxp(ji, jj) = MAX(zflxu(ji, jj), 0._wp) - MIN(zflxu(ji - 1, jj), 0._wp) + MAX(zflxv(ji, jj), 0._wp) - MIN(zflxv(ji, jj - &
-&1), 0._wp)
-        zflxn(ji, jj) = MIN(zflxu(ji, jj), 0._wp) - MAX(zflxu(ji - 1, jj), 0._wp) + MIN(zflxv(ji, jj), 0._wp) - MAX(zflxv(ji, jj - &
-&1), 0._wp)
+        zflxp(ji, jj) = MAX(zflxu(ji, jj), 0._wp) - MIN(zflxu(ji - 1, jj), 0._wp) + MAX(zflxv(ji, jj), 0._wp) - MIN(zflxv(ji, jj - 1), 0._wp)
+        zflxn(ji, jj) = MIN(zflxu(ji, jj), 0._wp) - MAX(zflxu(ji - 1, jj), 0._wp) + MIN(zflxv(ji, jj), 0._wp) - MAX(zflxv(ji, jj - 1), 0._wp)
         zdep2 = ht_0(ji, jj) + sshn_e(ji, jj) - rn_wdmin1
         IF (zdep2 <= 0._wp) THEN
           sshn_e(ji, jj) = rn_wdmin1 - ht_0(ji, jj)
@@ -250,23 +241,21 @@ MODULE wet_dry
         END IF
       END DO
     END DO
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data1 % PostEnd
     DO jk1 = 1, nn_wdit + 1
       !$ACC KERNELS
       zflxu1(:, :) = zflxu(:, :) * zwdlmtu(:, :)
       zflxv1(:, :) = zflxv(:, :) * zwdlmtv(:, :)
       jflag = 0
       !$ACC END KERNELS
-      CALL profile_psy_data1 % PreStart('wad_lmt_bt', 'r1', 0, 0)
+      CALL profile_psy_data2 % PreStart('wad_lmt_bt', 'r2', 0, 0)
       DO jj = 2, jpj
         DO ji = 2, jpi
           IF (tmask(ji, jj, 1) < 0.5_wp) CYCLE
           IF (ht_0(ji, jj) > zdepwd) CYCLE
           ztmp = e1e2t(ji, jj)
-          zzflxp = MAX(zflxu1(ji, jj), 0._wp) - MIN(zflxu1(ji - 1, jj), 0._wp) + MAX(zflxv1(ji, jj), 0._wp) - MIN(zflxv1(ji, jj - &
-&1), 0._wp)
-          zzflxn = MIN(zflxu1(ji, jj), 0._wp) - MAX(zflxu1(ji - 1, jj), 0._wp) + MIN(zflxv1(ji, jj), 0._wp) - MAX(zflxv1(ji, jj - &
-&1), 0._wp)
+          zzflxp = MAX(zflxu1(ji, jj), 0._wp) - MIN(zflxu1(ji - 1, jj), 0._wp) + MAX(zflxv1(ji, jj), 0._wp) - MIN(zflxv1(ji, jj - 1), 0._wp)
+          zzflxn = MIN(zflxu1(ji, jj), 0._wp) - MAX(zflxu1(ji - 1, jj), 0._wp) + MIN(zflxv1(ji, jj), 0._wp) - MAX(zflxv1(ji, jj - 1), 0._wp)
           zdep1 = (zzflxp + zzflxn) * z2dt / ztmp
           zdep2 = ht_0(ji, jj) + sshn_e(ji, jj) - rn_wdmin1 - z2dt * zssh_frc(ji, jj)
           IF (zdep1 > zdep2) THEN
@@ -287,16 +276,16 @@ MODULE wet_dry
       CALL lbc_lnk_multi('wet_dry', zwdlmtu, 'U', 1., zwdlmtv, 'V', 1.)
       CALL mpp_max('wet_dry', jflag)
       IF (jflag == 0) EXIT
-      CALL profile_psy_data1 % PostEnd
+      CALL profile_psy_data2 % PostEnd
     END DO
     !$ACC KERNELS
     zflxu(:, :) = zflxu(:, :) * zwdlmtu(:, :)
     zflxv(:, :) = zflxv(:, :) * zwdlmtv(:, :)
     !$ACC END KERNELS
-    CALL profile_psy_data2 % PreStart('wad_lmt_bt', 'r2', 0, 0)
+    CALL profile_psy_data3 % PreStart('wad_lmt_bt', 'r3', 0, 0)
     CALL lbc_lnk_multi('wet_dry', zflxu, 'U', - 1., zflxv, 'V', - 1.)
-    IF (jflag == 1 .AND. lwp) WRITE(numout, FMT = *) 'Need more iterations in wad_lmt_bt!!!'
+    IF (jflag == 1 .AND. lwp) WRITE(numout, *) 'Need more iterations in wad_lmt_bt!!!'
     IF (ln_timing) CALL timing_stop('wad_lmt_bt')
-    CALL profile_psy_data2 % PostEnd
+    CALL profile_psy_data3 % PostEnd
   END SUBROUTINE wad_lmt_bt
 END MODULE wet_dry

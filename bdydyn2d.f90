@@ -51,7 +51,7 @@ MODULE bdydyn2d
     INTEGER :: ii, ij, igrd
     REAL(KIND = wp) :: zwgt
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('bdy_dyn2d_frs', 'r0', 0, 0)
+    !$ACC KERNELS
     igrd = 2
     DO jb = 1, idx % nblen(igrd)
       ii = idx % nbi(jb, igrd)
@@ -66,6 +66,8 @@ MODULE bdydyn2d
       zwgt = idx % nbw(jb, igrd)
       pva2d(ii, ij) = (pva2d(ii, ij) + zwgt * (dta % v2d(jb) - pva2d(ii, ij))) * vmask(ii, ij, 1)
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data0 % PreStart('bdy_dyn2d_frs', 'r0', 0, 0)
     CALL lbc_bdy_lnk('bdydyn2d', pua2d, 'U', - 1., ib_bdy)
     CALL lbc_bdy_lnk('bdydyn2d', pva2d, 'V', - 1., ib_bdy)
     CALL profile_psy_data0 % PostEnd
@@ -154,9 +156,12 @@ MODULE bdydyn2d
     INTEGER :: ib_bdy, ib, igrd
     INTEGER :: ii, ij, zcoef, zcoef1, zcoef2, ip, jp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('bdy_ssh', 'r0', 0, 0)
     igrd = 1
+    CALL profile_psy_data0 % PostEnd
     DO ib_bdy = 1, nb_bdy
+      !$ACC KERNELS
       DO ib = 1, idx_bdy(ib_bdy) % nblenrim(igrd)
         ii = idx_bdy(ib_bdy) % nbi(ib, igrd)
         ij = idx_bdy(ib_bdy) % nbj(ib, igrd)
@@ -164,8 +169,7 @@ MODULE bdydyn2d
         zcoef2 = bdytmask(ii, ij - 1) + bdytmask(ii, ij + 1)
         IF (zcoef1 + zcoef2 == 0) THEN
           zcoef = bdytmask(ii - 1, ij - 1) + bdytmask(ii + 1, ij + 1) + bdytmask(ii + 1, ij - 1) + bdytmask(ii - 1, ij + 1)
-          zssh(ii, ij) = zssh(ii - 1, ij - 1) * bdytmask(ii - 1, ij - 1) + zssh(ii + 1, ij + 1) * bdytmask(ii + 1, ij + 1) + &
-&zssh(ii + 1, ij - 1) * bdytmask(ii + 1, ij - 1) + zssh(ii - 1, ij + 1) * bdytmask(ii - 1, ij + 1)
+          zssh(ii, ij) = zssh(ii - 1, ij - 1) * bdytmask(ii - 1, ij - 1) + zssh(ii + 1, ij + 1) * bdytmask(ii + 1, ij + 1) + zssh(ii + 1, ij - 1) * bdytmask(ii + 1, ij - 1) + zssh(ii - 1, ij + 1) * bdytmask(ii - 1, ij + 1)
           zssh(ii, ij) = (zssh(ii, ij) / MAX(1, zcoef)) * tmask(ii, ij, 1)
         ELSE
           ip = bdytmask(ii + 1, ij) - bdytmask(ii - 1, ij)
@@ -173,8 +177,10 @@ MODULE bdydyn2d
           zssh(ii, ij) = zssh(ii + ip, ij + jp) * tmask(ii + ip, ij + jp, 1)
         END IF
       END DO
+      !$ACC END KERNELS
+      CALL profile_psy_data1 % PreStart('bdy_ssh', 'r1', 0, 0)
       CALL lbc_bdy_lnk('bdydyn2d', zssh(:, :), 'T', 1., ib_bdy)
+      CALL profile_psy_data1 % PostEnd
     END DO
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE bdy_ssh
 END MODULE bdydyn2d

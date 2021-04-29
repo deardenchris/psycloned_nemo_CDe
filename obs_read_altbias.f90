@@ -38,27 +38,29 @@ MODULE obs_read_altbias
     INTEGER :: numaltbias
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     CALL profile_psy_data0 % PreStart('obs_rea_altbias', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) ' obs_rea_altbias : '
-    IF (lwp) WRITE(numout, FMT = *) ' ------------- '
-    IF (lwp) WRITE(numout, FMT = *) '   Read altimeter bias'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) ' obs_rea_altbias : '
+    IF (lwp) WRITE(numout, *) ' ------------- '
+    IF (lwp) WRITE(numout, *) '   Read altimeter bias'
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     z_altbias(:, :) = 0.0_wp
     numaltbias = 0
     !$ACC END KERNELS
     CALL profile_psy_data1 % PreStart('obs_rea_altbias', 'r1', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *) 'Opening ', bias_file
+    IF (lwp) WRITE(numout, *) 'Opening ', bias_file
     CALL iom_open(bias_file, numaltbias, ldstop = .FALSE.)
     IF (numaltbias .GT. 0) THEN
       CALL iom_get(numaltbias, jpdom_data, 'altbias', z_altbias(:, :), 1)
       CALL iom_close(numaltbias)
     ELSE
-      IF (lwp) WRITE(numout, FMT = *) 'no file found'
+      IF (lwp) WRITE(numout, *) 'no file found'
     END IF
-    ALLOCATE(igrdi(2, 2, sladata % nsurf), igrdj(2, 2, sladata % nsurf), zglam(2, 2, sladata % nsurf), zgphi(2, 2, sladata % &
-&nsurf), zmask(2, 2, sladata % nsurf), zbias(2, 2, sladata % nsurf))
+    ALLOCATE(igrdi(2, 2, sladata % nsurf), igrdj(2, 2, sladata % nsurf), zglam(2, 2, sladata % nsurf), zgphi(2, 2, sladata % nsurf), zmask(2, 2, sladata % nsurf), zbias(2, 2, sladata % nsurf))
+    CALL profile_psy_data1 % PostEnd
+    !$ACC KERNELS
     DO jobs = 1, sladata % nsurf
       igrdi(1, 1, jobs) = sladata % mi(jobs) - 1
       igrdj(1, 1, jobs) = sladata % mj(jobs) - 1
@@ -69,6 +71,8 @@ MODULE obs_read_altbias
       igrdi(2, 2, jobs) = sladata % mi(jobs)
       igrdj(2, 2, jobs) = sladata % mj(jobs)
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data2 % PreStart('obs_rea_altbias', 'r2', 0, 0)
     CALL obs_int_comm_2d(2, 2, sladata % nsurf, jpi, jpj, igrdi, igrdj, glamt, zglam)
     CALL obs_int_comm_2d(2, 2, sladata % nsurf, jpi, jpj, igrdi, igrdj, gphit, zgphi)
     CALL obs_int_comm_2d(2, 2, sladata % nsurf, jpi, jpj, igrdi, igrdj, tmask(:, :, 1), zmask)
@@ -83,6 +87,6 @@ MODULE obs_read_altbias
       sladata % rext(jobs, 2) = sladata % rext(jobs, 2) - zext(1)
     END DO
     DEALLOCATE(igrdi, igrdj, zglam, zgphi, zmask, zbias)
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE obs_rea_altbias
 END MODULE obs_read_altbias

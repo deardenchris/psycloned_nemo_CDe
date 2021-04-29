@@ -43,6 +43,16 @@ MODULE trdtra
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data9
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data10
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data11
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data12
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data13
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data14
     CALL profile_psy_data0 % PreStart('trd_tra', 'r0', 0, 0)
     IF (.NOT. ALLOCATED(trdtx)) THEN
       IF (trd_tra_alloc() /= 0) CALL ctl_stop('STOP', 'trd_tra : unable to allocate arrays')
@@ -51,17 +61,25 @@ MODULE trdtra
     IF (ctype == 'TRA' .AND. ktra == jp_tem) THEN
       SELECT CASE (ktrd)
       CASE (jptra_xad)
+        CALL profile_psy_data1 % PreStart('trd_tra', 'r1', 0, 0)
         CALL trd_tra_adv(ptrd, pun, ptra, 'X', trdtx)
+        CALL profile_psy_data1 % PostEnd
       CASE (jptra_yad)
+        CALL profile_psy_data2 % PreStart('trd_tra', 'r2', 0, 0)
         CALL trd_tra_adv(ptrd, pun, ptra, 'Y', trdty)
+        CALL profile_psy_data2 % PostEnd
       CASE (jptra_zad)
+        CALL profile_psy_data3 % PreStart('trd_tra', 'r3', 0, 0)
         CALL trd_tra_adv(ptrd, pun, ptra, 'Z', trdt)
+        CALL profile_psy_data3 % PostEnd
       CASE (jptra_bbc, jptra_qsr)
         !$ACC KERNELS
         trdt(:, :, :) = ptrd(:, :, :) * tmask(:, :, :)
         ztrds(:, :, :) = 0._wp
         !$ACC END KERNELS
+        CALL profile_psy_data4 % PreStart('trd_tra', 'r4', 0, 0)
         CALL trd_tra_mng(trdt, ztrds, ktrd, kt)
+        CALL profile_psy_data4 % PostEnd
       CASE (jptra_evd)
         !$ACC KERNELS
         avt_evd(:, :, :) = ptrd(:, :, :) * tmask(:, :, :)
@@ -75,20 +93,20 @@ MODULE trdtra
     IF (ctype == 'TRA' .AND. ktra == jp_sal) THEN
       SELECT CASE (ktrd)
       CASE (jptra_xad)
-        CALL profile_psy_data1 % PreStart('trd_tra', 'r1', 0, 0)
+        CALL profile_psy_data5 % PreStart('trd_tra', 'r5', 0, 0)
         CALL trd_tra_adv(ptrd, pun, ptra, 'X', ztrds)
         CALL trd_tra_mng(trdtx, ztrds, ktrd, kt)
-        CALL profile_psy_data1 % PostEnd
+        CALL profile_psy_data5 % PostEnd
       CASE (jptra_yad)
-        CALL profile_psy_data2 % PreStart('trd_tra', 'r2', 0, 0)
+        CALL profile_psy_data6 % PreStart('trd_tra', 'r6', 0, 0)
         CALL trd_tra_adv(ptrd, pun, ptra, 'Y', ztrds)
         CALL trd_tra_mng(trdty, ztrds, ktrd, kt)
-        CALL profile_psy_data2 % PostEnd
+        CALL profile_psy_data6 % PostEnd
       CASE (jptra_zad)
-        CALL profile_psy_data3 % PreStart('trd_tra', 'r3', 0, 0)
+        CALL profile_psy_data7 % PreStart('trd_tra', 'r7', 0, 0)
         CALL trd_tra_adv(ptrd, pun, ptra, 'Z', ztrds)
         CALL trd_tra_mng(trdt, ztrds, ktrd, kt)
-        CALL profile_psy_data3 % PostEnd
+        CALL profile_psy_data7 % PostEnd
       CASE (jptra_zdfp)
         ALLOCATE(zwt(jpi, jpj, jpk), zws(jpi, jpj, jpk), ztrdt(jpi, jpj, jpk))
         !$ACC KERNELS
@@ -96,71 +114,69 @@ MODULE trdtra
         zws(:, :, 1) = 0._wp
         zwt(:, :, jpk) = 0._wp
         zws(:, :, jpk) = 0._wp
-        !$ACC END KERNELS
         DO jk = 2, jpk
-          !$ACC KERNELS
           zwt(:, :, jk) = avt(:, :, jk) * (tsa(:, :, jk - 1, jp_tem) - tsa(:, :, jk, jp_tem)) / e3w_n(:, :, jk) * tmask(:, :, jk)
           zws(:, :, jk) = avs(:, :, jk) * (tsa(:, :, jk - 1, jp_sal) - tsa(:, :, jk, jp_sal)) / e3w_n(:, :, jk) * tmask(:, :, jk)
-          !$ACC END KERNELS
         END DO
-        !$ACC KERNELS
         ztrdt(:, :, jpk) = 0._wp
         ztrds(:, :, jpk) = 0._wp
-        !$ACC END KERNELS
         DO jk = 1, jpkm1
-          !$ACC KERNELS
           ztrdt(:, :, jk) = (zwt(:, :, jk) - zwt(:, :, jk + 1)) / e3t_n(:, :, jk)
           ztrds(:, :, jk) = (zws(:, :, jk) - zws(:, :, jk + 1)) / e3t_n(:, :, jk)
-          !$ACC END KERNELS
         END DO
+        !$ACC END KERNELS
+        CALL profile_psy_data8 % PreStart('trd_tra', 'r8', 0, 0)
         CALL trd_tra_mng(ztrdt, ztrds, jptra_zdfp, kt)
+        CALL profile_psy_data8 % PostEnd
         !$ACC KERNELS
         zwt(:, :, :) = 0._wp
         zws(:, :, :) = 0._wp
-        !$ACC END KERNELS
         DO jk = 2, jpk
-          !$ACC KERNELS
-          zwt(:, :, jk) = avt_evd(:, :, jk) * (tsa(:, :, jk - 1, jp_tem) - tsa(:, :, jk, jp_tem)) / e3w_n(:, :, jk) * tmask(:, :, &
-&jk)
-          zws(:, :, jk) = avt_evd(:, :, jk) * (tsa(:, :, jk - 1, jp_sal) - tsa(:, :, jk, jp_sal)) / e3w_n(:, :, jk) * tmask(:, :, &
-&jk)
-          !$ACC END KERNELS
+          zwt(:, :, jk) = avt_evd(:, :, jk) * (tsa(:, :, jk - 1, jp_tem) - tsa(:, :, jk, jp_tem)) / e3w_n(:, :, jk) * tmask(:, :, jk)
+          zws(:, :, jk) = avt_evd(:, :, jk) * (tsa(:, :, jk - 1, jp_sal) - tsa(:, :, jk, jp_sal)) / e3w_n(:, :, jk) * tmask(:, :, jk)
         END DO
-        !$ACC KERNELS
         ztrdt(:, :, jpk) = 0._wp
         ztrds(:, :, jpk) = 0._wp
-        !$ACC END KERNELS
         DO jk = 1, jpkm1
-          !$ACC KERNELS
           ztrdt(:, :, jk) = (zwt(:, :, jk) - zwt(:, :, jk + 1)) / e3t_n(:, :, jk)
           ztrds(:, :, jk) = (zws(:, :, jk) - zws(:, :, jk + 1)) / e3t_n(:, :, jk)
-          !$ACC END KERNELS
         END DO
-        CALL profile_psy_data4 % PreStart('trd_tra', 'r4', 0, 0)
+        !$ACC END KERNELS
+        CALL profile_psy_data9 % PreStart('trd_tra', 'r9', 0, 0)
         CALL trd_tra_mng(ztrdt, ztrds, jptra_evd, kt)
         DEALLOCATE(zwt, zws, ztrdt)
-        CALL profile_psy_data4 % PostEnd
+        CALL profile_psy_data9 % PostEnd
       CASE DEFAULT
         !$ACC KERNELS
         ztrds(:, :, :) = ptrd(:, :, :) * tmask(:, :, :)
         !$ACC END KERNELS
+        CALL profile_psy_data10 % PreStart('trd_tra', 'r10', 0, 0)
         CALL trd_tra_mng(trdt, ztrds, ktrd, kt)
+        CALL profile_psy_data10 % PostEnd
       END SELECT
     END IF
     IF (ctype == 'TRC') THEN
       SELECT CASE (ktrd)
       CASE (jptra_xad)
+        CALL profile_psy_data11 % PreStart('trd_tra', 'r11', 0, 0)
         CALL trd_tra_adv(ptrd, pun, ptra, 'X', ztrds)
+        CALL profile_psy_data11 % PostEnd
       CASE (jptra_yad)
+        CALL profile_psy_data12 % PreStart('trd_tra', 'r12', 0, 0)
         CALL trd_tra_adv(ptrd, pun, ptra, 'Y', ztrds)
+        CALL profile_psy_data12 % PostEnd
       CASE (jptra_zad)
+        CALL profile_psy_data13 % PreStart('trd_tra', 'r13', 0, 0)
         CALL trd_tra_adv(ptrd, pun, ptra, 'Z', ztrds)
+        CALL profile_psy_data13 % PostEnd
       CASE DEFAULT
         !$ACC KERNELS
         ztrds(:, :, :) = ptrd(:, :, :) * tmask(:, :, :)
         !$ACC END KERNELS
       END SELECT
+      CALL profile_psy_data14 % PreStart('trd_tra', 'r14', 0, 0)
       CALL trd_trc(ztrds, ktra, ktrd, kt)
+      CALL profile_psy_data14 % PostEnd
     END IF
   END SUBROUTINE trd_tra
   SUBROUTINE trd_tra_adv(pf, pun, ptn, cdir, ptrd)
@@ -192,11 +208,10 @@ MODULE trdtra
     ptrd(:, 1, :) = 0._wp
     ptrd(:, :, jpk) = 0._wp
     DO jk = 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          ptrd(ji, jj, jk) = - (pf(ji, jj, jk) - pf(ji - ii, jj - ij, jk - ik) - (pun(ji, jj, jk) - pun(ji - ii, jj - ij, jk - &
-&ik)) * ptn(ji, jj, jk)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk) * tmask(ji, jj, jk)
+          ptrd(ji, jj, jk) = - (pf(ji, jj, jk) - pf(ji - ii, jj - ij, jk - ik) - (pun(ji, jj, jk) - pun(ji - ii, jj - ij, jk - ik)) * ptn(ji, jj, jk)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk) * tmask(ji, jj, jk)
         END DO
       END DO
     END DO
@@ -211,6 +226,14 @@ MODULE trdtra
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data9
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data10
     CALL profile_psy_data0 % PreStart('trd_tra_mng', 'r0', 0, 0)
     IF (neuler == 0 .AND. kt == nit000) THEN
       r2dt = rdt
@@ -224,37 +247,53 @@ MODULE trdtra
     IF (ln_tra_mxl) THEN
       SELECT CASE (ktrd)
       CASE (jptra_xad)
-        CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_xad, '3D')
-      CASE (jptra_yad)
-        CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_yad, '3D')
-      CASE (jptra_zad)
-        CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_zad, '3D')
-      CASE (jptra_ldf)
-        CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_ldf, '3D')
-      CASE (jptra_bbl)
-        CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_bbl, '3D')
-      CASE (jptra_zdf)
         CALL profile_psy_data1 % PreStart('trd_tra_mng', 'r1', 0, 0)
+        CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_xad, '3D')
+        CALL profile_psy_data1 % PostEnd
+      CASE (jptra_yad)
+        CALL profile_psy_data2 % PreStart('trd_tra_mng', 'r2', 0, 0)
+        CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_yad, '3D')
+        CALL profile_psy_data2 % PostEnd
+      CASE (jptra_zad)
+        CALL profile_psy_data3 % PreStart('trd_tra_mng', 'r3', 0, 0)
+        CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_zad, '3D')
+        CALL profile_psy_data3 % PostEnd
+      CASE (jptra_ldf)
+        CALL profile_psy_data4 % PreStart('trd_tra_mng', 'r4', 0, 0)
+        CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_ldf, '3D')
+        CALL profile_psy_data4 % PostEnd
+      CASE (jptra_bbl)
+        CALL profile_psy_data5 % PreStart('trd_tra_mng', 'r5', 0, 0)
+        CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_bbl, '3D')
+        CALL profile_psy_data5 % PostEnd
+      CASE (jptra_zdf)
+        CALL profile_psy_data6 % PreStart('trd_tra_mng', 'r6', 0, 0)
         IF (ln_traldf_iso) THEN
           CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_ldf, '3D')
         ELSE
           CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_zdf, '3D')
         END IF
-        CALL profile_psy_data1 % PostEnd
+        CALL profile_psy_data6 % PostEnd
       CASE (jptra_dmp)
+        CALL profile_psy_data7 % PreStart('trd_tra_mng', 'r7', 0, 0)
         CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_dmp, '3D')
+        CALL profile_psy_data7 % PostEnd
       CASE (jptra_qsr)
+        CALL profile_psy_data8 % PreStart('trd_tra_mng', 'r8', 0, 0)
         CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_for, '3D')
+        CALL profile_psy_data8 % PostEnd
       CASE (jptra_nsr)
         !$ACC KERNELS
         ptrdx(:, :, 2 : jpk) = 0._wp
         ptrdy(:, :, 2 : jpk) = 0._wp
         !$ACC END KERNELS
+        CALL profile_psy_data9 % PreStart('trd_tra_mng', 'r9', 0, 0)
         CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_for, '2D')
+        CALL profile_psy_data9 % PostEnd
       CASE (jptra_bbc)
-        CALL profile_psy_data2 % PreStart('trd_tra_mng', 'r2', 0, 0)
+        CALL profile_psy_data10 % PreStart('trd_tra_mng', 'r10', 0, 0)
         CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_bbc, '3D')
-        CALL profile_psy_data2 % PostEnd
+        CALL profile_psy_data10 % PostEnd
       CASE (jptra_npc)
         CALL trd_mxl_zint(ptrdx, ptrdy, jpmxl_npc, '3D')
       CASE (jptra_atf)

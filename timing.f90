@@ -46,10 +46,7 @@ MODULE timing
   LOGICAL :: lwriter
   CONTAINS
   SUBROUTINE timing_start(cdinfo)
-    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdinfo
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('timing_start', 'r0', 0, 0)
     IF (ASSOCIATED(s_timer)) s_timer_old => s_timer
     CALL timing_ini_var(cdinfo)
     IF (.NOT. s_timer_old % l_tdone) THEN
@@ -64,16 +61,12 @@ MODULE timing
     CALL CPU_TIME(s_timer % t_cpu)
     CALL SYSTEM_CLOCK(COUNT_RATE = s_timer % ncount_rate, COUNT_MAX = s_timer % ncount_max)
     CALL SYSTEM_CLOCK(COUNT = s_timer % ncount)
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE timing_start
   SUBROUTINE timing_stop(cdinfo, csection)
-    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdinfo
     CHARACTER(LEN = *), INTENT(IN), OPTIONAL :: csection
     INTEGER :: ifinal_count, iperiods
     REAL(KIND = wp) :: zcpu_end, zmpitime, zcpu_raw, zclock_raw
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('timing_stop', 'r0', 0, 0)
     s_wrk => NULL()
     CALL SYSTEM_CLOCK(COUNT = ifinal_count)
     CALL CPU_TIME(zcpu_end)
@@ -95,7 +88,6 @@ MODULE timing
     s_timer % tsub_cpu = 0.
     s_timer % l_tdone = .TRUE.
     IF (ASSOCIATED(s_timer % parent_section)) s_timer => s_timer % parent_section
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE timing_stop
   SUBROUTINE timing_init
     INTEGER :: iperiods, istart_count, ifinal_count
@@ -109,15 +101,15 @@ MODULE timing
       lwriter = .TRUE.
     END IF
     IF (lwriter) THEN
-      WRITE(numtime, FMT = *)
-      WRITE(numtime, FMT = *) '      CNRS - NERC - Met OFFICE - MERCATOR-ocean - CMCC - INGV'
-      WRITE(numtime, FMT = *) '                             NEMO team'
-      WRITE(numtime, FMT = *) '                  Ocean General Circulation Model'
-      WRITE(numtime, FMT = *) '                        version 4.0  (2019) '
-      WRITE(numtime, FMT = *)
-      WRITE(numtime, FMT = *) '                        Timing Informations '
-      WRITE(numtime, FMT = *)
-      WRITE(numtime, FMT = *)
+      WRITE(numtime, *)
+      WRITE(numtime, *) '      CNRS - NERC - Met OFFICE - MERCATOR-ocean - CMCC - INGV'
+      WRITE(numtime, *) '                             NEMO team'
+      WRITE(numtime, *) '                  Ocean General Circulation Model'
+      WRITE(numtime, *) '                        version 4.0  (2019) '
+      WRITE(numtime, *)
+      WRITE(numtime, *) '                        Timing Informations '
+      WRITE(numtime, *)
+      WRITE(numtime, *)
     END IF
     CALL SYSTEM_CLOCK(COUNT_RATE = ncount_rate, COUNT_MAX = ncount_max)
     CALL SYSTEM_CLOCK(COUNT = istart_count)
@@ -135,7 +127,6 @@ MODULE timing
     CALL SYSTEM_CLOCK(COUNT = ncount)
   END SUBROUTINE timing_init
   SUBROUTINE timing_finalize
-    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     TYPE(timer), POINTER :: s_temp
     INTEGER :: idum, iperiods, icode
     INTEGER :: ji
@@ -144,8 +135,6 @@ MODULE timing
     REAL(KIND = wp), DIMENSION(:), ALLOCATABLE :: timing_glob
     REAL(KIND = wp) :: zsypd
     REAL(KIND = wp) :: zperc, ztot
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('timing_finalize', 'r0', 0, 0)
     ll_averep = .TRUE.
     CALL CPU_TIME(t_cpu(2))
     t_cpu(2) = t_cpu(2) - t_cpu(1) - t_overcpu
@@ -163,29 +152,26 @@ MODULE timing
     idum = nsize
     CALL mpp_sum('timing', idum)
     IF (idum / jpnij /= nsize) THEN
-      IF (lwriter) WRITE(numtime, FMT = *) '        ===> W A R N I N G: '
-      IF (lwriter) WRITE(numtime, FMT = *) ' Some CPU have different number of routines instrumented for timing'
-      IF (lwriter) WRITE(numtime, FMT = *) ' No detailed report on averaged timing can be provided'
-      IF (lwriter) WRITE(numtime, FMT = *) ' The following detailed report only deals with the current processor'
-      IF (lwriter) WRITE(numtime, FMT = *)
+      IF (lwriter) WRITE(numtime, *) '        ===> W A R N I N G: '
+      IF (lwriter) WRITE(numtime, *) ' Some CPU have different number of routines instrumented for timing'
+      IF (lwriter) WRITE(numtime, *) ' No detailed report on averaged timing can be provided'
+      IF (lwriter) WRITE(numtime, *) ' The following detailed report only deals with the current processor'
+      IF (lwriter) WRITE(numtime, *)
       ll_averep = .FALSE.
     END IF
     tot_etime = t_elaps(2)
     tot_ctime = t_cpu(2)
-    IF (lwriter) WRITE(numtime, FMT = *) 'Total timing (sum) :'
-    IF (lwriter) WRITE(numtime, FMT = *) '--------------------'
-    IF (lwriter) WRITE(numtime, FMT = "('Elapsed Time (s)  CPU Time (s)')")
-    IF (lwriter) WRITE(numtime, FMT = '(5x,f12.3,1x,f12.3)') tot_etime, tot_ctime
-    IF (lwriter) WRITE(numtime, FMT = *)
+    IF (lwriter) WRITE(numtime, *) 'Total timing (sum) :'
+    IF (lwriter) WRITE(numtime, *) '--------------------'
+    IF (lwriter) WRITE(numtime, "('Elapsed Time (s)  CPU Time (s)')")
+    IF (lwriter) WRITE(numtime, '(5x,f12.3,1x,f12.3)') tot_etime, tot_ctime
+    IF (lwriter) WRITE(numtime, *)
     IF (lwriter) CALL wcurrent_info
     clfmt = '(1X,"Timing started on ",2(A2,"/"),A4," at ",2(A2,":"),A2," MET ",A3,":",A2," from GMT")'
-    IF (lwriter) WRITE(numtime, TRIM(clfmt)) cdate(1)(7 : 8), cdate(1)(5 : 6), cdate(1)(1 : 4), ctime(1)(1 : 2), ctime(1)(3 : 4), &
-&ctime(1)(5 : 6), czone(1 : 3), czone(4 : 5)
+    IF (lwriter) WRITE(numtime, TRIM(clfmt)) cdate(1)(7 : 8), cdate(1)(5 : 6), cdate(1)(1 : 4), ctime(1)(1 : 2), ctime(1)(3 : 4), ctime(1)(5 : 6), czone(1 : 3), czone(4 : 5)
     clfmt = '(1X,  "Timing   ended on ",2(A2,"/"),A4," at ",2(A2,":"),A2," MET ",A3,":",A2," from GMT")'
-    IF (lwriter) WRITE(numtime, TRIM(clfmt)) cdate(2)(7 : 8), cdate(2)(5 : 6), cdate(2)(1 : 4), ctime(2)(1 : 2), ctime(2)(3 : 4), &
-&ctime(2)(5 : 6), czone(1 : 3), czone(4 : 5)
+    IF (lwriter) WRITE(numtime, TRIM(clfmt)) cdate(2)(7 : 8), cdate(2)(5 : 6), cdate(2)(1 : 4), ctime(2)(1 : 2), ctime(2)(3 : 4), ctime(2)(5 : 6), czone(1 : 3), czone(4 : 5)
     IF (lwriter) CLOSE(UNIT = numtime)
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE timing_finalize
   SUBROUTINE wcurrent_info
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -212,26 +198,21 @@ MODULE timing
       END DO
       IF (ll_ord) EXIT
     END DO
-    WRITE(numtime, FMT = *) 'Detailed timing for proc :', narea - 1
-    WRITE(numtime, FMT = *) '--------------------------'
-    WRITE(numtime, FMT = *) 'Section             ', 'Elapsed Time (s)  ', 'Elapsed Time (%)  ', 'CPU Time(s)  ', 'CPU Time (%)  ', &
-&'CPU/Elapsed  ', 'Frequency'
+    WRITE(numtime, *) 'Detailed timing for proc :', narea - 1
+    WRITE(numtime, *) '--------------------------'
+    WRITE(numtime, *) 'Section             ', 'Elapsed Time (s)  ', 'Elapsed Time (%)  ', 'CPU Time(s)  ', 'CPU Time (%)  ', 'CPU/Elapsed  ', 'Frequency'
     s_timer => s_timer_root
     clfmt = '(1x,a,4x,f12.3,6x,f12.3,x,f12.3,2x,f12.3,6x,f7.3,2x,i9)'
     DO WHILE (ASSOCIATED(s_timer))
-      WRITE(numtime, TRIM(clfmt)) s_timer % cname, s_timer % tsum_clock, s_timer % tsum_clock * 100. / t_elaps(2), s_timer % &
-&tsum_cpu, s_timer % tsum_cpu * 100. / t_cpu(2), s_timer % tsum_cpu / s_timer % tsum_clock, s_timer % niter
+      WRITE(numtime, TRIM(clfmt)) s_timer % cname, s_timer % tsum_clock, s_timer % tsum_clock * 100. / t_elaps(2), s_timer % tsum_cpu, s_timer % tsum_cpu * 100. / t_cpu(2), s_timer % tsum_cpu / s_timer % tsum_clock, s_timer % niter
       s_timer => s_timer % next
     END DO
-    WRITE(numtime, FMT = *)
+    WRITE(numtime, *)
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE wcurrent_info
   SUBROUTINE timing_ini_var(cdinfo)
-    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdinfo
     LOGICAL :: ll_section
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('timing_ini_var', 'r0', 0, 0)
     IF (.NOT. ASSOCIATED(s_timer_root)) THEN
       ALLOCATE(s_timer_root)
       s_timer_root % cname = cdinfo
@@ -308,20 +289,15 @@ MODULE timing
       s_timer % next % next => NULL()
       s_timer => s_timer % next
     END IF
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE timing_ini_var
   SUBROUTINE timing_reset
     l_initdone = .TRUE.
     CALL timing_list(s_timer_root)
   END SUBROUTINE timing_reset
   RECURSIVE SUBROUTINE timing_list(ptr)
-    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     TYPE(timer), POINTER, INTENT(INOUT) :: ptr
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('timing_list', 'r0', 0, 0)
     IF (ASSOCIATED(ptr % next)) CALL timing_list(ptr % next)
-    IF (lwp) WRITE(numout, FMT = *) '   ', ptr % cname
-    CALL profile_psy_data0 % PostEnd
+    IF (lwp) WRITE(numout, *) '   ', ptr % cname
   END SUBROUTINE timing_list
   SUBROUTINE insert(sd_current, sd_root, sd_ptr)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType

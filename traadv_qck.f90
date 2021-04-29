@@ -29,10 +29,10 @@ MODULE traadv_qck
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('tra_adv_qck', 'r0', 0, 0)
     IF (kt == kit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'tra_adv_qck : 3rd order quickest advection scheme on ', cdtype
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      IF (lwp) WRITE(numout, FMT = *)
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'tra_adv_qck : 3rd order quickest advection scheme on ', cdtype
+      IF (lwp) WRITE(numout, *) '~~~~~~~~~~~~'
+      IF (lwp) WRITE(numout, *)
     END IF
     l_trd = .FALSE.
     l_ptr = .FALSE.
@@ -56,6 +56,10 @@ MODULE traadv_qck
     REAL(KIND = wp) :: ztra, zbtr, zdir, zdx, zmsk
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zwx, zfu, zfc, zfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     DO jn = 1, kjpt
       !$ACC KERNELS
       zfu(:, :, :) = 0._wp
@@ -63,7 +67,7 @@ MODULE traadv_qck
       zfd(:, :, :) = 0._wp
       zwx(:, :, :) = 0._wp
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zfc(ji, jj, jk) = ptb(ji - 1, jj, jk, jn)
@@ -72,10 +76,12 @@ MODULE traadv_qck
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data0 % PreStart('tra_adv_qck_i', 'r0', 0, 0)
       CALL lbc_lnk_multi('traadv_qck', zfc(:, :, :), 'T', 1., zfd(:, :, :), 'T', 1.)
+      CALL profile_psy_data0 % PostEnd
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zdir = 0.5 + SIGN(0.5, pun(ji, jj, jk))
@@ -84,7 +90,7 @@ MODULE traadv_qck
         END DO
       END DO
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zdir = 0.5 + SIGN(0.5, pun(ji, jj, jk))
@@ -96,13 +102,13 @@ MODULE traadv_qck
         END DO
       END DO
       !$ACC END KERNELS
-      CALL profile_psy_data0 % PreStart('tra_adv_qck_i', 'r0', 0, 0)
+      CALL profile_psy_data1 % PreStart('tra_adv_qck_i', 'r1', 0, 0)
       CALL lbc_lnk_multi('traadv_qck', zfu(:, :, :), 'T', 1., zfd(:, :, :), 'T', 1., zfc(:, :, :), 'T', 1., zwx(:, :, :), 'T', 1.)
       CALL quickest(zfu, zfd, zfc, zwx)
-      CALL profile_psy_data0 % PostEnd
+      CALL profile_psy_data1 % PostEnd
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zfu(ji, jj, jk) = tmask(ji - 1, jj, jk) + tmask(ji, jj, jk) + tmask(ji + 1, jj, jk) - 2.
@@ -110,10 +116,12 @@ MODULE traadv_qck
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data2 % PreStart('tra_adv_qck_i', 'r2', 0, 0)
       CALL lbc_lnk('traadv_qck', zfu(:, :, :), 'T', 1.)
+      CALL profile_psy_data2 % PostEnd
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zdir = 0.5 + SIGN(0.5, pun(ji, jj, jk))
@@ -124,10 +132,12 @@ MODULE traadv_qck
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data3 % PreStart('tra_adv_qck_i', 'r3', 0, 0)
       CALL lbc_lnk('traadv_qck', zwx(:, :, :), 'T', 1.)
+      CALL profile_psy_data3 % PostEnd
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zbtr = r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
@@ -137,7 +147,9 @@ MODULE traadv_qck
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data4 % PreStart('tra_adv_qck_i', 'r4', 0, 0)
       IF (l_trd) CALL trd_tra(kt, cdtype, jn, jptra_xad, zwx, pun, ptn(:, :, :, jn))
+      CALL profile_psy_data4 % PostEnd
     END DO
   END SUBROUTINE tra_adv_qck_i
   SUBROUTINE tra_adv_qck_j(kt, cdtype, p2dt, pvn, ptb, ptn, pta, kjpt)
@@ -154,6 +166,9 @@ MODULE traadv_qck
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zwy, zfu, zfc, zfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     DO jn = 1, kjpt
       !$ACC KERNELS
       zfu(:, :, :) = 0.0
@@ -161,7 +176,7 @@ MODULE traadv_qck
       zfd(:, :, :) = 0.0
       zwy(:, :, :) = 0.0
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zfc(ji, jj, jk) = ptb(ji, jj - 1, jk, jn)
@@ -170,10 +185,12 @@ MODULE traadv_qck
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data0 % PreStart('tra_adv_qck_j', 'r0', 0, 0)
       CALL lbc_lnk_multi('traadv_qck', zfc(:, :, :), 'T', 1., zfd(:, :, :), 'T', 1.)
+      CALL profile_psy_data0 % PostEnd
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zdir = 0.5 + SIGN(0.5, pvn(ji, jj, jk))
@@ -182,7 +199,7 @@ MODULE traadv_qck
         END DO
       END DO
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zdir = 0.5 + SIGN(0.5, pvn(ji, jj, jk))
@@ -194,13 +211,13 @@ MODULE traadv_qck
         END DO
       END DO
       !$ACC END KERNELS
-      CALL profile_psy_data0 % PreStart('tra_adv_qck_j', 'r0', 0, 0)
+      CALL profile_psy_data1 % PreStart('tra_adv_qck_j', 'r1', 0, 0)
       CALL lbc_lnk_multi('traadv_qck', zfu(:, :, :), 'T', 1., zfd(:, :, :), 'T', 1., zfc(:, :, :), 'T', 1., zwy(:, :, :), 'T', 1.)
       CALL quickest(zfu, zfd, zfc, zwy)
-      CALL profile_psy_data0 % PostEnd
+      CALL profile_psy_data1 % PostEnd
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zfu(ji, jj, jk) = tmask(ji, jj - 1, jk) + tmask(ji, jj, jk) + tmask(ji, jj + 1, jk) - 2.
@@ -208,10 +225,12 @@ MODULE traadv_qck
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data2 % PreStart('tra_adv_qck_j', 'r2', 0, 0)
       CALL lbc_lnk('traadv_qck', zfu(:, :, :), 'T', 1.)
+      CALL profile_psy_data2 % PostEnd
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zdir = 0.5 + SIGN(0.5, pvn(ji, jj, jk))
@@ -222,10 +241,12 @@ MODULE traadv_qck
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data3 % PreStart('tra_adv_qck_j', 'r3', 0, 0)
       CALL lbc_lnk('traadv_qck', zwy(:, :, :), 'T', 1.)
+      CALL profile_psy_data3 % PostEnd
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zbtr = r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
@@ -235,13 +256,14 @@ MODULE traadv_qck
         END DO
       END DO
       !$ACC END KERNELS
-      CALL profile_psy_data1 % PreStart('tra_adv_qck_j', 'r1', 0, 0)
+      CALL profile_psy_data4 % PreStart('tra_adv_qck_j', 'r4', 0, 0)
       IF (l_trd) CALL trd_tra(kt, cdtype, jn, jptra_yad, zwy, pvn, ptn(:, :, :, jn))
       IF (l_ptr) CALL dia_ptr_hst(jn, 'adv', zwy(:, :, :))
-      CALL profile_psy_data1 % PostEnd
+      CALL profile_psy_data4 % PostEnd
     END DO
   END SUBROUTINE tra_adv_qck_j
   SUBROUTINE tra_adv_cen2_k(kt, cdtype, pwn, ptn, pta, kjpt)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     INTEGER, INTENT(IN) :: kt
     CHARACTER(LEN = 3), INTENT(IN) :: cdtype
     INTEGER, INTENT(IN) :: kjpt
@@ -250,6 +272,7 @@ MODULE traadv_qck
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk, kjpt), INTENT(INOUT) :: pta
     INTEGER :: ji, jj, jk, jn
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zwz
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     !$ACC KERNELS
     zwz(:, :, 1) = 0._wp
     zwz(:, :, jpk) = 0._wp
@@ -257,7 +280,7 @@ MODULE traadv_qck
     DO jn = 1, kjpt
       !$ACC KERNELS
       DO jk = 2, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zwz(ji, jj, jk) = 0.5 * pwn(ji, jj, jk) * (ptn(ji, jj, jk - 1, jn) + ptn(ji, jj, jk, jn)) * wmask(ji, jj, jk)
@@ -268,7 +291,7 @@ MODULE traadv_qck
       IF (ln_linssh) THEN
         IF (ln_isfcav) THEN
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               zwz(ji, jj, mikt(ji, jj)) = pwn(ji, jj, mikt(ji, jj)) * ptn(ji, jj, mikt(ji, jj), jn)
@@ -283,16 +306,17 @@ MODULE traadv_qck
       END IF
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (zwz(ji, jj, jk) - zwz(ji, jj, jk + 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, &
-&jk)
+            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (zwz(ji, jj, jk) - zwz(ji, jj, jk + 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
           END DO
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data0 % PreStart('tra_adv_cen2_k', 'r0', 0, 0)
       IF (l_trd) CALL trd_tra(kt, cdtype, jn, jptra_zad, zwz, pwn, ptn(:, :, :, jn))
+      CALL profile_psy_data0 % PostEnd
     END DO
   END SUBROUTINE tra_adv_cen2_k
   SUBROUTINE quickest(pfu, pfd, pfc, puc)
@@ -305,7 +329,7 @@ MODULE traadv_qck
     REAL(KIND = wp) :: zc, zcurv, zfho
     !$ACC KERNELS
     DO jk = 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           zc = puc(ji, jj, jk)

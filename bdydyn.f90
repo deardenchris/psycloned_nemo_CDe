@@ -28,55 +28,48 @@ MODULE bdydyn
     END IF
     ll_orlanski = .FALSE.
     DO ib_bdy = 1, nb_bdy
-      IF (cn_dyn2d(ib_bdy) == 'orlanski' .OR. cn_dyn2d(ib_bdy) == 'orlanski_npo' .OR. cn_dyn3d(ib_bdy) == 'orlanski' .OR. &
-&cn_dyn3d(ib_bdy) == 'orlanski_npo') ll_orlanski = .TRUE.
+      IF (cn_dyn2d(ib_bdy) == 'orlanski' .OR. cn_dyn2d(ib_bdy) == 'orlanski_npo' .OR. cn_dyn3d(ib_bdy) == 'orlanski' .OR. cn_dyn3d(ib_bdy) == 'orlanski_npo') ll_orlanski = .TRUE.
     END DO
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     pua2d(:, :) = 0._wp
     pva2d(:, :) = 0._wp
-    !$ACC END KERNELS
     DO jk = 1, jpkm1
-      !$ACC KERNELS
       pua2d(:, :) = pua2d(:, :) + e3u_a(:, :, jk) * ua(:, :, jk) * umask(:, :, jk)
       pva2d(:, :) = pva2d(:, :) + e3v_a(:, :, jk) * va(:, :, jk) * vmask(:, :, jk)
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
     pua2d(:, :) = pua2d(:, :) * r1_hu_a(:, :)
     pva2d(:, :) = pva2d(:, :) * r1_hv_a(:, :)
-    !$ACC END KERNELS
     DO jk = 1, jpkm1
-      !$ACC KERNELS
       ua(:, :, jk) = (ua(:, :, jk) - pua2d(:, :)) * umask(:, :, jk)
       va(:, :, jk) = (va(:, :, jk) - pva2d(:, :)) * vmask(:, :, jk)
-      !$ACC END KERNELS
     END DO
+    !$ACC END KERNELS
     IF (ll_orlanski) THEN
+      !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC KERNELS
         ub(:, :, jk) = (ub(:, :, jk) - ub_b(:, :)) * umask(:, :, jk)
         vb(:, :, jk) = (vb(:, :, jk) - vb_b(:, :)) * vmask(:, :, jk)
-        !$ACC END KERNELS
       END DO
+      !$ACC END KERNELS
     END IF
     CALL profile_psy_data1 % PreStart('bdy_dyn', 'r1', 0, 0)
     IF (ll_dyn2d) CALL bdy_dyn2d(kt, pua2d, pva2d, ub_b, vb_b, r1_hu_a(:, :), r1_hv_a(:, :), ssha)
     IF (ll_dyn3d) CALL bdy_dyn3d(kt)
     CALL profile_psy_data1 % PostEnd
+    !$ACC KERNELS
     DO jk = 1, jpkm1
-      !$ACC KERNELS
       ua(:, :, jk) = (ua(:, :, jk) + pua2d(:, :)) * umask(:, :, jk)
       va(:, :, jk) = (va(:, :, jk) + pva2d(:, :)) * vmask(:, :, jk)
-      !$ACC END KERNELS
     END DO
+    !$ACC END KERNELS
     IF (ll_orlanski) THEN
+      !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC KERNELS
         ub(:, :, jk) = (ub(:, :, jk) + ub_b(:, :)) * umask(:, :, jk)
         vb(:, :, jk) = (vb(:, :, jk) + vb_b(:, :)) * vmask(:, :, jk)
-        !$ACC END KERNELS
       END DO
+      !$ACC END KERNELS
     END IF
   END SUBROUTINE bdy_dyn
 END MODULE bdydyn

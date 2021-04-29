@@ -42,11 +42,12 @@ MODULE tramle
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zpsim_u, zpsim_v, zmld, zbm, zhu, zhv, zn2, zLf_NH, zLf_MH
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zpsi_uw, zpsi_vw
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     !$ACC KERNELS
     inml_mle(:, :) = mbkt(:, :) + 1
     IF (nla10 > 0) THEN
       DO jk = jpkm1, nlb10, - 1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             IF (rhop(ji, jj, jk) > rhop(ji, jj, nla10) + rn_rho_c_mle) inml_mle(ji, jj) = jk
@@ -59,7 +60,7 @@ MODULE tramle
     zbm(:, :) = 0._wp
     zn2(:, :) = 0._wp
     DO jk = 1, ikmax
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           zc = e3t_n(ji, jj, jk) * REAL(MIN(MAX(0, inml_mle(ji, jj) - jk), 1))
@@ -71,7 +72,7 @@ MODULE tramle
     END DO
     SELECT CASE (nn_mld_uv)
     CASE (0)
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           zhu(ji, jj) = MIN(zmld(ji + 1, jj), zmld(ji, jj))
@@ -79,7 +80,7 @@ MODULE tramle
         END DO
       END DO
     CASE (1)
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           zhu(ji, jj) = (zmld(ji + 1, jj) + zmld(ji, jj)) * 0.5_wp
@@ -87,7 +88,7 @@ MODULE tramle
         END DO
       END DO
     CASE (2)
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           zhu(ji, jj) = MAX(zmld(ji + 1, jj), zmld(ji, jj))
@@ -97,28 +98,24 @@ MODULE tramle
     END SELECT
     zbm(:, :) = + grav * zbm(:, :) / MAX(e3t_n(:, :, 1), zmld(:, :))
     IF (nn_mle == 0) THEN
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
-          zpsim_u(ji, jj) = rn_ce * zhu(ji, jj) * zhu(ji, jj) * e2_e1u(ji, jj) * (zbm(ji + 1, jj) - zbm(ji, jj)) * MIN(111.E3_wp, &
-&e1u(ji, jj)) / (MAX(rn_lf * rfu(ji, jj), SQRT(rb_c * zhu(ji, jj))))
-          zpsim_v(ji, jj) = rn_ce * zhv(ji, jj) * zhv(ji, jj) * e1_e2v(ji, jj) * (zbm(ji, jj + 1) - zbm(ji, jj)) * MIN(111.E3_wp, &
-&e2v(ji, jj)) / (MAX(rn_lf * rfv(ji, jj), SQRT(rb_c * zhv(ji, jj))))
+          zpsim_u(ji, jj) = rn_ce * zhu(ji, jj) * zhu(ji, jj) * e2_e1u(ji, jj) * (zbm(ji + 1, jj) - zbm(ji, jj)) * MIN(111.E3_wp, e1u(ji, jj)) / (MAX(rn_lf * rfu(ji, jj), SQRT(rb_c * zhu(ji, jj))))
+          zpsim_v(ji, jj) = rn_ce * zhv(ji, jj) * zhv(ji, jj) * e1_e2v(ji, jj) * (zbm(ji, jj + 1) - zbm(ji, jj)) * MIN(111.E3_wp, e2v(ji, jj)) / (MAX(rn_lf * rfv(ji, jj), SQRT(rb_c * zhv(ji, jj))))
         END DO
       END DO
     ELSE IF (nn_mle == 1) THEN
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
-          zpsim_u(ji, jj) = rc_f * zhu(ji, jj) * zhu(ji, jj) * e2_e1u(ji, jj) * (zbm(ji + 1, jj) - zbm(ji, jj)) * MIN(111.E3_wp, &
-&e1u(ji, jj))
-          zpsim_v(ji, jj) = rc_f * zhv(ji, jj) * zhv(ji, jj) * e1_e2v(ji, jj) * (zbm(ji, jj + 1) - zbm(ji, jj)) * MIN(111.E3_wp, &
-&e2v(ji, jj))
+          zpsim_u(ji, jj) = rc_f * zhu(ji, jj) * zhu(ji, jj) * e2_e1u(ji, jj) * (zbm(ji + 1, jj) - zbm(ji, jj)) * MIN(111.E3_wp, e1u(ji, jj))
+          zpsim_v(ji, jj) = rc_f * zhv(ji, jj) * zhv(ji, jj) * e1_e2v(ji, jj) * (zbm(ji, jj + 1) - zbm(ji, jj)) * MIN(111.E3_wp, e2v(ji, jj))
         END DO
       END DO
     END IF
     IF (nn_conv == 1) THEN
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           IF (MIN(zn2(ji, jj), zn2(ji + 1, jj)) < 0._wp) zpsim_u(ji, jj) = 0._wp
@@ -126,7 +123,7 @@ MODULE tramle
         END DO
       END DO
     END IF
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpjm1
       DO ji = 1, jpim1
         zhu(ji, jj) = 1._wp / zhu(ji, jj)
@@ -136,7 +133,7 @@ MODULE tramle
     zpsi_uw(:, :, :) = 0._wp
     zpsi_vw(:, :, :) = 0._wp
     DO jk = 2, ikmax
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           zcuw = 1._wp - (gdepw_n(ji + 1, jj, jk) + gdepw_n(ji, jj, jk)) * zhu(ji, jj)
@@ -153,18 +150,17 @@ MODULE tramle
     !$ACC END KERNELS
     DO jk = 1, ikmax
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           pu(ji, jj, jk) = pu(ji, jj, jk) + (zpsi_uw(ji, jj, jk) - zpsi_uw(ji, jj, jk + 1))
           pv(ji, jj, jk) = pv(ji, jj, jk) + (zpsi_vw(ji, jj, jk) - zpsi_vw(ji, jj, jk + 1))
         END DO
       END DO
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          pw(ji, jj, jk) = pw(ji, jj, jk) - (zpsi_uw(ji, jj, jk) - zpsi_uw(ji - 1, jj, jk) + zpsi_vw(ji, jj, jk) - zpsi_vw(ji, jj &
-&- 1, jk))
+          pw(ji, jj, jk) = pw(ji, jj, jk) - (zpsi_uw(ji, jj, jk) - zpsi_uw(ji - 1, jj, jk) + zpsi_vw(ji, jj, jk) - zpsi_vw(ji, jj - 1, jk))
         END DO
       END DO
       !$ACC END KERNELS
@@ -173,17 +169,19 @@ MODULE tramle
       !$ACC KERNELS
       zLf_NH(:, :) = SQRT(rb_c * zmld(:, :)) * r1_ft(:, :)
       !$ACC END KERNELS
+      CALL profile_psy_data0 % PreStart('tra_mle_trp', 'r0', 0, 0)
       CALL iom_put("Lf_NHpf", zLf_NH)
+      CALL profile_psy_data0 % PostEnd
+      !$ACC KERNELS
       DO jk = 1, ikmax + 1
-        !$ACC KERNELS
         zpsi_uw(:, :, jk) = zpsi_uw(:, :, jk) * r1_e2u(:, :)
         zpsi_vw(:, :, jk) = zpsi_vw(:, :, jk) * r1_e1v(:, :)
-        !$ACC END KERNELS
       END DO
-      CALL profile_psy_data0 % PreStart('tra_mle_trp', 'r0', 0, 0)
+      !$ACC END KERNELS
+      CALL profile_psy_data1 % PreStart('tra_mle_trp', 'r1', 0, 0)
       CALL iom_put("psiu_mle", zpsi_uw)
       CALL iom_put("psiv_mle", zpsi_vw)
-      CALL profile_psy_data0 % PostEnd
+      CALL profile_psy_data1 % PostEnd
     END IF
   END SUBROUTINE tra_mle_trp
   SUBROUTINE tra_mle_init
@@ -200,41 +198,41 @@ MODULE tramle
 902 IF (ios > 0) CALL ctl_nam(ios, 'namtra_mle in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namtra_mle)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'tra_mle_init : mixed layer eddy (MLE) advection acting on tracers'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namtra_mle : mixed layer eddy advection applied on tracers'
-      WRITE(numout, FMT = *) '      use mixed layer eddy (MLE, i.e. Fox-Kemper param) (T/F)      ln_mle       = ', ln_mle
-      WRITE(numout, FMT = *) '         MLE type: =0 standard Fox-Kemper ; =1 new formulation        nn_mle    = ', nn_mle
-      WRITE(numout, FMT = *) '         magnitude of the MLE (typical value: 0.06 to 0.08)           rn_ce     = ', rn_ce
-      WRITE(numout, FMT = *) '         scale of ML front (ML radius of deformation) (rn_mle=0)      rn_lf     = ', rn_lf, 'm'
-      WRITE(numout, FMT = *) '         maximum time scale of MLE                    (rn_mle=0)      rn_time   = ', rn_time, 's'
-      WRITE(numout, FMT = *) '         reference latitude (degrees) of MLE coef.    (rn_mle=1)      rn_lat    = ', rn_lat, 'deg'
-      WRITE(numout, FMT = *) '         space interp. of MLD at u-(v-)pts (0=min,1=averaged,2=max)   nn_mld_uv = ', nn_mld_uv
-      WRITE(numout, FMT = *) '         =1 no MLE in case of convection ; =0 always MLE              nn_conv   = ', nn_conv
-      WRITE(numout, FMT = *) '         Density difference used to define ML for FK              rn_rho_c_mle  = ', rn_rho_c_mle
+      WRITE(numout, *)
+      WRITE(numout, *) 'tra_mle_init : mixed layer eddy (MLE) advection acting on tracers'
+      WRITE(numout, *) '~~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist namtra_mle : mixed layer eddy advection applied on tracers'
+      WRITE(numout, *) '      use mixed layer eddy (MLE, i.e. Fox-Kemper param) (T/F)      ln_mle       = ', ln_mle
+      WRITE(numout, *) '         MLE type: =0 standard Fox-Kemper ; =1 new formulation        nn_mle    = ', nn_mle
+      WRITE(numout, *) '         magnitude of the MLE (typical value: 0.06 to 0.08)           rn_ce     = ', rn_ce
+      WRITE(numout, *) '         scale of ML front (ML radius of deformation) (rn_mle=0)      rn_lf     = ', rn_lf, 'm'
+      WRITE(numout, *) '         maximum time scale of MLE                    (rn_mle=0)      rn_time   = ', rn_time, 's'
+      WRITE(numout, *) '         reference latitude (degrees) of MLE coef.    (rn_mle=1)      rn_lat    = ', rn_lat, 'deg'
+      WRITE(numout, *) '         space interp. of MLD at u-(v-)pts (0=min,1=averaged,2=max)   nn_mld_uv = ', nn_mld_uv
+      WRITE(numout, *) '         =1 no MLE in case of convection ; =0 always MLE              nn_conv   = ', nn_conv
+      WRITE(numout, *) '         Density difference used to define ML for FK              rn_rho_c_mle  = ', rn_rho_c_mle
     END IF
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
       IF (ln_mle) THEN
-        WRITE(numout, FMT = *) '   ==>>>   Mixed Layer Eddy induced transport added to tracer advection'
-        IF (nn_mle == 0) WRITE(numout, FMT = *) '              Fox-Kemper et al 2010 formulation'
-        IF (nn_mle == 1) WRITE(numout, FMT = *) '              New formulation'
+        WRITE(numout, *) '   ==>>>   Mixed Layer Eddy induced transport added to tracer advection'
+        IF (nn_mle == 0) WRITE(numout, *) '              Fox-Kemper et al 2010 formulation'
+        IF (nn_mle == 1) WRITE(numout, *) '              New formulation'
       ELSE
-        WRITE(numout, FMT = *) '   ==>>>   Mixed Layer Eddy parametrisation NOT used'
+        WRITE(numout, *) '   ==>>>   Mixed Layer Eddy parametrisation NOT used'
       END IF
     END IF
     IF (ln_mle) THEN
       rb_c = grav * rn_rho_c_mle / rau0
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '      ML buoyancy criteria = ', rb_c, ' m/s2 '
-      IF (lwp) WRITE(numout, FMT = *) '      associated ML density criteria defined in zdfmxl = ', rho_c, 'kg/m3'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '      ML buoyancy criteria = ', rb_c, ' m/s2 '
+      IF (lwp) WRITE(numout, *) '      associated ML density criteria defined in zdfmxl = ', rho_c, 'kg/m3'
       IF (nn_mle == 0) THEN
         ALLOCATE(rfu(jpi, jpj), rfv(jpi, jpj), STAT = ierr)
         IF (ierr /= 0) CALL ctl_stop('tra_adv_mle_init: failed to allocate arrays')
         !$ACC KERNELS
         z1_t2 = 1._wp / (rn_time * rn_time)
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpj
           DO ji = 2, jpi
             zfu = (ff_f(ji, jj) + ff_f(ji, jj - 1)) * 0.5_wp

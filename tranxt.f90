@@ -37,13 +37,12 @@ MODULE tranxt
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
     CALL profile_psy_data0 % PreStart('tra_nxt', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('tra_nxt')
     IF (kt == nit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'tra_nxt : achieve the time stepping by Asselin filter and array swap'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'tra_nxt : achieve the time stepping by Asselin filter and array swap'
+      IF (lwp) WRITE(numout, *) '~~~~~~~'
     END IF
     CALL lbc_lnk_multi('tranxt', tsa(:, :, :, jp_tem), 'T', 1., tsa(:, :, :, jp_sal), 'T', 1.)
     IF (ln_bdy) CALL bdy_tra(kt)
@@ -64,14 +63,14 @@ MODULE tranxt
         CALL trd_tra(kt, 'TRA', jp_tem, jptra_zdfp, ztrdt)
         CALL trd_tra(kt, 'TRA', jp_sal, jptra_zdfp, ztrds)
       END IF
-      zfact = 1.0 / rdt
       CALL profile_psy_data1 % PostEnd
+      !$ACC KERNELS
+      zfact = 1.0 / rdt
       DO jk = 1, jpkm1
-        !$ACC KERNELS
         ztrdt(:, :, jk) = (tsa(:, :, jk, jp_tem) * e3t_a(:, :, jk) / e3t_n(:, :, jk) - tsn(:, :, jk, jp_tem)) * zfact
         ztrds(:, :, jk) = (tsa(:, :, jk, jp_sal) * e3t_a(:, :, jk) / e3t_n(:, :, jk) - tsn(:, :, jk, jp_sal)) * zfact
-        !$ACC END KERNELS
       END DO
+      !$ACC END KERNELS
       CALL profile_psy_data2 % PreStart('tra_nxt', 'r2', 0, 0)
       CALL trd_tra(kt, 'TRA', jp_tem, jptra_tot, ztrdt)
       CALL trd_tra(kt, 'TRA', jp_sal, jptra_tot, ztrds)
@@ -108,31 +107,27 @@ MODULE tranxt
       ELSE
         CALL tra_nxt_vvl(kt, nit000, rdt, 'TRA', tsb, tsn, tsa, sbc_tsc, sbc_tsc_b, jpts)
       END IF
-      CALL lbc_lnk_multi('tranxt', tsb(:, :, :, jp_tem), 'T', 1., tsb(:, :, :, jp_sal), 'T', 1., tsn(:, :, :, jp_tem), 'T', 1., &
-&tsn(:, :, :, jp_sal), 'T', 1., tsa(:, :, :, jp_tem), 'T', 1., tsa(:, :, :, jp_sal), 'T', 1.)
+      CALL lbc_lnk_multi('tranxt', tsb(:, :, :, jp_tem), 'T', 1., tsb(:, :, :, jp_sal), 'T', 1., tsn(:, :, :, jp_tem), 'T', 1., tsn(:, :, :, jp_sal), 'T', 1., tsa(:, :, :, jp_tem), 'T', 1., tsa(:, :, :, jp_sal), 'T', 1.)
       CALL profile_psy_data4 % PostEnd
     END IF
     IF (l_trdtra .AND. ln_linssh) THEN
-      CALL profile_psy_data5 % PreStart('tra_nxt', 'r5', 0, 0)
+      !$ACC KERNELS
       zfact = 1._wp / r2dt
-      CALL profile_psy_data5 % PostEnd
       DO jk = 1, jpkm1
-        !$ACC KERNELS
         ztrdt(:, :, jk) = (tsb(:, :, jk, jp_tem) - ztrdt(:, :, jk)) * zfact
         ztrds(:, :, jk) = (tsb(:, :, jk, jp_sal) - ztrds(:, :, jk)) * zfact
-        !$ACC END KERNELS
       END DO
-      CALL profile_psy_data6 % PreStart('tra_nxt', 'r6', 0, 0)
+      !$ACC END KERNELS
+      CALL profile_psy_data5 % PreStart('tra_nxt', 'r5', 0, 0)
       CALL trd_tra(kt, 'TRA', jp_tem, jptra_atf, ztrdt)
       CALL trd_tra(kt, 'TRA', jp_sal, jptra_atf, ztrds)
-      CALL profile_psy_data6 % PostEnd
+      CALL profile_psy_data5 % PostEnd
     END IF
-    CALL profile_psy_data7 % PreStart('tra_nxt', 'r7', 0, 0)
+    CALL profile_psy_data6 % PreStart('tra_nxt', 'r6', 0, 0)
     IF (l_trdtra) DEALLOCATE(ztrdt, ztrds)
-    IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsn(:, :, :, jp_tem), clinfo1 = ' nxt  - Tn: ', mask1 = tmask, tab3d_2 = tsn(:, :, :, &
-&jp_sal), clinfo2 = ' Sn: ', mask2 = tmask)
+    IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsn(:, :, :, jp_tem), clinfo1 = ' nxt  - Tn: ', mask1 = tmask, tab3d_2 = tsn(:, :, :, jp_sal), clinfo2 = ' Sn: ', mask2 = tmask)
     IF (ln_timing) CALL timing_stop('tra_nxt')
-    CALL profile_psy_data7 % PostEnd
+    CALL profile_psy_data6 % PostEnd
   END SUBROUTINE tra_nxt
   SUBROUTINE tra_nxt_fix(kt, kit000, cdtype, ptb, ptn, pta, kjpt)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -148,15 +143,15 @@ MODULE tranxt
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('tra_nxt_fix', 'r0', 0, 0)
     IF (kt == kit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'tra_nxt_fix : time stepping', cdtype
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'tra_nxt_fix : time stepping', cdtype
+      IF (lwp) WRITE(numout, *) '~~~~~~~~~~~'
     END IF
     CALL profile_psy_data0 % PostEnd
     DO jn = 1, kjpt
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             ztn = ptn(ji, jj, jk, jn)
@@ -191,9 +186,9 @@ MODULE tranxt
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     CALL profile_psy_data0 % PreStart('tra_nxt_vvl', 'r0', 0, 0)
     IF (kt == kit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'tra_nxt_vvl : time stepping', cdtype
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'tra_nxt_vvl : time stepping', cdtype
+      IF (lwp) WRITE(numout, *) '~~~~~~~~~~~'
     END IF
     IF (cdtype == 'TRA') THEN
       ll_traqsr = ln_traqsr
@@ -219,7 +214,7 @@ MODULE tranxt
     DO jn = 1, kjpt
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             ze3t_b = e3t_b(ji, jj, jk)
@@ -246,13 +241,10 @@ MODULE tranxt
               END IF
             END IF
             IF (ll_traqsr .AND. jn == jp_tem .AND. jk <= nksr) ztc_f = ztc_f - zfact1 * (qsr_hc(ji, jj, jk) - qsr_hc_b(ji, jj, jk))
-            IF (ll_rnf .AND. jk <= nk_rnf(ji, jj)) ztc_f = ztc_f - zfact1 * (rnf_tsc(ji, jj, jn) - rnf_tsc_b(ji, jj, jn)) * &
-&e3t_n(ji, jj, jk) / h_rnf(ji, jj)
+            IF (ll_rnf .AND. jk <= nk_rnf(ji, jj)) ztc_f = ztc_f - zfact1 * (rnf_tsc(ji, jj, jn) - rnf_tsc_b(ji, jj, jn)) * e3t_n(ji, jj, jk) / h_rnf(ji, jj)
             IF (ll_isf) THEN
-              IF (jk >= misfkt(ji, jj) .AND. jk < misfkb(ji, jj)) ztc_f = ztc_f - zfact1 * (risf_tsc(ji, jj, jn) - risf_tsc_b(ji, &
-&jj, jn)) * e3t_n(ji, jj, jk) * r1_hisf_tbl(ji, jj)
-              IF (jk == misfkb(ji, jj)) ztc_f = ztc_f - zfact1 * (risf_tsc(ji, jj, jn) - risf_tsc_b(ji, jj, jn)) * e3t_n(ji, jj, &
-&jk) * r1_hisf_tbl(ji, jj) * ralpha(ji, jj)
+              IF (jk >= misfkt(ji, jj) .AND. jk < misfkb(ji, jj)) ztc_f = ztc_f - zfact1 * (risf_tsc(ji, jj, jn) - risf_tsc_b(ji, jj, jn)) * e3t_n(ji, jj, jk) * r1_hisf_tbl(ji, jj)
+              IF (jk == misfkb(ji, jj)) ztc_f = ztc_f - zfact1 * (risf_tsc(ji, jj, jn) - risf_tsc_b(ji, jj, jn)) * e3t_n(ji, jj, jk) * r1_hisf_tbl(ji, jj) * ralpha(ji, jj)
             END IF
             ze3t_f = 1.E0 / ze3t_f
             ptb(ji, jj, jk, jn) = ztc_f * ze3t_f

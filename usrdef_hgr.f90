@@ -9,8 +9,7 @@ MODULE usrdef_hgr
   PRIVATE
   PUBLIC :: usr_def_hgr
   CONTAINS
-  SUBROUTINE usr_def_hgr(plamt, plamu, plamv, plamf, pphit, pphiu, pphiv, pphif, kff, pff_f, pff_t, pe1t, pe1u, pe1v, pe1f, pe2t, &
-&pe2u, pe2v, pe2f, ke1e2u_v, pe1e2u, pe1e2v)
+  SUBROUTINE usr_def_hgr(plamt, plamu, plamv, plamf, pphit, pphiu, pphiv, pphif, kff, pff_f, pff_t, pe1t, pe1u, pe1v, pe1f, pe2t, pe2u, pe2v, pe2f, ke1e2u_v, pe1e2u, pe1e2v)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), DIMENSION(:, :), INTENT(OUT) :: plamt, plamu, plamv, plamf
     REAL(KIND = wp), DIMENSION(:, :), INTENT(OUT) :: pphit, pphiu, pphiv, pphif
@@ -25,9 +24,9 @@ MODULE usrdef_hgr
     REAL(KIND = wp) :: zphi1, zphi0, zsin_alpha, zim05, zjm05, zbeta, znorme
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('usr_def_hgr', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) 'usr_def_hgr : GYRE configuration (beta-plane with rotated regular grid-spacing)'
-    IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) 'usr_def_hgr : GYRE configuration (beta-plane with rotated regular grid-spacing)'
+    IF (lwp) WRITE(numout, *) '~~~~~~~~~~~'
     zlam1 = - 85._wp
     zphi1 = 29._wp
     ze1 = 106000._wp / REAL(nn_GYRE, wp)
@@ -41,12 +40,12 @@ MODULE usrdef_hgr
       CALL ctl_warn(' GYRE used as Benchmark: e1=e2=106km, no need to adjust rdt, ahm,aht ')
     END IF
     IF (nprint == 1 .AND. lwp) THEN
-      WRITE(numout, FMT = *) 'ze1', ze1, 'cosalpha', zcos_alpha, 'sinalpha', zsin_alpha
-      WRITE(numout, FMT = *) 'ze1deg', ze1deg, 'zlam0', zlam0, 'zphi0', zphi0
+      WRITE(numout, *) 'ze1', ze1, 'cosalpha', zcos_alpha, 'sinalpha', zsin_alpha
+      WRITE(numout, *) 'ze1deg', ze1deg, 'zlam0', zlam0, 'zphi0', zphi0
     END IF
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zim1 = REAL(ji + nimpp - 1) - 1.
@@ -81,6 +80,6 @@ MODULE usrdef_hgr
     pff_f(:, :) = (zf0 + zbeta * ABS(pphif(:, :) - zphi0) * rad * ra)
     pff_t(:, :) = (zf0 + zbeta * ABS(pphit(:, :) - zphi0) * rad * ra)
     !$ACC END KERNELS
-    IF (lwp) WRITE(numout, FMT = *) '                           beta-plane used. beta = ', zbeta, ' 1/(s.m)'
+    IF (lwp) WRITE(numout, *) '                           beta-plane used. beta = ', zbeta, ' 1/(s.m)'
   END SUBROUTINE usr_def_hgr
 END MODULE usrdef_hgr

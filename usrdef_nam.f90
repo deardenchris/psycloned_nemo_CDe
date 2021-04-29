@@ -31,28 +31,28 @@ MODULE usrdef_nam
     kpi = 30 * nn_GYRE + 2
     kpj = 20 * nn_GYRE + 2
     kpk = jpkglo
-    WRITE(ldtxt(ii), FMT = *) '   '
+    WRITE(ldtxt(ii), *) '   '
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) 'usr_def_nam  : read the user defined namelist (namusr_def) in namelist_cfg'
+    WRITE(ldtxt(ii), *) 'usr_def_nam  : read the user defined namelist (namusr_def) in namelist_cfg'
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '~~~~~~~~~~~ '
+    WRITE(ldtxt(ii), *) '~~~~~~~~~~~ '
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '   Namelist namusr_def : GYRE case'
+    WRITE(ldtxt(ii), *) '   Namelist namusr_def : GYRE case'
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '      GYRE used as Benchmark (=T)                      ln_bench  = ', ln_bench
+    WRITE(ldtxt(ii), *) '      GYRE used as Benchmark (=T)                      ln_bench  = ', ln_bench
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '      inverse resolution & implied domain size         nn_GYRE   = ', nn_gyre
+    WRITE(ldtxt(ii), *) '      inverse resolution & implied domain size         nn_GYRE   = ', nn_gyre
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '         jpiglo = 30*nn_GYRE+2                            jpiglo = ', kpi
+    WRITE(ldtxt(ii), *) '         jpiglo = 30*nn_GYRE+2                            jpiglo = ', kpi
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '         jpjglo = 20*nn_GYRE+2                            jpjglo = ', kpj
+    WRITE(ldtxt(ii), *) '         jpjglo = 20*nn_GYRE+2                            jpjglo = ', kpj
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '      number of model levels                              jpkglo = ', kpk
+    WRITE(ldtxt(ii), *) '      number of model levels                              jpkglo = ', kpk
     ii = ii + 1
     kperio = 0
-    WRITE(ldtxt(ii), FMT = *) '   '
+    WRITE(ldtxt(ii), *) '   '
     ii = ii + 1
-    WRITE(ldtxt(ii), FMT = *) '   Lateral b.c. of the global domain set to closed     jperio = ', kperio
+    WRITE(ldtxt(ii), *) '   Lateral b.c. of the global domain set to closed     jperio = ', kperio
     ii = ii + 1
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE usr_def_nam

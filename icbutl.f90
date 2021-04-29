@@ -25,6 +25,7 @@ MODULE icbutl
   PUBLIC :: icb_utl_heat
   CONTAINS
   SUBROUTINE icb_utl_copy
+    !$ACC KERNELS
     uo_e(1 : jpi, 1 : jpj) = ssu_m(:, :) * umask(:, :, 1)
     vo_e(1 : jpi, 1 : jpj) = ssv_m(:, :) * vmask(:, :, 1)
     ff_e(1 : jpi, 1 : jpj) = ff_f(:, :)
@@ -32,6 +33,7 @@ MODULE icbutl
     fr_e(1 : jpi, 1 : jpj) = fr_i(:, :)
     ua_e(1 : jpi, 1 : jpj) = utau(:, :) * umask(:, :, 1)
     va_e(1 : jpi, 1 : jpj) = vtau(:, :) * vmask(:, :, 1)
+    !$ACC END KERNELS
     CALL lbc_lnk_icb('icbutl', uo_e, 'U', - 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', vo_e, 'V', - 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', ff_e, 'F', + 1._wp, 1, 1)
@@ -39,7 +41,9 @@ MODULE icbutl
     CALL lbc_lnk_icb('icbutl', va_e, 'V', - 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', fr_e, 'T', + 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', tt_e, 'T', + 1._wp, 1, 1)
+    !$ACC KERNELS
     ssh_e(1 : jpi, 1 : jpj) = ssh_m(:, :) * tmask(:, :, 1)
+    !$ACC END KERNELS
     CALL lbc_lnk_icb('icbutl', ssh_e, 'T', + 1._wp, 1, 1)
   END SUBROUTINE icb_utl_copy
   SUBROUTINE icb_utl_interp(pi, pe1, puo, pui, pua, pssh_i, pj, pe2, pvo, pvi, pva, pssh_j, psst, pcn, phi, pff)
@@ -68,10 +72,8 @@ MODULE icbutl
     pui = 0._wp
     pvi = 0._wp
     phi = 0._wp
-    pssh_i = (icb_utl_bilin_h(ssh_e, pi + 0.1_wp, pj, 'T', .TRUE.) - icb_utl_bilin_h(ssh_e, pi - 0.1_wp, pj, 'T', .TRUE.)) / &
-&(0.2_wp * pe1)
-    pssh_j = (icb_utl_bilin_h(ssh_e, pi, pj + 0.1_wp, 'T', .TRUE.) - icb_utl_bilin_h(ssh_e, pi, pj - 0.1_wp, 'T', .TRUE.)) / &
-&(0.2_wp * pe2)
+    pssh_i = (icb_utl_bilin_h(ssh_e, pi + 0.1_wp, pj, 'T', .TRUE.) - icb_utl_bilin_h(ssh_e, pi - 0.1_wp, pj, 'T', .TRUE.)) / (0.2_wp * pe1)
+    pssh_j = (icb_utl_bilin_h(ssh_e, pi, pj + 0.1_wp, 'T', .TRUE.) - icb_utl_bilin_h(ssh_e, pi, pj - 0.1_wp, 'T', .TRUE.)) / (0.2_wp * pe2)
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_utl_interp
   REAL(KIND = wp) FUNCTION icb_utl_bilin_h(pfld, pi, pj, cd_type, plmask)
@@ -140,8 +142,7 @@ MODULE icbutl
     zw2 = zmask(2) * zi * (1._wp - zj)
     zw3 = zmask(3) * (1._wp - zi) * zj
     zw4 = zmask(4) * zi * zj
-    icb_utl_bilin_h = (pfld(ii, ij) * zw1 + pfld(ii + 1, ij) * zw2 + pfld(ii, ij + 1) * zw3 + pfld(ii + 1, ij + 1) * zw4) / &
-&MAX(1.E-20, zw1 + zw2 + zw3 + zw4)
+    icb_utl_bilin_h = (pfld(ii, ij) * zw1 + pfld(ii + 1, ij) * zw2 + pfld(ii, ij + 1) * zw3 + pfld(ii + 1, ij + 1) * zw4) / MAX(1.E-20, zw1 + zw2 + zw3 + zw4)
     CALL profile_psy_data0 % PostEnd
   END FUNCTION icb_utl_bilin_h
   REAL(KIND = wp) FUNCTION icb_utl_bilin(pfld, pi, pj, cd_type)
@@ -191,8 +192,7 @@ MODULE icbutl
     END IF
     IF (ii == jpi) ii = ii - 1
     IF (ij == jpj) ij = ij - 1
-    icb_utl_bilin = (pfld(ii, ij) * (1. - zi) + pfld(ii + 1, ij) * zi) * (1. - zj) + (pfld(ii, ij + 1) * (1. - zi) + pfld(ii + 1, &
-&ij + 1) * zi) * zj
+    icb_utl_bilin = (pfld(ii, ij) * (1. - zi) + pfld(ii + 1, ij) * zi) * (1. - zj) + (pfld(ii, ij + 1) * (1. - zi) + pfld(ii + 1, ij + 1) * zi) * zj
     CALL profile_psy_data0 % PostEnd
   END FUNCTION icb_utl_bilin
   REAL(KIND = wp) FUNCTION icb_utl_bilin_x(pfld, pi, pj)
@@ -335,19 +335,24 @@ MODULE icbutl
     TYPE(point), POINTER :: pt
     INTEGER :: istat
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('icb_utl_create', 'r0', 0, 0)
     IF (ASSOCIATED(berg)) CALL ctl_stop('icebergs, icb_utl_create: berg already associated')
     ALLOCATE(berg, STAT = istat)
     IF (istat /= 0) CALL ctl_stop('failed to allocate iceberg')
+    CALL profile_psy_data0 % PostEnd
+    !$ACC KERNELS
     berg % number(:) = bergvals % number(:)
     berg % mass_scaling = bergvals % mass_scaling
+    !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('icb_utl_create', 'r1', 0, 0)
     berg % prev => NULL()
     berg % next => NULL()
     ALLOCATE(pt, STAT = istat)
     IF (istat /= 0) CALL ctl_stop('failed to allocate first iceberg point')
     pt = ptvals
     berg % current_point => pt
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data1 % PostEnd
   END SUBROUTINE icb_utl_create
   SUBROUTINE icb_utl_insert(newberg)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -431,8 +436,7 @@ MODULE icbutl
     IF (nn_verbose_level == 0) RETURN
     CALL profile_psy_data0 % PreStart('icb_utl_print_berg', 'r0', 0, 0)
     pt => berg % current_point
-    WRITE(numicb, 9200) kt, berg % number(1), pt % xi, pt % yj, pt % lon, pt % lat, pt % uvel, pt % vvel, pt % uo, pt % vo, pt % &
-&ua, pt % va, pt % ui, pt % vi
+    WRITE(numicb, 9200) kt, berg % number(1), pt % xi, pt % yj, pt % lon, pt % lat, pt % uvel, pt % vvel, pt % uo, pt % vo, pt % ua, pt % va, pt % ui, pt % vi
     CALL flush(numicb)
 9200 FORMAT(5X, I5, 2X, I10, 6(2X, 2F10.4))
     CALL profile_psy_data0 % PostEnd
@@ -449,8 +453,7 @@ MODULE icbutl
     this => first_berg
     IF (ASSOCIATED(this)) THEN
       WRITE(numicb, '(a," pe=(",i3,")")') cd_label, narea
-      WRITE(numicb, FMT = '(a8,4x,a6,12x,a5,15x,a7,19x,a3,17x,a5,17x,a5,17x,a5)') 'timestep', 'number', 'xi,yj', 'lon,lat', 'u,v', &
-&'uo,vo', 'ua,va', 'ui,vi'
+      WRITE(numicb, '(a8,4x,a6,12x,a5,15x,a7,19x,a3,17x,a5,17x,a5,17x,a5)') 'timestep', 'number', 'xi,yj', 'lon,lat', 'u,v', 'uo,vo', 'ua,va', 'ui,vi'
     END IF
     DO WHILE (ASSOCIATED(this))
       CALL icb_utl_print_berg(this, kt)
@@ -459,7 +462,7 @@ MODULE icbutl
     ibergs = icb_utl_count()
     inbergs = ibergs
     CALL mpp_sum('icbutl', inbergs)
-    IF (ibergs > 0) WRITE(numicb, FMT = '(a," there are",i5," bergs out of",i6," on PE ",i4)') cd_label, ibergs, inbergs, narea
+    IF (ibergs > 0) WRITE(numicb, '(a," there are",i5," bergs out of",i6," on PE ",i4)') cd_label, ibergs, inbergs, narea
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_utl_print
   SUBROUTINE icb_utl_incr

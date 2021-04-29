@@ -42,40 +42,37 @@ MODULE dynnxt
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
     CALL profile_psy_data0 % PreStart('dyn_nxt', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('dyn_nxt')
     IF (ln_dynspg_ts) ALLOCATE(zue(jpi, jpj), zve(jpi, jpj))
     IF (l_trddyn) ALLOCATE(zua(jpi, jpj, jpk), zva(jpi, jpj, jpk))
     IF (kt == nit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'dyn_nxt : time stepping'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'dyn_nxt : time stepping'
+      IF (lwp) WRITE(numout, *) '~~~~~~~'
     END IF
     CALL profile_psy_data0 % PostEnd
     IF (ln_dynspg_ts) THEN
       !$ACC KERNELS
       zue(:, :) = e3u_a(:, :, 1) * ua(:, :, 1) * umask(:, :, 1)
       zve(:, :) = e3v_a(:, :, 1) * va(:, :, 1) * vmask(:, :, 1)
-      !$ACC END KERNELS
       DO jk = 2, jpkm1
-        !$ACC KERNELS
         zue(:, :) = zue(:, :) + e3u_a(:, :, jk) * ua(:, :, jk) * umask(:, :, jk)
         zve(:, :) = zve(:, :) + e3v_a(:, :, jk) * va(:, :, jk) * vmask(:, :, jk)
-        !$ACC END KERNELS
       END DO
       DO jk = 1, jpkm1
-        !$ACC KERNELS
         ua(:, :, jk) = (ua(:, :, jk) - zue(:, :) * r1_hu_a(:, :) + ua_b(:, :)) * umask(:, :, jk)
         va(:, :, jk) = (va(:, :, jk) - zve(:, :) * r1_hv_a(:, :) + va_b(:, :)) * vmask(:, :, jk)
-        !$ACC END KERNELS
       END DO
+      !$ACC END KERNELS
       IF (.NOT. ln_bt_fw) THEN
+        !$ACC KERNELS
         DO jk = 1, jpkm1
-          !$ACC KERNELS
           un(:, :, jk) = (un(:, :, jk) - un_adv(:, :) * r1_hu_n(:, :) + un_b(:, :)) * umask(:, :, jk)
           vn(:, :, jk) = (vn(:, :, jk) - vn_adv(:, :) * r1_hv_n(:, :) + vn_b(:, :)) * vmask(:, :, jk)
-          !$ACC END KERNELS
         END DO
+        !$ACC END KERNELS
       END IF
     END IF
     CALL profile_psy_data1 % PreStart('dyn_nxt', 'r1', 0, 0)
@@ -105,26 +102,26 @@ MODULE dynnxt
       !$ACC END KERNELS
     END IF
     IF (neuler == 0 .AND. kt == nit000) THEN
+      !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC KERNELS
         un(:, :, jk) = ua(:, :, jk)
         vn(:, :, jk) = va(:, :, jk)
-        !$ACC END KERNELS
       END DO
+      !$ACC END KERNELS
       IF (.NOT. ln_linssh) THEN
+        !$ACC KERNELS
         DO jk = 1, jpkm1
-          !$ACC KERNELS
           e3t_n(:, :, jk) = e3t_a(:, :, jk)
           e3u_n(:, :, jk) = e3u_a(:, :, jk)
           e3v_n(:, :, jk) = e3v_a(:, :, jk)
-          !$ACC END KERNELS
         END DO
+        !$ACC END KERNELS
       END IF
     ELSE
       IF (ln_linssh) THEN
         !$ACC KERNELS
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               zuf = un(ji, jj, jk) + atfp * (ub(ji, jj, jk) - 2._wp * un(ji, jj, jk) + ua(ji, jj, jk))
@@ -149,12 +146,11 @@ MODULE dynnxt
           IF (ln_rnf_depth) THEN
             !$ACC KERNELS
             DO jk = 1, jpkm1
-              !$ACC LOOP INDEPENDENT COLLAPSE(2)
+              !$ACC loop independent collapse(2)
               DO jj = 1, jpj
                 DO ji = 1, jpi
                   IF (jk <= nk_rnf(ji, jj)) THEN
-                    e3t_b(ji, jj, jk) = e3t_b(ji, jj, jk) - zcoef * (- rnf_b(ji, jj) + rnf(ji, jj)) * (e3t_n(ji, jj, jk) / &
-&h_rnf(ji, jj)) * tmask(ji, jj, jk)
+                    e3t_b(ji, jj, jk) = e3t_b(ji, jj, jk) - zcoef * (- rnf_b(ji, jj) + rnf(ji, jj)) * (e3t_n(ji, jj, jk) / h_rnf(ji, jj)) * tmask(ji, jj, jk)
                   END IF
                 END DO
               END DO
@@ -169,15 +165,13 @@ MODULE dynnxt
         IF (ln_isf) THEN
           !$ACC KERNELS
           DO jk = 1, jpkm1
-            !$ACC LOOP INDEPENDENT COLLAPSE(2)
+            !$ACC loop independent collapse(2)
             DO jj = 1, jpj
               DO ji = 1, jpi
                 IF (misfkt(ji, jj) <= jk .AND. jk < misfkb(ji, jj)) THEN
-                  e3t_b(ji, jj, jk) = e3t_b(ji, jj, jk) - zcoef * (fwfisf_b(ji, jj) - fwfisf(ji, jj)) * (e3t_n(ji, jj, jk) * &
-&r1_hisf_tbl(ji, jj)) * tmask(ji, jj, jk)
+                  e3t_b(ji, jj, jk) = e3t_b(ji, jj, jk) - zcoef * (fwfisf_b(ji, jj) - fwfisf(ji, jj)) * (e3t_n(ji, jj, jk) * r1_hisf_tbl(ji, jj)) * tmask(ji, jj, jk)
                 ELSE IF (jk == misfkb(ji, jj)) THEN
-                  e3t_b(ji, jj, jk) = e3t_b(ji, jj, jk) - zcoef * (fwfisf_b(ji, jj) - fwfisf(ji, jj)) * (e3t_n(ji, jj, jk) * &
-&r1_hisf_tbl(ji, jj)) * ralpha(ji, jj) * tmask(ji, jj, jk)
+                  e3t_b(ji, jj, jk) = e3t_b(ji, jj, jk) - zcoef * (fwfisf_b(ji, jj) - fwfisf(ji, jj)) * (e3t_n(ji, jj, jk) * r1_hisf_tbl(ji, jj)) * ralpha(ji, jj) * tmask(ji, jj, jk)
                 END IF
               END DO
             END DO
@@ -191,7 +185,7 @@ MODULE dynnxt
           CALL profile_psy_data4 % PostEnd
           !$ACC KERNELS
           DO jk = 1, jpkm1
-            !$ACC LOOP INDEPENDENT COLLAPSE(2)
+            !$ACC loop independent collapse(2)
             DO jj = 1, jpj
               DO ji = 1, jpi
                 zuf = un(ji, jj, jk) + atfp * (ub(ji, jj, jk) - 2._wp * un(ji, jj, jk) + ua(ji, jj, jk))
@@ -212,7 +206,7 @@ MODULE dynnxt
           CALL profile_psy_data5 % PostEnd
           !$ACC KERNELS
           DO jk = 1, jpkm1
-            !$ACC LOOP INDEPENDENT COLLAPSE(2)
+            !$ACC loop independent collapse(2)
             DO jj = 1, jpj
               DO ji = 1, jpi
                 zue3a = e3u_a(ji, jj, jk) * ua(ji, jj, jk)
@@ -236,37 +230,29 @@ MODULE dynnxt
           DEALLOCATE(ze3u_f, ze3v_f)
         END IF
       END IF
+      !$ACC KERNELS
       IF (ln_dynspg_ts .AND. ln_bt_fw) THEN
-        !$ACC KERNELS
         zue(:, :) = e3u_b(:, :, 1) * ub(:, :, 1) * umask(:, :, 1)
         zve(:, :) = e3v_b(:, :, 1) * vb(:, :, 1) * vmask(:, :, 1)
-        !$ACC END KERNELS
         DO jk = 2, jpkm1
-          !$ACC KERNELS
           zue(:, :) = zue(:, :) + e3u_b(:, :, jk) * ub(:, :, jk) * umask(:, :, jk)
           zve(:, :) = zve(:, :) + e3v_b(:, :, jk) * vb(:, :, jk) * vmask(:, :, jk)
-          !$ACC END KERNELS
         END DO
         DO jk = 1, jpkm1
-          !$ACC KERNELS
           ub(:, :, jk) = ub(:, :, jk) - (zue(:, :) * r1_hu_n(:, :) - un_b(:, :)) * umask(:, :, jk)
           vb(:, :, jk) = vb(:, :, jk) - (zve(:, :) * r1_hv_n(:, :) - vn_b(:, :)) * vmask(:, :, jk)
-          !$ACC END KERNELS
         END DO
       END IF
+      !$ACC END KERNELS
     END IF
     IF (.NOT. ln_linssh) THEN
       !$ACC KERNELS
       hu_b(:, :) = e3u_b(:, :, 1) * umask(:, :, 1)
       hv_b(:, :) = e3v_b(:, :, 1) * vmask(:, :, 1)
-      !$ACC END KERNELS
       DO jk = 2, jpkm1
-        !$ACC KERNELS
         hu_b(:, :) = hu_b(:, :) + e3u_b(:, :, jk) * umask(:, :, jk)
         hv_b(:, :) = hv_b(:, :) + e3v_b(:, :, jk) * vmask(:, :, jk)
-        !$ACC END KERNELS
       END DO
-      !$ACC KERNELS
       r1_hu_b(:, :) = ssumask(:, :) / (hu_b(:, :) + 1._wp - ssumask(:, :))
       r1_hv_b(:, :) = ssvmask(:, :) / (hv_b(:, :) + 1._wp - ssvmask(:, :))
       !$ACC END KERNELS
@@ -276,16 +262,12 @@ MODULE dynnxt
     ub_b(:, :) = e3u_b(:, :, 1) * ub(:, :, 1) * umask(:, :, 1)
     vn_b(:, :) = e3v_a(:, :, 1) * vn(:, :, 1) * vmask(:, :, 1)
     vb_b(:, :) = e3v_b(:, :, 1) * vb(:, :, 1) * vmask(:, :, 1)
-    !$ACC END KERNELS
     DO jk = 2, jpkm1
-      !$ACC KERNELS
       un_b(:, :) = un_b(:, :) + e3u_a(:, :, jk) * un(:, :, jk) * umask(:, :, jk)
       ub_b(:, :) = ub_b(:, :) + e3u_b(:, :, jk) * ub(:, :, jk) * umask(:, :, jk)
       vn_b(:, :) = vn_b(:, :) + e3v_a(:, :, jk) * vn(:, :, jk) * vmask(:, :, jk)
       vb_b(:, :) = vb_b(:, :) + e3v_b(:, :, jk) * vb(:, :, jk) * vmask(:, :, jk)
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
     un_b(:, :) = un_b(:, :) * r1_hu_a(:, :)
     vn_b(:, :) = vn_b(:, :) * r1_hv_a(:, :)
     ub_b(:, :) = ub_b(:, :) * r1_hu_b(:, :)
@@ -302,13 +284,15 @@ MODULE dynnxt
       zua(:, :, :) = (ub(:, :, :) - zua(:, :, :)) * z1_2dt
       zva(:, :, :) = (vb(:, :, :) - zva(:, :, :)) * z1_2dt
       !$ACC END KERNELS
+      CALL profile_psy_data7 % PreStart('dyn_nxt', 'r7', 0, 0)
       CALL trd_dyn(zua, zva, jpdyn_atf, kt)
+      CALL profile_psy_data7 % PostEnd
     END IF
-    CALL profile_psy_data7 % PreStart('dyn_nxt', 'r7', 0, 0)
+    CALL profile_psy_data8 % PreStart('dyn_nxt', 'r8', 0, 0)
     IF (ln_ctl) CALL prt_ctl(tab3d_1 = un, clinfo1 = ' nxt  - Un: ', mask1 = umask, tab3d_2 = vn, clinfo2 = ' Vn: ', mask2 = vmask)
     IF (ln_dynspg_ts) DEALLOCATE(zue, zve)
     IF (l_trddyn) DEALLOCATE(zua, zva)
     IF (ln_timing) CALL timing_stop('dyn_nxt')
-    CALL profile_psy_data7 % PostEnd
+    CALL profile_psy_data8 % PostEnd
   END SUBROUTINE dyn_nxt
 END MODULE dynnxt

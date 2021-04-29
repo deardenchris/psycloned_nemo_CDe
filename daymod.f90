@@ -19,8 +19,7 @@ MODULE daymod
     INTEGER :: inbday, idweek
     REAL(KIND = wp) :: zjul
     IF (REAL(nitend - nit000 + 1) * rdt > REAL(HUGE(nsec1jan000))) THEN
-      CALL ctl_stop('The number of seconds between each restart exceeds the integer 4 max value: 2^31-1. ', &
-&'You must do a restart at higher frequency (or remove this stop and recompile the code in I8)')
+      CALL ctl_stop('The number of seconds between each restart exceeds the integer 4 max value: 2^31-1. ', 'You must do a restart at higher frequency (or remove this stop and recompile the code in I8)')
     END IF
     nsecd = NINT(rday)
     nsecd05 = NINT(0.5 * rday)
@@ -63,9 +62,7 @@ MODULE daymod
     nsec_day = nhour * 3600 + nminute * 60 - ndt05
     IF (nsec_day .LT. 0) nsec_day = nsec_day + nsecd
     IF (nsec_week .LT. 0) nsec_week = nsec_week + nsecd * 7
-    IF (lwp) WRITE(numout, FMT = '(a,i6,a,i2,a,i2,a,i8,a,i8,a,i8,a,i8)') ' =======>> 1/2 time step before the start of the run &
-&DATE Y/M/D = ', nyear, '/', nmonth, '/', nday, '  nsec_day:', nsec_day, '  nsec_week:', nsec_week, '                     &
-&nsec_month:', nsec_month, '  nsec_year:', nsec_year
+    IF (lwp) WRITE(numout, '(a,i6,a,i2,a,i2,a,i8,a,i8,a,i8,a,i8)') ' =======>> 1/2 time step before the start of the run DATE Y/M/D = ', nyear, '/', nmonth, '/', nday, '  nsec_day:', nsec_day, '  nsec_week:', nsec_week, '                     nsec_month:', nsec_month, '  nsec_year:', nsec_year
     CALL day(nit000)
     IF (lwxios) THEN
       CALL iom_set_rstw_var_active('kt')
@@ -144,10 +141,8 @@ MODULE daymod
       END IF
       ndastp = nyear * 10000 + nmonth * 100 + nday
       CALL ymds2ju(nyear, 01, 01, 0.0, fjulstartyear)
-      IF (lwp) WRITE(numout, FMT = '(a,i8,a,i4.4,a,i2.2,a,i2.2,a,i3.3)') '======>> time-step =', kt, '      New day, DATE Y/M/D = &
-&', nyear, '/', nmonth, '/', nday, '      nday_year = ', nday_year
-      IF (lwp) WRITE(numout, FMT = '(a,i8,a,i7,a,i5)') '         nsec_year = ', nsec_year, '   nsec_month = ', nsec_month, '   &
-&nsec_day = ', nsec_day, '   nsec_week = ', nsec_week
+      IF (lwp) WRITE(numout, '(a,i8,a,i4.4,a,i2.2,a,i2.2,a,i3.3)') '======>> time-step =', kt, '      New day, DATE Y/M/D = ', nyear, '/', nmonth, '/', nday, '      nday_year = ', nday_year
+      IF (lwp) WRITE(numout, '(a,i8,a,i7,a,i5)') '         nsec_year = ', nsec_year, '   nsec_month = ', nsec_month, '   nsec_day = ', nsec_day, '   nsec_week = ', nsec_week
     END IF
     IF (nsec_week > 7 * nsecd) nsec_week = ndt05
     IF (ln_ctl) THEN
@@ -168,21 +163,20 @@ MODULE daymod
       IF (iom_varid(numror, 'kt', ldstop = .FALSE.) > 0) THEN
         CALL iom_get(numror, 'kt', zkt, ldxios = lrxios)
         IF (lwp) THEN
-          WRITE(numout, FMT = *) ' *** Info read in restart : '
-          WRITE(numout, FMT = *) '   previous time-step                               : ', NINT(zkt)
-          WRITE(numout, FMT = *) ' *** restart option'
+          WRITE(numout, *) ' *** Info read in restart : '
+          WRITE(numout, *) '   previous time-step                               : ', NINT(zkt)
+          WRITE(numout, *) ' *** restart option'
           SELECT CASE (nrstdt)
           CASE (0)
-            WRITE(numout, FMT = *) ' nrstdt = 0 : no control of nit000'
+            WRITE(numout, *) ' nrstdt = 0 : no control of nit000'
           CASE (1)
-            WRITE(numout, FMT = *) ' nrstdt = 1 : no control the date at nit000 (use ndate0 read in the namelist)'
+            WRITE(numout, *) ' nrstdt = 1 : no control the date at nit000 (use ndate0 read in the namelist)'
           CASE (2)
-            WRITE(numout, FMT = *) ' nrstdt = 2 : calendar parameters read in restart'
+            WRITE(numout, *) ' nrstdt = 2 : calendar parameters read in restart'
           END SELECT
-          WRITE(numout, FMT = *)
+          WRITE(numout, *)
         END IF
-        IF (nit000 - NINT(zkt) /= 1 .AND. nrstdt /= 0) CALL ctl_stop(' ===>>>> : problem with nit000 for the restart', ' verify &
-&the restart file or rerun with nrstdt = 0 (namelist)')
+        IF (nit000 - NINT(zkt) /= 1 .AND. nrstdt /= 0) CALL ctl_stop(' ===>>>> : problem with nit000 for the restart', ' verify the restart file or rerun with nrstdt = 0 (namelist)')
         IF (nrstdt == 2) THEN
           CALL iom_get(numror, 'ndastp', zndastp, ldxios = lrxios)
           ndastp = NINT(zndastp)
@@ -223,17 +217,17 @@ MODULE daymod
       END IF
       IF (ABS(adatrj - REAL(NINT(adatrj), wp)) < 0.1 / rday) adatrj = REAL(NINT(adatrj), wp)
       IF (lwp) THEN
-        WRITE(numout, FMT = *) ' *** Info used values : '
-        WRITE(numout, FMT = *) '   date ndastp                                      : ', ndastp
-        WRITE(numout, FMT = *) '   number of elapsed days since the begining of run : ', adatrj
-        WRITE(numout, FMT = *) '   nn_time0                                         : ', nn_time0
-        WRITE(numout, FMT = *)
+        WRITE(numout, *) ' *** Info used values : '
+        WRITE(numout, *) '   date ndastp                                      : ', ndastp
+        WRITE(numout, *) '   number of elapsed days since the begining of run : ', adatrj
+        WRITE(numout, *) '   nn_time0                                         : ', nn_time0
+        WRITE(numout, *)
       END IF
     ELSE IF (TRIM(cdrw) == 'WRITE') THEN
       IF (kt == nitrst) THEN
-        IF (lwp) WRITE(numout, FMT = *)
-        IF (lwp) WRITE(numout, FMT = *) 'rst_write : write oce restart file  kt =', kt
-        IF (lwp) WRITE(numout, FMT = *) '~~~~~~~'
+        IF (lwp) WRITE(numout, *)
+        IF (lwp) WRITE(numout, *) 'rst_write : write oce restart file  kt =', kt
+        IF (lwp) WRITE(numout, *) '~~~~~~~'
       END IF
       IF (lwxios) CALL iom_swap(cwxios_context)
       CALL iom_rstput(kt, nitrst, numrow, 'kt', REAL(kt, wp), ldxios = lwxios)

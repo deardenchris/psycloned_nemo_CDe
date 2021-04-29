@@ -56,19 +56,16 @@ MODULE usrdef_sbc
     zcos_sais2 = COS((ztime - ztimemax2) / (ztimemax2 - ztimemin2) * rpi)
     ztrp = - 40.E0
     zconv = 3.16E-5
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
-        t_star = zTstar * (1. + 1. / 50. * zcos_sais2) * COS(rpi * (gphit(ji, jj) - 5.) / (53.5 * (1 + 11 / 53.5 * zcos_sais2) * &
-&2.))
+        t_star = zTstar * (1. + 1. / 50. * zcos_sais2) * COS(rpi * (gphit(ji, jj) - 5.) / (53.5 * (1 + 11 / 53.5 * zcos_sais2) * 2.))
         qsr(ji, jj) = 230 * COS(3.1415 * (gphit(ji, jj) - 23.5 * zcos_sais1) / (0.9 * 180))
         qns(ji, jj) = ztrp * (tsb(ji, jj, 1, jp_tem) - t_star) - qsr(ji, jj)
         IF (gphit(ji, jj) >= 14.845 .AND. 37.2 >= gphit(ji, jj)) THEN
-          emp(ji, jj) = zemp_S * zconv * SIN(rpi / 2 * (gphit(ji, jj) - 37.2) / (24.6 - 37.2)) * (1 - zemp_sais / zemp_S * &
-&zcos_sais1)
+          emp(ji, jj) = zemp_S * zconv * SIN(rpi / 2 * (gphit(ji, jj) - 37.2) / (24.6 - 37.2)) * (1 - zemp_sais / zemp_S * zcos_sais1)
         ELSE
-          emp(ji, jj) = - zemp_N * zconv * SIN(rpi / 2 * (gphit(ji, jj) - 37.2) / (46.8 - 37.2)) * (1 - zemp_sais / zemp_N * &
-&zcos_sais1)
+          emp(ji, jj) = - zemp_N * zconv * SIN(rpi / 2 * (gphit(ji, jj) - 37.2) / (46.8 - 37.2)) * (1 - zemp_sais / zemp_N * zcos_sais1)
         END IF
       END DO
     END DO
@@ -96,7 +93,7 @@ MODULE usrdef_sbc
     ztau = 0.105 / SQRT(2.)
     ztau_sais = 0.015
     ztaun = ztau - ztau_sais * COS((ztime - ztimemax) / (ztimemin - ztimemax) * rpi)
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         utau(ji, jj) = - ztaun * SIN(rpi * (gphiu(ji, jj) - 15.) / (29. - 15.))
@@ -104,7 +101,7 @@ MODULE usrdef_sbc
       END DO
     END DO
     zcoef = 1. / (zrhoa * zcdrag)
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         ztx = utau(ji - 1, jj) + utau(ji, jj)
@@ -118,35 +115,35 @@ MODULE usrdef_sbc
     CALL profile_psy_data2 % PreStart('usrdef_sbc_oce', 'r2', 0, 0)
     CALL lbc_lnk_multi('usrdef_sbc', taum(:, :), 'T', 1., wndm(:, :), 'T', 1.)
     IF (kt == nit000 .AND. lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'usrdef_sbc_oce : analytical surface fluxes for GYRE configuration'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~ '
-      WRITE(numout, FMT = *) '           nyear      = ', nyear
-      WRITE(numout, FMT = *) '           nmonth     = ', nmonth
-      WRITE(numout, FMT = *) '           nday       = ', nday
-      WRITE(numout, FMT = *) '           nday_year  = ', nday_year
-      WRITE(numout, FMT = *) '           ztime      = ', ztime
-      WRITE(numout, FMT = *) '           ztimemax   = ', ztimemax
-      WRITE(numout, FMT = *) '           ztimemin   = ', ztimemin
-      WRITE(numout, FMT = *) '           ztimemax1  = ', ztimemax1
-      WRITE(numout, FMT = *) '           ztimemin1  = ', ztimemin1
-      WRITE(numout, FMT = *) '           ztimemax2  = ', ztimemax2
-      WRITE(numout, FMT = *) '           ztimemin2  = ', ztimemin2
-      WRITE(numout, FMT = *) '           zyear0     = ', zyear0
-      WRITE(numout, FMT = *) '           zmonth0    = ', zmonth0
-      WRITE(numout, FMT = *) '           zday0      = ', zday0
-      WRITE(numout, FMT = *) '           zday_year0 = ', zday_year0
-      WRITE(numout, FMT = *) '           zyydd      = ', zyydd
-      WRITE(numout, FMT = *) '           zemp_S     = ', zemp_S
-      WRITE(numout, FMT = *) '           zemp_N     = ', zemp_N
-      WRITE(numout, FMT = *) '           zemp_sais  = ', zemp_sais
-      WRITE(numout, FMT = *) '           zTstar     = ', zTstar
-      WRITE(numout, FMT = *) '           zsumemp    = ', zsumemp
-      WRITE(numout, FMT = *) '           zsurf      = ', zsurf
-      WRITE(numout, FMT = *) '           ztrp       = ', ztrp
-      WRITE(numout, FMT = *) '           zconv      = ', zconv
-      WRITE(numout, FMT = *) '           ndastp     = ', ndastp
-      WRITE(numout, FMT = *) '           adatrj     = ', adatrj
+      WRITE(numout, *)
+      WRITE(numout, *) 'usrdef_sbc_oce : analytical surface fluxes for GYRE configuration'
+      WRITE(numout, *) '~~~~~~~~~~~ '
+      WRITE(numout, *) '           nyear      = ', nyear
+      WRITE(numout, *) '           nmonth     = ', nmonth
+      WRITE(numout, *) '           nday       = ', nday
+      WRITE(numout, *) '           nday_year  = ', nday_year
+      WRITE(numout, *) '           ztime      = ', ztime
+      WRITE(numout, *) '           ztimemax   = ', ztimemax
+      WRITE(numout, *) '           ztimemin   = ', ztimemin
+      WRITE(numout, *) '           ztimemax1  = ', ztimemax1
+      WRITE(numout, *) '           ztimemin1  = ', ztimemin1
+      WRITE(numout, *) '           ztimemax2  = ', ztimemax2
+      WRITE(numout, *) '           ztimemin2  = ', ztimemin2
+      WRITE(numout, *) '           zyear0     = ', zyear0
+      WRITE(numout, *) '           zmonth0    = ', zmonth0
+      WRITE(numout, *) '           zday0      = ', zday0
+      WRITE(numout, *) '           zday_year0 = ', zday_year0
+      WRITE(numout, *) '           zyydd      = ', zyydd
+      WRITE(numout, *) '           zemp_S     = ', zemp_S
+      WRITE(numout, *) '           zemp_N     = ', zemp_N
+      WRITE(numout, *) '           zemp_sais  = ', zemp_sais
+      WRITE(numout, *) '           zTstar     = ', zTstar
+      WRITE(numout, *) '           zsumemp    = ', zsumemp
+      WRITE(numout, *) '           zsurf      = ', zsurf
+      WRITE(numout, *) '           ztrp       = ', ztrp
+      WRITE(numout, *) '           zconv      = ', zconv
+      WRITE(numout, *) '           ndastp     = ', ndastp
+      WRITE(numout, *) '           adatrj     = ', adatrj
     END IF
     CALL profile_psy_data2 % PostEnd
   END SUBROUTINE usrdef_sbc_oce

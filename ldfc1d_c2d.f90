@@ -23,24 +23,18 @@ MODULE ldfc1d_c2d
     REAL(KIND = wp) :: zw, zdep2
     REAL(KIND = wp) :: zratio
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     CALL profile_psy_data0 % PreStart('ldf_c1d', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) '   ldf_c1d : set a given profile to eddy mixing coefficients'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) '   ldf_c1d : set a given profile to eddy mixing coefficients'
     zratio = 0.25_wp
     zh = 500._wp
     zw = 1._wp / 200._wp
     zc = (1._wp - zratio) / (1._wp + TANH(zh * zw))
-    CALL profile_psy_data0 % PostEnd
     SELECT CASE (cd_type)
     CASE ('DYN')
-      !$ACC KERNELS
       DO jk = jpkm1, 1, - 1
         pah1(:, :, jk) = pahs1(:, :) * (zratio + zc * (1._wp + TANH(- (gdept_0(:, :, jk) - zh) * zw)))
       END DO
-      !$ACC END KERNELS
-      CALL profile_psy_data1 % PreStart('ldf_c1d', 'r1', 0, 0)
       DO jk = jpkm1, 1, - 1
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
@@ -50,9 +44,7 @@ MODULE ldfc1d_c2d
         END DO
       END DO
       CALL lbc_lnk('ldfc1d_c2d', pah2, 'F', 1.)
-      CALL profile_psy_data1 % PostEnd
     CASE ('TRA')
-      CALL profile_psy_data2 % PreStart('ldf_c1d', 'r2', 0, 0)
       DO jk = jpkm1, 1, - 1
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
@@ -64,10 +56,10 @@ MODULE ldfc1d_c2d
         END DO
       END DO
       CALL lbc_lnk_multi('ldfc1d_c2d', pah1, 'U', 1., pah2, 'V', 1.)
-      CALL profile_psy_data2 % PostEnd
     CASE DEFAULT
       CALL ctl_stop('ldf_c1d: ', cd_type, ' Unknown, i.e. /= DYN or TRA')
     END SELECT
+    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE ldf_c1d
   SUBROUTINE ldf_c2d(cd_type, pUfac, knn, pah1, pah2)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -78,14 +70,15 @@ MODULE ldfc1d_c2d
     INTEGER :: ji, jj, jk
     INTEGER :: inn
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('ldf_c2d', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) '   ldf_c2d :   aht = Ufac * max(e1,e2)   with Ufac = ', pUfac, ' m/s'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) '   ldf_c2d :   aht = Ufac * max(e1,e2)   with Ufac = ', pUfac, ' m/s'
     CALL profile_psy_data0 % PostEnd
     SELECT CASE (cd_type)
     CASE ('DYN')
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           pah1(ji, jj, 1) = pUfac * MAX(e1t(ji, jj), e2t(ji, jj)) ** knn
@@ -95,7 +88,7 @@ MODULE ldfc1d_c2d
       !$ACC END KERNELS
     CASE ('TRA')
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           pah1(ji, jj, 1) = pUfac * MAX(e1u(ji, jj), e2u(ji, jj)) ** knn
@@ -104,13 +97,15 @@ MODULE ldfc1d_c2d
       END DO
       !$ACC END KERNELS
     CASE DEFAULT
+      CALL profile_psy_data1 % PreStart('ldf_c2d', 'r1', 0, 0)
       CALL ctl_stop('ldf_c2d: ', cd_type, ' Unknown, i.e. /= DYN or TRA')
+      CALL profile_psy_data1 % PostEnd
     END SELECT
+    !$ACC KERNELS
     DO jk = 2, jpkm1
-      !$ACC KERNELS
       pah1(:, :, jk) = pah1(:, :, 1)
       pah2(:, :, jk) = pah2(:, :, 1)
-      !$ACC END KERNELS
     END DO
+    !$ACC END KERNELS
   END SUBROUTINE ldf_c2d
 END MODULE ldfc1d_c2d

@@ -23,19 +23,19 @@ MODULE trdini
 902 IF (ios > 0) CALL ctl_nam(ios, 'namtrd in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namtrd)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'trd_init : Momentum/Tracers trends'
-      WRITE(numout, FMT = *) '~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namtrd : set trends parameters'
-      WRITE(numout, FMT = *) '      global domain averaged dyn & tra trends   ln_glo_trd  = ', ln_glo_trd
-      WRITE(numout, FMT = *) '      U & V trends: 3D output                   ln_dyn_trd  = ', ln_dyn_trd
-      WRITE(numout, FMT = *) '      U & V trends: Mixed Layer averaged        ln_dyn_mxl  = ', ln_dyn_mxl
-      WRITE(numout, FMT = *) '      T & S trends: 3D output                   ln_tra_trd  = ', ln_tra_trd
-      WRITE(numout, FMT = *) '      T & S trends: Mixed Layer averaged        ln_tra_mxl  = ', ln_tra_mxl
-      WRITE(numout, FMT = *) '      Kinetic   Energy trends                   ln_KE_trd   = ', ln_KE_trd
-      WRITE(numout, FMT = *) '      Potential Energy trends                   ln_PE_trd   = ', ln_PE_trd
-      WRITE(numout, FMT = *) '      Barotropic vorticity trends               ln_vor_trd  = ', ln_vor_trd
-      WRITE(numout, FMT = *) '      frequency of trends diagnostics (glo)     nn_trd      = ', nn_trd
+      WRITE(numout, *)
+      WRITE(numout, *) 'trd_init : Momentum/Tracers trends'
+      WRITE(numout, *) '~~~~~~~~'
+      WRITE(numout, *) '   Namelist namtrd : set trends parameters'
+      WRITE(numout, *) '      global domain averaged dyn & tra trends   ln_glo_trd  = ', ln_glo_trd
+      WRITE(numout, *) '      U & V trends: 3D output                   ln_dyn_trd  = ', ln_dyn_trd
+      WRITE(numout, *) '      U & V trends: Mixed Layer averaged        ln_dyn_mxl  = ', ln_dyn_mxl
+      WRITE(numout, *) '      T & S trends: 3D output                   ln_tra_trd  = ', ln_tra_trd
+      WRITE(numout, *) '      T & S trends: Mixed Layer averaged        ln_tra_mxl  = ', ln_tra_mxl
+      WRITE(numout, *) '      Kinetic   Energy trends                   ln_KE_trd   = ', ln_KE_trd
+      WRITE(numout, *) '      Potential Energy trends                   ln_PE_trd   = ', ln_PE_trd
+      WRITE(numout, *) '      Barotropic vorticity trends               ln_vor_trd  = ', ln_vor_trd
+      WRITE(numout, *) '      frequency of trends diagnostics (glo)     nn_trd      = ', nn_trd
     END IF
     l_trdtra = .FALSE.
     IF (ln_tra_trd .OR. ln_PE_trd .OR. ln_tra_mxl .OR. ln_glo_trd) l_trdtra = .TRUE.

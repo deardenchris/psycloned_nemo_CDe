@@ -33,12 +33,12 @@ MODULE asmbkg
       cl_asmbkg = TRIM(cl_asmbkg)
       INQUIRE(FILE = cl_asmbkg, EXIST = llok)
       IF (.NOT. llok) THEN
-        IF (lwp) WRITE(numout, FMT = *) ' Setting up assimilation background file ' // TRIM(c_asmbkg)
+        IF (lwp) WRITE(numout, *) ' Setting up assimilation background file ' // TRIM(c_asmbkg)
         CALL iom_open(c_asmbkg, inum, ldwrt = .TRUE.)
         IF (nitbkg_r == nit000 - 1) THEN
           zdate = REAL(ndastp)
           IF (ln_zdftke) THEN
-            IF (lwp) WRITE(numout, FMT = *) ' Reading TKE (en) from restart...'
+            IF (lwp) WRITE(numout, *) ' Reading TKE (en) from restart...'
             CALL tke_rst(nit000, 'READ')
           END IF
         ELSE
@@ -59,7 +59,7 @@ MODULE asmbkg
       cl_asmdin = TRIM(cl_asmdin)
       INQUIRE(FILE = cl_asmdin, EXIST = llok)
       IF (.NOT. llok) THEN
-        IF (lwp) WRITE(numout, FMT = *) ' Setting up assimilation background file ' // TRIM(c_asmdin)
+        IF (lwp) WRITE(numout, *) ' Setting up assimilation background file ' // TRIM(c_asmdin)
         CALL iom_open(c_asmdin, inum, ldwrt = .TRUE.)
         IF (nitdin_r == nit000 - 1) THEN
           zdate = REAL(ndastp)

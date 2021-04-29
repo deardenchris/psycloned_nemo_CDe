@@ -43,22 +43,21 @@ MODULE sbcapr
     ALLOCATE(ssh_ib(jpi, jpj), ssh_ibb(jpi, jpj))
     ALLOCATE(apr(jpi, jpj))
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '   Namelist namsbc_apr : Atmospheric PRessure as extrenal forcing'
-      WRITE(numout, FMT = *) '      ref. pressure: global mean Patm (T) or a constant (F)  ln_ref_apr = ', ln_ref_apr
+      WRITE(numout, *)
+      WRITE(numout, *) '   Namelist namsbc_apr : Atmospheric PRessure as extrenal forcing'
+      WRITE(numout, *) '      ref. pressure: global mean Patm (T) or a constant (F)  ln_ref_apr = ', ln_ref_apr
     END IF
     IF (ln_ref_apr) THEN
       tarea = glob_sum('sbcapr', e1e2t(:, :))
-      IF (lwp) WRITE(numout, FMT = *) '         Variable ref. Patm computed over a ocean surface of ', tarea * 1E-6, 'km2'
+      IF (lwp) WRITE(numout, *) '         Variable ref. Patm computed over a ocean surface of ', tarea * 1E-6, 'km2'
     ELSE
-      IF (lwp) WRITE(numout, FMT = *) '         Reference Patm used : ', rn_pref, ' N/m2'
+      IF (lwp) WRITE(numout, *) '         Reference Patm used : ', rn_pref, ' N/m2'
     END IF
     r1_grau = 1.E0 / (grav * rau0)
     IF (ln_apr_obc) THEN
-      IF (lwp) WRITE(numout, FMT = *) '         Inverse barometer added to OBC ssh data'
+      IF (lwp) WRITE(numout, *) '         Inverse barometer added to OBC ssh data'
     END IF
-    IF (ln_apr_obc .AND. .NOT. ln_apr_dyn) CALL ctl_warn('sbc_apr: use inverse barometer ssh at open boundary ONLY requires &
-&ln_apr_dyn=T')
+    IF (ln_apr_obc .AND. .NOT. ln_apr_dyn) CALL ctl_warn('sbc_apr: use inverse barometer ssh at open boundary ONLY requires ln_apr_dyn=T')
     IF (lwxios) THEN
       CALL iom_set_rstw_var_active('ssh_ibb')
     END IF
@@ -69,6 +68,7 @@ MODULE sbcapr
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     IF (MOD(kt - 1, nn_fsbc) == 0) THEN
       !$ACC KERNELS
       IF (kt /= nit000) ssh_ibb(:, :) = ssh_ib(:, :)
@@ -76,33 +76,37 @@ MODULE sbcapr
       CALL profile_psy_data0 % PreStart('sbc_apr', 'r0', 0, 0)
       CALL fld_read(kt, nn_fsbc, sf_apr)
       IF (ln_ref_apr) rn_pref = glob_sum('sbcapr', sf_apr(1) % fnow(:, :, 1) * e1e2t(:, :)) / tarea
+      CALL profile_psy_data0 % PostEnd
+      !$ACC KERNELS
       ssh_ib(:, :) = - (sf_apr(1) % fnow(:, :, 1) - rn_pref) * r1_grau
       apr(:, :) = sf_apr(1) % fnow(:, :, 1)
+      !$ACC END KERNELS
+      CALL profile_psy_data1 % PreStart('sbc_apr', 'r1', 0, 0)
       CALL iom_put("ssh_ib", ssh_ib)
-      CALL profile_psy_data0 % PostEnd
+      CALL profile_psy_data1 % PostEnd
     END IF
     IF (kt == nit000) THEN
       IF (ln_rstart .AND. iom_varid(numror, 'ssh_ibb', ldstop = .FALSE.) > 0) THEN
-        CALL profile_psy_data1 % PreStart('sbc_apr', 'r1', 0, 0)
-        IF (lwp) WRITE(numout, FMT = *) 'sbc_apr:   ssh_ibb read in the restart file'
+        CALL profile_psy_data2 % PreStart('sbc_apr', 'r2', 0, 0)
+        IF (lwp) WRITE(numout, *) 'sbc_apr:   ssh_ibb read in the restart file'
         CALL iom_get(numror, jpdom_autoglo, 'ssh_ibb', ssh_ibb, ldxios = lrxios)
-        CALL profile_psy_data1 % PostEnd
+        CALL profile_psy_data2 % PostEnd
       ELSE
-        IF (lwp) WRITE(numout, FMT = *) 'sbc_apr:   ssh_ibb set to nit000 values'
+        IF (lwp) WRITE(numout, *) 'sbc_apr:   ssh_ibb set to nit000 values'
         !$ACC KERNELS
         ssh_ibb(:, :) = ssh_ib(:, :)
         !$ACC END KERNELS
       END IF
     END IF
-    CALL profile_psy_data2 % PreStart('sbc_apr', 'r2', 0, 0)
+    CALL profile_psy_data3 % PreStart('sbc_apr', 'r3', 0, 0)
     IF (lrst_oce) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'sbc_apr : ssh_ib written in ocean restart file at it= ', kt, ' date= ', ndastp
-      IF (lwp) WRITE(numout, FMT = *) '~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'sbc_apr : ssh_ib written in ocean restart file at it= ', kt, ' date= ', ndastp
+      IF (lwp) WRITE(numout, *) '~~~~'
       IF (lwxios) CALL iom_swap(cwxios_context)
       CALL iom_rstput(kt, nitrst, numrow, 'ssh_ibb', ssh_ib, ldxios = lwxios)
       IF (lwxios) CALL iom_swap(cxios_context)
     END IF
-    CALL profile_psy_data2 % PostEnd
+    CALL profile_psy_data3 % PostEnd
   END SUBROUTINE sbc_apr
 END MODULE sbcapr

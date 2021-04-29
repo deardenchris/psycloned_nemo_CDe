@@ -118,16 +118,16 @@ MODULE obs_write
     fbdata % caddname(1) = 'Hx'
     WRITE(clfname, FMT = "(A,'_fdbk_',I4.4,'.nc')") TRIM(clfiletype), nproc
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'obs_wri_prof :'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) 'Writing ' // TRIM(clfiletype) // ' feedback file : ', TRIM(clfname)
+      WRITE(numout, *)
+      WRITE(numout, *) 'obs_wri_prof :'
+      WRITE(numout, *) '~~~~~~~~~~~~~'
+      WRITE(numout, *) 'Writing ' // TRIM(clfiletype) // ' feedback file : ', TRIM(clfname)
     END IF
     fbdata % cdjuldref = '19500101000000'
     DO jo = 1, profdata % nprof
       fbdata % plam(jo) = profdata % rlam(jo)
       fbdata % pphi(jo) = profdata % rphi(jo)
-      WRITE(fbdata % cdtyp(jo), FMT = '(I4)') profdata % ntyp(jo)
+      WRITE(fbdata % cdtyp(jo), '(I4)') profdata % ntyp(jo)
       fbdata % ivqc(jo, :) = profdata % ivqc(jo, :)
       fbdata % ivqcf(:, jo, :) = profdata % ivqcf(:, jo, :)
       IF (profdata % nqc(jo) > 255) THEN
@@ -153,8 +153,7 @@ MODULE obs_write
           fbdata % iobsj(jo, jvar) = mjg(profdata % mj(jo, jvar))
         END IF
       END DO
-      CALL greg2jul(0, profdata % nmin(jo), profdata % nhou(jo), profdata % nday(jo), profdata % nmon(jo), profdata % nyea(jo), &
-&fbdata % ptim(jo), krefdate = 19500101)
+      CALL greg2jul(0, profdata % nmin(jo), profdata % nhou(jo), profdata % nday(jo), profdata % nmon(jo), profdata % nyea(jo), fbdata % ptim(jo), krefdate = 19500101)
       DO jvar = 1, 2
         DO jk = profdata % npvsta(jo, jvar), profdata % npvend(jo, jvar)
           ik = profdata % var(jvar) % nvlidx(jk)
@@ -188,11 +187,9 @@ MODULE obs_write
       DO jo = 1, fbdata % nobs
         IF (fbdata % pphi(jo) < 9999.0) THEN
           DO jk = 1, fbdata % nlev
-            IF ((fbdata % pob(jk, jo, 1) >= 9999.0) .AND. (fbdata % pdep(jk, jo) < 9999.0) .AND. (fbdata % padd(jk, jo, 1, 2) < &
-&9999.0) .AND. (fbdata % pext(jk, jo, 1) < 9999.0)) THEN
+            IF ((fbdata % pob(jk, jo, 1) >= 9999.0) .AND. (fbdata % pdep(jk, jo) < 9999.0) .AND. (fbdata % padd(jk, jo, 1, 2) < 9999.0) .AND. (fbdata % pext(jk, jo, 1) < 9999.0)) THEN
               zpres = dep_to_p(REAL(fbdata % pdep(jk, jo), wp), REAL(fbdata % pphi(jo), wp))
-              fbdata % pob(jk, jo, 1) = potemp(REAL(fbdata % padd(jk, jo, 1, 2), wp), REAL(fbdata % pext(jk, jo, 1), wp), zpres, &
-&0.0_wp)
+              fbdata % pob(jk, jo, 1) = potemp(REAL(fbdata % padd(jk, jo, 1, 2), wp), REAL(fbdata % pext(jk, jo, 1), wp), zpres, 0.0_wp)
             END IF
           END DO
         END IF
@@ -320,16 +317,16 @@ MODULE obs_write
     fbdata % caddname(1) = 'Hx'
     WRITE(clfname, FMT = "(A,'_fdbk_',I4.4,'.nc')") TRIM(clfiletype), nproc
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'obs_wri_surf :'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) 'Writing ' // TRIM(surfdata % cvars(1)) // ' feedback file : ', TRIM(clfname)
+      WRITE(numout, *)
+      WRITE(numout, *) 'obs_wri_surf :'
+      WRITE(numout, *) '~~~~~~~~~~~~~'
+      WRITE(numout, *) 'Writing ' // TRIM(surfdata % cvars(1)) // ' feedback file : ', TRIM(clfname)
     END IF
     fbdata % cdjuldref = '19500101000000'
     DO jo = 1, surfdata % nsurf
       fbdata % plam(jo) = surfdata % rlam(jo)
       fbdata % pphi(jo) = surfdata % rphi(jo)
-      WRITE(fbdata % cdtyp(jo), FMT = '(I4)') surfdata % ntyp(jo)
+      WRITE(fbdata % cdtyp(jo), '(I4)') surfdata % ntyp(jo)
       fbdata % ivqc(jo, :) = 0
       fbdata % ivqcf(:, jo, :) = 0
       IF (surfdata % nqc(jo) > 255) THEN
@@ -353,8 +350,7 @@ MODULE obs_write
         fbdata % iobsi(jo, 1) = mig(surfdata % mi(jo))
         fbdata % iobsj(jo, 1) = mjg(surfdata % mj(jo))
       END IF
-      CALL greg2jul(0, surfdata % nmin(jo), surfdata % nhou(jo), surfdata % nday(jo), surfdata % nmon(jo), surfdata % nyea(jo), &
-&fbdata % ptim(jo), krefdate = 19500101)
+      CALL greg2jul(0, surfdata % nmin(jo), surfdata % nhou(jo), surfdata % nday(jo), surfdata % nmon(jo), surfdata % nyea(jo), fbdata % ptim(jo), krefdate = 19500101)
       fbdata % padd(1, jo, 1, 1) = surfdata % rmod(jo, 1)
       IF (TRIM(surfdata % cvars(1)) == 'SLA') fbdata % padd(1, jo, 2, 1) = surfdata % rext(jo, 1)
       fbdata % pob(1, jo, 1) = surfdata % robs(jo, 1)
@@ -397,37 +393,44 @@ MODULE obs_write
     REAL(KIND = wp) :: zsumx2
     REAL(KIND = wp) :: zomb
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     CALL profile_psy_data0 % PreStart('obs_wri_stats', 'r0', 0, 0)
     IF (lwp) THEN
-      WRITE(numout, FMT = *) ''
-      WRITE(numout, FMT = *) 'obs_wri_stats :'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~~~~'
+      WRITE(numout, *) ''
+      WRITE(numout, *) 'obs_wri_stats :'
+      WRITE(numout, *) '~~~~~~~~~~~~~~~'
     END IF
+    CALL profile_psy_data0 % PostEnd
     DO jvar = 1, fbdata % nvar
+      CALL profile_psy_data1 % PreStart('obs_wri_stats', 'r1', 0, 0)
       zsumx = 0.0_wp
       zsumx2 = 0.0_wp
       inumgoodobs = 0
+      CALL profile_psy_data1 % PostEnd
       DO jo = 1, fbdata % nobs
+        !$ACC KERNELS
         DO jk = 1, fbdata % nlev
-          IF ((fbdata % pob(jk, jo, jvar) < 9999.0) .AND. (fbdata % pdep(jk, jo) < 9999.0) .AND. (fbdata % padd(jk, jo, 1, jvar) < &
-&9999.0)) THEN
+          IF ((fbdata % pob(jk, jo, jvar) < 9999.0) .AND. (fbdata % pdep(jk, jo) < 9999.0) .AND. (fbdata % padd(jk, jo, 1, jvar) < 9999.0)) THEN
             zomb = fbdata % pob(jk, jo, jvar) - fbdata % padd(jk, jo, 1, jvar)
             zsumx = zsumx + zomb
             zsumx2 = zsumx2 + zomb ** 2
             inumgoodobs = inumgoodobs + 1
           END IF
         END DO
+        !$ACC END KERNELS
       END DO
+      CALL profile_psy_data2 % PreStart('obs_wri_stats', 'r2', 0, 0)
       CALL obs_mpp_sum_integer(inumgoodobs, inumgoodobsmpp)
       CALL mpp_sum('obs_write', zsumx)
       CALL mpp_sum('obs_write', zsumx2)
       IF (lwp) THEN
-        WRITE(numout, FMT = *) 'Type: ', fbdata % cname(jvar), '  Total number of good observations: ', inumgoodobsmpp
-        WRITE(numout, FMT = *) 'Overall mean obs minus model of the good observations: ', zsumx / inumgoodobsmpp
-        WRITE(numout, FMT = *) 'Overall RMS obs minus model of the good observations: ', SQRT(zsumx2 / inumgoodobsmpp)
-        WRITE(numout, FMT = *) ''
+        WRITE(numout, *) 'Type: ', fbdata % cname(jvar), '  Total number of good observations: ', inumgoodobsmpp
+        WRITE(numout, *) 'Overall mean obs minus model of the good observations: ', zsumx / inumgoodobsmpp
+        WRITE(numout, *) 'Overall RMS obs minus model of the good observations: ', SQRT(zsumx2 / inumgoodobsmpp)
+        WRITE(numout, *) ''
       END IF
+      CALL profile_psy_data2 % PostEnd
     END DO
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE obs_wri_stats
 END MODULE obs_write

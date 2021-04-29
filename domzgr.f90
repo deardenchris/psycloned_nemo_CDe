@@ -23,21 +23,19 @@ MODULE domzgr
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('dom_zgr', 'r0', 0, 0)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dom_zgr : vertical coordinate'
-      WRITE(numout, FMT = *) '~~~~~~~'
+      WRITE(numout, *)
+      WRITE(numout, *) 'dom_zgr : vertical coordinate'
+      WRITE(numout, *) '~~~~~~~'
     END IF
-    IF (ln_linssh .AND. lwp) WRITE(numout, FMT = *) '   linear free surface: the vertical mesh does not change in time'
+    IF (ln_linssh .AND. lwp) WRITE(numout, *) '   linear free surface: the vertical mesh does not change in time'
     IF (ln_read_cfg) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   Read vertical mesh in ', TRIM(cn_domcfg), ' file'
-      CALL zgr_read(ln_zco, ln_zps, ln_sco, ln_isfcav, gdept_1d, gdepw_1d, e3t_1d, e3w_1d, gdept_0, gdepw_0, e3t_0, e3u_0, e3v_0, &
-&e3f_0, e3w_0, e3uw_0, e3vw_0, k_top, k_bot)
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   Read vertical mesh in ', TRIM(cn_domcfg), ' file'
+      CALL zgr_read(ln_zco, ln_zps, ln_sco, ln_isfcav, gdept_1d, gdepw_1d, e3t_1d, e3w_1d, gdept_0, gdepw_0, e3t_0, e3u_0, e3v_0, e3f_0, e3w_0, e3uw_0, e3vw_0, k_top, k_bot)
     ELSE
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '          User defined vertical mesh (usr_def_zgr)'
-      CALL usr_def_zgr(ln_zco, ln_zps, ln_sco, ln_isfcav, gdept_1d, gdepw_1d, e3t_1d, e3w_1d, gdept_0, gdepw_0, e3t_0, e3u_0, &
-&e3v_0, e3f_0, e3w_0, e3uw_0, e3vw_0, k_top, k_bot)
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '          User defined vertical mesh (usr_def_zgr)'
+      CALL usr_def_zgr(ln_zco, ln_zps, ln_sco, ln_isfcav, gdept_1d, gdepw_1d, e3t_1d, e3w_1d, gdept_0, gdepw_0, e3t_0, e3u_0, e3v_0, e3f_0, e3w_0, e3uw_0, e3vw_0, k_top, k_bot)
     END IF
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
@@ -49,12 +47,12 @@ MODULE domzgr
     CALL profile_psy_data1 % PreStart('dom_zgr', 'r1', 0, 0)
     IF (.NOT. ln_closea) CALL clo_bat(k_top, k_bot)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '   Type of vertical coordinate (read in ', TRIM(cn_domcfg), ' file or set in userdef_nam) :'
-      WRITE(numout, FMT = *) '      z-coordinate - full steps      ln_zco    = ', ln_zco
-      WRITE(numout, FMT = *) '      z-coordinate - partial steps   ln_zps    = ', ln_zps
-      WRITE(numout, FMT = *) '      s- or hybrid z-s-coordinate    ln_sco    = ', ln_sco
-      WRITE(numout, FMT = *) '      ice shelf cavities             ln_isfcav = ', ln_isfcav
+      WRITE(numout, *)
+      WRITE(numout, *) '   Type of vertical coordinate (read in ', TRIM(cn_domcfg), ' file or set in userdef_nam) :'
+      WRITE(numout, *) '      z-coordinate - full steps      ln_zco    = ', ln_zco
+      WRITE(numout, *) '      z-coordinate - partial steps   ln_zps    = ', ln_zps
+      WRITE(numout, *) '      s- or hybrid z-s-coordinate    ln_sco    = ', ln_sco
+      WRITE(numout, *) '      ice shelf cavities             ln_isfcav = ', ln_isfcav
     END IF
     ioptio = 0
     IF (ln_zco) ioptio = ioptio + 1
@@ -66,21 +64,16 @@ MODULE domzgr
     nlb10 = MINLOC(gdepw_1d, mask = gdepw_1d > zrefdep, dim = 1)
     nla10 = nlb10 - 1
     IF (nprint == 1 .AND. lwp) THEN
-      WRITE(numout, FMT = *) ' MIN val k_top   ', MINVAL(k_top(:, :)), ' MAX ', MAXVAL(k_top(:, :))
-      WRITE(numout, FMT = *) ' MIN val k_bot   ', MINVAL(k_bot(:, :)), ' MAX ', MAXVAL(k_bot(:, :))
-      WRITE(numout, FMT = *) ' MIN val depth t ', MINVAL(gdept_0(:, :, :)), ' w ', MINVAL(gdepw_0(:, :, :)), '3w ', &
-&MINVAL(gde3w_0(:, :, :))
-      WRITE(numout, FMT = *) ' MIN val e3    t ', MINVAL(e3t_0(:, :, :)), ' f ', MINVAL(e3f_0(:, :, :)), ' u ', MINVAL(e3u_0(:, :, &
-&:)), ' u ', MINVAL(e3v_0(:, :, :)), ' uw', MINVAL(e3uw_0(:, :, :)), ' vw', MINVAL(e3vw_0(:, :, :)), ' w ', MINVAL(e3w_0(:, :, :))
-      WRITE(numout, FMT = *) ' MAX val depth t ', MAXVAL(gdept_0(:, :, :)), ' w ', MAXVAL(gdepw_0(:, :, :)), '3w ', &
-&MAXVAL(gde3w_0(:, :, :))
-      WRITE(numout, FMT = *) ' MAX val e3    t ', MAXVAL(e3t_0(:, :, :)), ' f ', MAXVAL(e3f_0(:, :, :)), ' u ', MAXVAL(e3u_0(:, :, &
-&:)), ' u ', MAXVAL(e3v_0(:, :, :)), ' uw', MAXVAL(e3uw_0(:, :, :)), ' vw', MAXVAL(e3vw_0(:, :, :)), ' w ', MAXVAL(e3w_0(:, :, :))
+      WRITE(numout, *) ' MIN val k_top   ', MINVAL(k_top(:, :)), ' MAX ', MAXVAL(k_top(:, :))
+      WRITE(numout, *) ' MIN val k_bot   ', MINVAL(k_bot(:, :)), ' MAX ', MAXVAL(k_bot(:, :))
+      WRITE(numout, *) ' MIN val depth t ', MINVAL(gdept_0(:, :, :)), ' w ', MINVAL(gdepw_0(:, :, :)), '3w ', MINVAL(gde3w_0(:, :, :))
+      WRITE(numout, *) ' MIN val e3    t ', MINVAL(e3t_0(:, :, :)), ' f ', MINVAL(e3f_0(:, :, :)), ' u ', MINVAL(e3u_0(:, :, :)), ' u ', MINVAL(e3v_0(:, :, :)), ' uw', MINVAL(e3uw_0(:, :, :)), ' vw', MINVAL(e3vw_0(:, :, :)), ' w ', MINVAL(e3w_0(:, :, :))
+      WRITE(numout, *) ' MAX val depth t ', MAXVAL(gdept_0(:, :, :)), ' w ', MAXVAL(gdepw_0(:, :, :)), '3w ', MAXVAL(gde3w_0(:, :, :))
+      WRITE(numout, *) ' MAX val e3    t ', MAXVAL(e3t_0(:, :, :)), ' f ', MAXVAL(e3f_0(:, :, :)), ' u ', MAXVAL(e3u_0(:, :, :)), ' u ', MAXVAL(e3v_0(:, :, :)), ' uw', MAXVAL(e3uw_0(:, :, :)), ' vw', MAXVAL(e3vw_0(:, :, :)), ' w ', MAXVAL(e3w_0(:, :, :))
     END IF
     CALL profile_psy_data1 % PostEnd
   END SUBROUTINE dom_zgr
-  SUBROUTINE zgr_read(ld_zco, ld_zps, ld_sco, ld_isfcav, pdept_1d, pdepw_1d, pe3t_1d, pe3w_1d, pdept, pdepw, pe3t, pe3u, pe3v, &
-&pe3f, pe3w, pe3uw, pe3vw, k_top, k_bot)
+  SUBROUTINE zgr_read(ld_zco, ld_zps, ld_sco, ld_isfcav, pdept_1d, pdepw_1d, pe3t_1d, pe3w_1d, pdept, pdepw, pe3t, pe3u, pe3v, pe3f, pe3w, pe3uw, pe3vw, k_top, k_bot)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     LOGICAL, INTENT(OUT) :: ld_zco, ld_zps, ld_sco
     LOGICAL, INTENT(OUT) :: ld_isfcav
@@ -96,11 +89,12 @@ MODULE domzgr
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: z2d
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     CALL profile_psy_data0 % PreStart('zgr_read', 'r0', 0, 0)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '   zgr_read : read the vertical coordinates in ', TRIM(cn_domcfg), ' file'
-      WRITE(numout, FMT = *) '   ~~~~~~~~'
+      WRITE(numout, *)
+      WRITE(numout, *) '   zgr_read : read the vertical coordinates in ', TRIM(cn_domcfg), ' file'
+      WRITE(numout, *) '   ~~~~~~~~'
     END IF
     CALL iom_open(cn_domcfg, inum)
     CALL iom_get(inum, 'ln_zco', z_zco)
@@ -136,10 +130,8 @@ MODULE domzgr
     CALL iom_get(inum, jpdom_data, 'e3w_0', pe3w, lrowattr = ln_use_jattr)
     CALL iom_get(inum, jpdom_data, 'e3uw_0', pe3uw, lrowattr = ln_use_jattr)
     CALL iom_get(inum, jpdom_data, 'e3vw_0', pe3vw, lrowattr = ln_use_jattr)
-    IF (iom_varid(inum, 'gdept_1d', ldstop = .FALSE.) > 0 .AND. iom_varid(inum, 'gdepw_1d', ldstop = .FALSE.) > 0 .AND. &
-&iom_varid(inum, 'gdept_0', ldstop = .FALSE.) > 0 .AND. iom_varid(inum, 'gdepw_0', ldstop = .FALSE.) > 0) THEN
-      CALL ctl_warn('zgr_read : old definition of depths and scale factors used ', &
-&'           depths at t- and w-points read in the domain configuration file')
+    IF (iom_varid(inum, 'gdept_1d', ldstop = .FALSE.) > 0 .AND. iom_varid(inum, 'gdepw_1d', ldstop = .FALSE.) > 0 .AND. iom_varid(inum, 'gdept_0', ldstop = .FALSE.) > 0 .AND. iom_varid(inum, 'gdepw_0', ldstop = .FALSE.) > 0) THEN
+      CALL ctl_warn('zgr_read : old definition of depths and scale factors used ', '           depths at t- and w-points read in the domain configuration file')
       CALL iom_get(inum, jpdom_unknown, 'gdept_1d', pdept_1d)
       CALL iom_get(inum, jpdom_unknown, 'gdepw_1d', pdepw_1d)
       CALL iom_get(inum, jpdom_data, 'gdept_0', pdept, lrowattr = ln_use_jattr)
@@ -148,10 +140,10 @@ MODULE domzgr
       CALL e3_to_depth(pe3t_1d, pe3w_1d, pdept_1d, pdepw_1d)
       CALL e3_to_depth(pe3t, pe3w, pdept, pdepw)
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '              Reference 1D z-coordinate depth and scale factors:'
-        WRITE(numout, FMT = "(9x,' level  gdept_1d  gdepw_1d  e3t_1d   e3w_1d  ')")
-        WRITE(numout, FMT = "(10x, i4, 4f9.2)") (jk, pdept_1d(jk), pdepw_1d(jk), pe3t_1d(jk), pe3w_1d(jk), jk = 1, jpk)
+        WRITE(numout, *)
+        WRITE(numout, *) '              Reference 1D z-coordinate depth and scale factors:'
+        WRITE(numout, "(9x,' level  gdept_1d  gdepw_1d  e3t_1d   e3w_1d  ')")
+        WRITE(numout, "(10x, i4, 4f9.2)") (jk, pdept_1d(jk), pdepw_1d(jk), pe3t_1d(jk), pe3w_1d(jk), jk = 1, jpk)
       END IF
     END IF
     CALL iom_get(inum, jpdom_data, 'top_level', z2d, lrowattr = ln_use_jattr)
@@ -159,14 +151,16 @@ MODULE domzgr
     !$ACC KERNELS
     k_top(:, :) = NINT(z2d(:, :))
     !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('zgr_read', 'r1', 0, 0)
     CALL iom_get(inum, jpdom_data, 'bottom_level', z2d, lrowattr = ln_use_jattr)
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     k_bot(:, :) = NINT(z2d(:, :))
     !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('zgr_read', 'r1', 0, 0)
+    CALL profile_psy_data2 % PreStart('zgr_read', 'r2', 0, 0)
     IF (ll_wd) CALL iom_get(inum, 'rn_wd_ref_depth', ssh_ref)
     CALL iom_close(inum)
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE zgr_read
   SUBROUTINE zgr_top_bot(k_top, k_bot)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -174,15 +168,20 @@ MODULE domzgr
     INTEGER :: ji, jj
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zk
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
     CALL profile_psy_data0 % PreStart('zgr_top_bot', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) '    zgr_top_bot : ocean top and bottom k-index of T-, U-, V- and W-levels '
-    IF (lwp) WRITE(numout, FMT = *) '    ~~~~~~~~~~~'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) '    zgr_top_bot : ocean top and bottom k-index of T-, U-, V- and W-levels '
+    IF (lwp) WRITE(numout, *) '    ~~~~~~~~~~~'
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     mikt(:, :) = MAX(k_top(:, :), 1)
     mbkt(:, :) = MAX(k_bot(:, :), 1)
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpjm1
       DO ji = 1, jpim1
         miku(ji, jj) = MAX(mikt(ji + 1, jj), mikt(ji, jj))
@@ -194,27 +193,37 @@ MODULE domzgr
     END DO
     zk(:, :) = REAL(miku(:, :), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('zgr_top_bot', 'r1', 0, 0)
     CALL lbc_lnk('domzgr', zk, 'U', 1.)
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     miku(:, :) = MAX(NINT(zk(:, :)), 1)
     zk(:, :) = REAL(mikv(:, :), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data2 % PreStart('zgr_top_bot', 'r2', 0, 0)
     CALL lbc_lnk('domzgr', zk, 'V', 1.)
+    CALL profile_psy_data2 % PostEnd
     !$ACC KERNELS
     mikv(:, :) = MAX(NINT(zk(:, :)), 1)
     zk(:, :) = REAL(mikf(:, :), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data3 % PreStart('zgr_top_bot', 'r3', 0, 0)
     CALL lbc_lnk('domzgr', zk, 'F', 1.)
+    CALL profile_psy_data3 % PostEnd
     !$ACC KERNELS
     mikf(:, :) = MAX(NINT(zk(:, :)), 1)
     zk(:, :) = REAL(mbku(:, :), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data4 % PreStart('zgr_top_bot', 'r4', 0, 0)
     CALL lbc_lnk('domzgr', zk, 'U', 1.)
+    CALL profile_psy_data4 % PostEnd
     !$ACC KERNELS
     mbku(:, :) = MAX(NINT(zk(:, :)), 1)
     zk(:, :) = REAL(mbkv(:, :), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data5 % PreStart('zgr_top_bot', 'r5', 0, 0)
     CALL lbc_lnk('domzgr', zk, 'V', 1.)
+    CALL profile_psy_data5 % PostEnd
     !$ACC KERNELS
     mbkv(:, :) = MAX(NINT(zk(:, :)), 1)
     !$ACC END KERNELS

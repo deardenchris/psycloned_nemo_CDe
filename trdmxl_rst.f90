@@ -19,29 +19,29 @@ MODULE trdmxl_rst
     CHARACTER(LEN = 256) :: clpath
     IF (kt == nitrst - 1 .OR. nstock == 1 .OR. (kt == nitend .AND. MOD(nitend - 1, nstock) == 0)) THEN
       IF (nitrst > 999999999) THEN
-        WRITE(clkt, FMT = *) nitrst
+        WRITE(clkt, *) nitrst
       ELSE
-        WRITE(clkt, FMT = '(i8.8)') nitrst
+        WRITE(clkt, '(i8.8)') nitrst
       END IF
       clname = TRIM(cexper) // "_" // TRIM(ADJUSTL(clkt)) // "_" // TRIM(cn_trdrst_out)
       clpath = TRIM(cn_ocerst_outdir)
       IF (clpath(LEN_TRIM(clpath) :) /= '/') clpath = TRIM(clpath) // '/'
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '             open ocean restart_mxl NetCDF file: ' // clname
+        WRITE(numout, *)
+        WRITE(numout, *) '             open ocean restart_mxl NetCDF file: ' // clname
         IF (kt == nitrst - 1) THEN
-          WRITE(numout, FMT = *) '             kt = nitrst - 1 = ', kt, ' date= ', ndastp
+          WRITE(numout, *) '             kt = nitrst - 1 = ', kt, ' date= ', ndastp
         ELSE
-          WRITE(numout, FMT = *) '             kt = ', kt, ' date= ', ndastp
+          WRITE(numout, *) '             kt = ', kt, ' date= ', ndastp
         END IF
       END IF
       CALL iom_open(TRIM(clpath) // TRIM(clname), nummxlw, ldwrt = .TRUE.)
     END IF
     IF (kt == nitrst .AND. lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'trdmxl_rst: output for ML diags. restart, with trd_mxl_rst_write routine kt =', kt
-      WRITE(numout, FMT = *) '~~~~~~~~~~'
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
+      WRITE(numout, *) 'trdmxl_rst: output for ML diags. restart, with trd_mxl_rst_write routine kt =', kt
+      WRITE(numout, *) '~~~~~~~~~~'
+      WRITE(numout, *)
     END IF
     IF (ln_trdmxl_instant) THEN
       CALL iom_rstput(kt, nitrst, nummxlw, 'tmlbb', tmlbb)
@@ -87,9 +87,9 @@ MODULE trdmxl_rst
     LOGICAL :: llok
     CHARACTER(LEN = 256) :: clpath
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) ' trd_mxl_rst_read : read the NetCDF mixed layer trend restart file'
-      WRITE(numout, FMT = *) ' ~~~~~~~~~~~~~~~~'
+      WRITE(numout, *)
+      WRITE(numout, *) ' trd_mxl_rst_read : read the NetCDF mixed layer trend restart file'
+      WRITE(numout, *) ' ~~~~~~~~~~~~~~~~'
     END IF
     clpath = TRIM(cn_ocerst_indir)
     IF (clpath(LEN_TRIM(clpath) :) /= '/') clpath = TRIM(clpath) // '/'

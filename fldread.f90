@@ -132,8 +132,7 @@ MODULE fldread
           sd(jf) % rotn(1) = sd(jf) % rotn(2)
           IF (sd(jf) % ln_tint) sd(jf) % fdta(:, :, :, 1) = sd(jf) % fdta(:, :, :, 2)
           CALL fld_rec(kn_fsbc, sd(jf), kt_offset = it_offset, kit = kit)
-          IF (.NOT. ll_firstcall .AND. sd(jf) % ln_tint .AND. sd(jf) % nrec_b(1) /= sd(jf) % nreclast .AND. MOD(sd(jf) % &
-&nrec_a(1), sd(jf) % nreclast) == 1) THEN
+          IF (.NOT. ll_firstcall .AND. sd(jf) % ln_tint .AND. sd(jf) % nrec_b(1) /= sd(jf) % nreclast .AND. MOD(sd(jf) % nrec_a(1), sd(jf) % nreclast) == 1) THEN
             itmp = sd(jf) % nrec_a(1)
             sd(jf) % nrec_a(1) = sd(jf) % nreclast
             CALL fld_get(sd(jf), imap)
@@ -145,8 +144,7 @@ MODULE fldread
           END IF
           CALL fld_clopn(sd(jf))
           IF (sd(jf) % ln_tint) THEN
-            IF (.NOT. ll_firstcall .AND. MOD(sd(jf) % nrec_a(1), sd(jf) % nreclast) /= 1 .AND. sd(jf) % nrec_b(1) /= sd(jf) % &
-&nrec_a(1) - 1) THEN
+            IF (.NOT. ll_firstcall .AND. MOD(sd(jf) % nrec_a(1), sd(jf) % nreclast) /= 1 .AND. sd(jf) % nrec_b(1) /= sd(jf) % nrec_a(1) - 1) THEN
               sd(jf) % nrec_a(1) = sd(jf) % nrec_a(1) - 1
               CALL fld_get(sd(jf), imap)
               sd(jf) % fdta(:, :, :, 1) = sd(jf) % fdta(:, :, :, 2)
@@ -163,11 +161,9 @@ MODULE fldread
               llnxtyr = sd(jf) % cltype == 'yearly' .OR. (nmonth == 12 .AND. llnxtmth)
               isecend = nsec_year + nsec1jan000 + (nitend - kt) * NINT(rdt)
               llstop = isecend > sd(jf) % nrec_a(2)
-              CALL fld_clopn(sd(jf), nyear + COUNT((/llnxtyr/)), nmonth + COUNT((/llnxtmth/)) - 12 * COUNT((/llnxtyr/)), &
-&nday + 1 - nmonth_len(nmonth) * COUNT((/llnxtmth/)), llstop)
+              CALL fld_clopn(sd(jf), nyear + COUNT((/llnxtyr/)), nmonth + COUNT((/llnxtmth/)) - 12 * COUNT((/llnxtyr/)), nday + 1 - nmonth_len(nmonth) * COUNT((/llnxtmth/)), llstop)
               IF (sd(jf) % num <= 0 .AND. .NOT. llstop) THEN
-                CALL ctl_warn('next year/month/week/day file: ' // TRIM(sd(jf) % clname) // ' not present -> back to current &
-&year/month/day')
+                CALL ctl_warn('next year/month/week/day file: ' // TRIM(sd(jf) % clname) // ' not present -> back to current year/month/day')
                 CALL fld_clopn(sd(jf))
                 sd(jf) % nrec_a(1) = sd(jf) % nreclast
               END IF
@@ -184,21 +180,17 @@ MODULE fldread
       DO jf = 1, imf
         IF (sd(jf) % ln_tint) THEN
           IF (lwp .AND. kt - nit000 <= 100) THEN
-            clfmt = "('   fld_read: var ', a, ' kt = ', i8, ' (', f9.4,' days), Y/M/D = ', i4.4,'/', i2.2,'/', i2.2," // "', &
-&records b/a: ', i6.4, '/', i6.4, ' (days ', f9.4,'/', f9.4, ')')"
-            WRITE(numout, clfmt) TRIM(sd(jf) % clvar), kt, REAL(isecsbc, wp) / rday, nyear, nmonth, nday, sd(jf) % nrec_b(1), &
-&sd(jf) % nrec_a(1), REAL(sd(jf) % nrec_b(2), wp) / rday, REAL(sd(jf) % nrec_a(2), wp) / rday
-            WRITE(numout, FMT = *) '      it_offset is : ', it_offset
+            clfmt = "('   fld_read: var ', a, ' kt = ', i8, ' (', f9.4,' days), Y/M/D = ', i4.4,'/', i2.2,'/', i2.2," // "', records b/a: ', i6.4, '/', i6.4, ' (days ', f9.4,'/', f9.4, ')')"
+            WRITE(numout, clfmt) TRIM(sd(jf) % clvar), kt, REAL(isecsbc, wp) / rday, nyear, nmonth, nday, sd(jf) % nrec_b(1), sd(jf) % nrec_a(1), REAL(sd(jf) % nrec_b(2), wp) / rday, REAL(sd(jf) % nrec_a(2), wp) / rday
+            WRITE(numout, *) '      it_offset is : ', it_offset
           END IF
           ztinta = REAL(isecsbc - sd(jf) % nrec_b(2), wp) / REAL(sd(jf) % nrec_a(2) - sd(jf) % nrec_b(2), wp)
           ztintb = 1. - ztinta
           sd(jf) % fnow(:, :, :) = ztintb * sd(jf) % fdta(:, :, :, 1) + ztinta * sd(jf) % fdta(:, :, :, 2)
         ELSE
           IF (lwp .AND. kt - nit000 <= 100) THEN
-            clfmt = "('   fld_read: var ', a, ' kt = ', i8,' (', f9.4,' days), Y/M/D = ', i4.4,'/', i2.2,'/', i2.2," // "', &
-&record: ', i6.4, ' (days ', f9.4, ' <-> ', f9.4, ')')"
-            WRITE(numout, clfmt) TRIM(sd(jf) % clvar), kt, REAL(isecsbc, wp) / rday, nyear, nmonth, nday, sd(jf) % nrec_a(1), &
-&REAL(sd(jf) % nrec_b(2), wp) / rday, REAL(sd(jf) % nrec_a(2), wp) / rday
+            clfmt = "('   fld_read: var ', a, ' kt = ', i8,' (', f9.4,' days), Y/M/D = ', i4.4,'/', i2.2,'/', i2.2," // "', record: ', i6.4, ' (days ', f9.4, ' <-> ', f9.4, ')')"
+            WRITE(numout, clfmt) TRIM(sd(jf) % clvar), kt, REAL(isecsbc, wp) / rday, nyear, nmonth, nday, sd(jf) % nrec_a(1), REAL(sd(jf) % nrec_b(2), wp) / rday, REAL(sd(jf) % nrec_a(2), wp) / rday
           END IF
         END IF
         IF (kt == nitend - kn_fsbc + 1) CALL iom_close(sd(jf) % num)
@@ -277,8 +269,7 @@ MODULE fldread
       iday = nday - COUNT((/llprevday/)) + nmonth_len(nmonth - 1) * COUNT((/llprevmth/)) - isec_week / NINT(rday)
       CALL fld_clopn(sdjf, iyear, imonth, iday, .NOT. llprev)
       IF (llprev .AND. sdjf % num <= 0) THEN
-        CALL ctl_warn('previous year/month/week/day file: ' // TRIM(sdjf % clrootname) // ' not present -> back to current &
-&year/month/week/day')
+        CALL ctl_warn('previous year/month/week/day file: ' // TRIM(sdjf % clrootname) // ' not present -> back to current year/month/week/day')
         llprev = .FALSE.
         sdjf % nrec_a(1) = 1
         CALL fld_clopn(sdjf)
@@ -335,11 +326,9 @@ MODULE fldread
         ztmp = REAL(nsec_year, wp) / (REAL(nyear_len(1), wp) * rday) + 0.5 + REAL(it_offset, wp) / (REAL(nyear_len(1), wp) * rday)
         sdjf % nrec_a(1) = 1 + INT(ztmp) - COUNT((/llbefore/))
         IF (llbefore) THEN
-          sdjf % nrec_a(2) = nsec1jan000 - (1 - INT(ztmp)) * NINT(0.5 * rday) * nyear_len(0) + INT(ztmp) * NINT(0.5 * rday) * &
-&nyear_len(1)
+          sdjf % nrec_a(2) = nsec1jan000 - (1 - INT(ztmp)) * NINT(0.5 * rday) * nyear_len(0) + INT(ztmp) * NINT(0.5 * rday) * nyear_len(1)
         ELSE
-          sdjf % nrec_a(2) = nsec1jan000 + (1 - INT(ztmp)) * NINT(0.5 * rday) * nyear_len(1) + INT(ztmp) * INT(rday) * &
-&nyear_len(1) + INT(ztmp) * NINT(0.5 * rday) * nyear_len(2)
+          sdjf % nrec_a(2) = nsec1jan000 + (1 - INT(ztmp)) * NINT(0.5 * rday) * nyear_len(1) + INT(ztmp) * INT(rday) * nyear_len(1) + INT(ztmp) * NINT(0.5 * rday) * nyear_len(2)
         END IF
       ELSE
         sdjf % nrec_a(1) = 1
@@ -348,8 +337,7 @@ MODULE fldread
       END IF
     ELSE IF (sdjf % nfreqh == - 1) THEN
       IF (sdjf % ln_tint) THEN
-        ztmp = REAL(nsec_month, wp) / (REAL(nmonth_len(nmonth), wp) * rday) + 0.5 + REAL(it_offset, wp) / &
-&(REAL(nmonth_len(nmonth), wp) * rday)
+        ztmp = REAL(nsec_month, wp) / (REAL(nmonth_len(nmonth), wp) * rday) + 0.5 + REAL(it_offset, wp) / (REAL(nmonth_len(nmonth), wp) * rday)
         imth = nmonth + INT(ztmp) - COUNT((/llbefore/))
         IF (sdjf % cltype == 'monthly') THEN
           sdjf % nrec_a(1) = 1 + INT(ztmp) - COUNT((/llbefore/))
@@ -417,11 +405,9 @@ MODULE fldread
     IF (ASSOCIATED(map % ptr)) THEN
       IF (PRESENT(jpk_bdy)) THEN
         IF (sdjf % ln_tint) THEN
-          CALL fld_map(sdjf % num, sdjf % clvar, sdjf % fdta(:, :, :, 2), sdjf % nrec_a(1), map, sdjf % igrd, sdjf % ibdy, &
-&jpk_bdy, fvl)
+          CALL fld_map(sdjf % num, sdjf % clvar, sdjf % fdta(:, :, :, 2), sdjf % nrec_a(1), map, sdjf % igrd, sdjf % ibdy, jpk_bdy, fvl)
         ELSE
-          CALL fld_map(sdjf % num, sdjf % clvar, sdjf % fnow(:, :, :), sdjf % nrec_a(1), map, sdjf % igrd, sdjf % ibdy, jpk_bdy, &
-&fvl)
+          CALL fld_map(sdjf % num, sdjf % clvar, sdjf % fnow(:, :, :), sdjf % nrec_a(1), map, sdjf % igrd, sdjf % ibdy, jpk_bdy, fvl)
         END IF
       ELSE
         IF (sdjf % ln_tint) THEN
@@ -536,8 +522,8 @@ MODULE fldread
         END IF
       END IF
     END IF
-    IF (lwp) WRITE(numout, FMT = *) 'Dim size for ', TRIM(clvar), ' is ', ilendta
-    IF (lwp) WRITE(numout, FMT = *) 'Number of levels for ', TRIM(clvar), ' is ', ipk
+    IF (lwp) WRITE(numout, *) 'Dim size for ', TRIM(clvar), ' is ', ilendta
+    IF (lwp) WRITE(numout, *) 'Number of levels for ', TRIM(clvar), ' is ', ipk
     SELECT CASE (ipk)
     CASE (1)
       CALL iom_get(num, jpdom_unknown, clvar, dta_read(1 : ilendta, 1 : ipj, 1), nrec)
@@ -627,7 +613,7 @@ MODULE fldread
     DO ib = 1, ipi
       zij = idx_bdy(ibdy) % nbi(ib, igrd)
       zjj = idx_bdy(ibdy) % nbj(ib, igrd)
-      IF (narea == 2) WRITE(*, FMT = *) 'MAPI', ib, igrd, map % ptr(ib), narea - 1, zij, zjj
+      IF (narea == 2) WRITE(*, *) 'MAPI', ib, igrd, map % ptr(ib), narea - 1, zij, zjj
     END DO
     IF (map % ll_unstruc) THEN
       DO ib = 1, ipi
@@ -645,19 +631,18 @@ MODULE fldread
         SELECT CASE (igrd)
         CASE (1)
           IF (ABS((zh - ht_n(zij, zjj)) / ht_n(zij, zjj)) * tmask(zij, zjj, 1) > 0.01_wp) THEN
-            WRITE(ibstr, FMT = "(I10.10)") map % ptr(ib)
+            WRITE(ibstr, "(I10.10)") map % ptr(ib)
             CALL ctl_warn('fld_bdy_interp: T depths differ between grids at BDY point ' // TRIM(ibstr) // ' by more than 1%')
           END IF
         CASE (2)
           IF (ABS((zh - hu_n(zij, zjj)) * r1_hu_n(zij, zjj)) * umask(zij, zjj, 1) > 0.01_wp) THEN
-            WRITE(ibstr, FMT = "(I10.10)") map % ptr(ib)
+            WRITE(ibstr, "(I10.10)") map % ptr(ib)
             CALL ctl_warn('fld_bdy_interp: U depths differ between grids at BDY point ' // TRIM(ibstr) // ' by more than 1%')
-            IF (lwp) WRITE(*, FMT = *) 'DEPTHU', zh, SUM(e3u_n(zij, zjj, :), mask = umask(zij, zjj, :) == 1), SUM(umask(zij, zjj, &
-&:)), hu_n(zij, zjj), map % ptr(ib), ib, zij, zjj, narea - 1, dta_read(map % ptr(ib), 1, :)
+            IF (lwp) WRITE(*, *) 'DEPTHU', zh, SUM(e3u_n(zij, zjj, :), mask = umask(zij, zjj, :) == 1), SUM(umask(zij, zjj, :)), hu_n(zij, zjj), map % ptr(ib), ib, zij, zjj, narea - 1, dta_read(map % ptr(ib), 1, :)
           END IF
         CASE (3)
           IF (ABS((zh - hv_n(zij, zjj)) * r1_hv_n(zij, zjj)) * vmask(zij, zjj, 1) > 0.01_wp) THEN
-            WRITE(ibstr, FMT = "(I10.10)") map % ptr(ib)
+            WRITE(ibstr, "(I10.10)") map % ptr(ib)
             CALL ctl_warn('fld_bdy_interp: V depths differ between grids at BDY point ' // TRIM(ibstr) // ' by more than 1%')
           END IF
         END SELECT
@@ -684,12 +669,9 @@ MODULE fldread
             dta(ib, 1, ik) = dta_read(map % ptr(ib), 1, MAXLOC(dta_read_z(map % ptr(ib), 1, :), 1))
           ELSE
             DO ikk = 1, jpkm1_bdy
-              IF (((zl - dta_read_z(map % ptr(ib), 1, ikk)) * (zl - dta_read_z(map % ptr(ib), 1, ikk + 1)) <= 0._wp) .AND. &
-&(dta_read_z(map % ptr(ib), 1, ikk + 1) /= fv_alt)) THEN
-                zi = (zl - dta_read_z(map % ptr(ib), 1, ikk)) / (dta_read_z(map % ptr(ib), 1, ikk + 1) - dta_read_z(map % ptr(ib), &
-&1, ikk))
-                dta(ib, 1, ik) = dta_read(map % ptr(ib), 1, ikk) + (dta_read(map % ptr(ib), 1, ikk + 1) - dta_read(map % ptr(ib), &
-&1, ikk)) * zi
+              IF (((zl - dta_read_z(map % ptr(ib), 1, ikk)) * (zl - dta_read_z(map % ptr(ib), 1, ikk + 1)) <= 0._wp) .AND. (dta_read_z(map % ptr(ib), 1, ikk + 1) /= fv_alt)) THEN
+                zi = (zl - dta_read_z(map % ptr(ib), 1, ikk)) / (dta_read_z(map % ptr(ib), 1, ikk + 1) - dta_read_z(map % ptr(ib), 1, ikk))
+                dta(ib, 1, ik) = dta_read(map % ptr(ib), 1, ikk) + (dta_read(map % ptr(ib), 1, ikk + 1) - dta_read(map % ptr(ib), 1, ikk)) * zi
               END IF
             END DO
           END IF
@@ -712,8 +694,7 @@ MODULE fldread
             IF (fvl) THEN
               dta(ib, 1, ik) = (dta(ib, 1, ik) + (ztrans - ztrans_new) * r1_hu_n(zij, zjj)) * umask(zij, zjj, ik)
             ELSE
-              IF (ABS(ztrans * r1_hu_n(zij, zjj)) > 0.01_wp) CALL ctl_warn('fld_bdy_interp: barotropic component of > 0.01 ms-1 &
-&found in baroclinic velocities at')
+              IF (ABS(ztrans * r1_hu_n(zij, zjj)) > 0.01_wp) CALL ctl_warn('fld_bdy_interp: barotropic component of > 0.01 ms-1 found in baroclinic velocities at')
               dta(ib, 1, ik) = dta(ib, 1, ik) + (0._wp - ztrans_new) * r1_hu_n(zij, zjj) * umask(zij, zjj, ik)
             END IF
           END DO
@@ -761,17 +742,17 @@ MODULE fldread
         SELECT CASE (igrd)
         CASE (1)
           IF (ABS((zh - ht_n(zij, zjj)) / ht_n(zij, zjj)) * tmask(zij, zjj, 1) > 0.01_wp) THEN
-            WRITE(ibstr, FMT = "(I10.10)") map % ptr(ib)
+            WRITE(ibstr, "(I10.10)") map % ptr(ib)
             CALL ctl_warn('fld_bdy_interp: T depths differ between grids at BDY point ' // TRIM(ibstr) // ' by more than 1%')
           END IF
         CASE (2)
           IF (ABS((zh - hu_n(zij, zjj)) * r1_hu_n(zij, zjj)) * umask(zij, zjj, 1) > 0.01_wp) THEN
-            WRITE(ibstr, FMT = "(I10.10)") map % ptr(ib)
+            WRITE(ibstr, "(I10.10)") map % ptr(ib)
             CALL ctl_warn('fld_bdy_interp: U depths differ between grids at BDY point ' // TRIM(ibstr) // ' by more than 1%')
           END IF
         CASE (3)
           IF (ABS((zh - hv_n(zij, zjj)) * r1_hv_n(zij, zjj)) * vmask(zij, zjj, 1) > 0.01_wp) THEN
-            WRITE(ibstr, FMT = "(I10.10)") map % ptr(ib)
+            WRITE(ibstr, "(I10.10)") map % ptr(ib)
             CALL ctl_warn('fld_bdy_interp: V depths differ between grids at BDY point ' // TRIM(ibstr) // ' by more than 1%')
           END IF
         END SELECT
@@ -798,8 +779,7 @@ MODULE fldread
             dta(ib, 1, ik) = dta_read(ji, jj, MAXLOC(dta_read_z(ji, jj, :), 1))
           ELSE
             DO ikk = 1, jpkm1_bdy
-              IF (((zl - dta_read_z(ji, jj, ikk)) * (zl - dta_read_z(ji, jj, ikk + 1)) <= 0._wp) .AND. (dta_read_z(ji, jj, ikk + &
-&1) /= fv_alt)) THEN
+              IF (((zl - dta_read_z(ji, jj, ikk)) * (zl - dta_read_z(ji, jj, ikk + 1)) <= 0._wp) .AND. (dta_read_z(ji, jj, ikk + 1) /= fv_alt)) THEN
                 zi = (zl - dta_read_z(ji, jj, ikk)) / (dta_read_z(ji, jj, ikk + 1) - dta_read_z(ji, jj, ikk))
                 dta(ib, 1, ik) = dta_read(ji, jj, ikk) + (dta_read(ji, jj, ikk + 1) - dta_read(ji, jj, ikk)) * zi
               END IF
@@ -896,8 +876,7 @@ MODULE fldread
                 END IF
               END DO
               sd(ju) % rotn(jn) = .TRUE.
-              IF (lwp .AND. kt == nit000) WRITE(numout, FMT = *) 'fld_read: vector pair (' // TRIM(sd(ju) % clvar) // ', ' // &
-&TRIM(sd(iv) % clvar) // ') rotated on to model grid'
+              IF (lwp .AND. kt == nit000) WRITE(numout, *) 'fld_read: vector pair (' // TRIM(sd(ju) % clvar) // ', ' // TRIM(sd(iv) % clvar) // ') rotated on to model grid'
             END IF
           END IF
         END IF
@@ -949,12 +928,12 @@ MODULE fldread
     END IF
     clname = TRIM(sdjf % clrootname)
     IF (.NOT. sdjf % ln_clim) THEN
-      WRITE(clname, FMT = '(a,"_y",i4.4)') TRIM(sdjf % clrootname), iyear
-      IF (sdjf % cltype /= 'yearly') WRITE(clname, FMT = '(a,"m" ,i2.2)') TRIM(clname), imonth
+      WRITE(clname, '(a,"_y",i4.4)') TRIM(sdjf % clrootname), iyear
+      IF (sdjf % cltype /= 'yearly') WRITE(clname, '(a,"m" ,i2.2)') TRIM(clname), imonth
     ELSE
-      IF (sdjf % cltype /= 'yearly') WRITE(clname, FMT = '(a,"_m",i2.2)') TRIM(sdjf % clrootname), imonth
+      IF (sdjf % cltype /= 'yearly') WRITE(clname, '(a,"_m",i2.2)') TRIM(sdjf % clrootname), imonth
     END IF
-    IF (sdjf % cltype == 'daily' .OR. sdjf % cltype(1 : 4) == 'week') WRITE(clname, FMT = '(a,"d" ,i2.2)') TRIM(clname), iday
+    IF (sdjf % cltype == 'daily' .OR. sdjf % cltype(1 : 4) == 'week') WRITE(clname, '(a,"d" ,i2.2)') TRIM(clname), iday
     IF (TRIM(clname) /= TRIM(sdjf % clname) .OR. sdjf % num == 0) THEN
       sdjf % clname = TRIM(clname)
       IF (sdjf % num /= 0) CALL iom_close(sdjf % num)
@@ -1018,27 +997,23 @@ MODULE fldread
       IF (LEN(TRIM(sdf_n(jf) % lname)) > 0) sdf(jf) % lsmname = TRIM(cdir) // TRIM(sdf_n(jf) % lname)
       sdf(jf) % vcomp = sdf_n(jf) % vcomp
       sdf(jf) % rotn(:) = .TRUE.
-      IF (sdf(jf) % cltype(1 : 4) == 'week' .AND. nn_leapy == 0) CALL ctl_stop('fld_clopn: weekly file (' // TRIM(sdf(jf) % &
-&clrootname) // ') needs nn_leapy = 1')
-      IF (sdf(jf) % cltype(1 : 4) == 'week' .AND. sdf(jf) % ln_clim) CALL ctl_stop('fld_clopn: weekly file (' // TRIM(sdf(jf) % &
-&clrootname) // ') needs ln_clim = .FALSE.')
+      IF (sdf(jf) % cltype(1 : 4) == 'week' .AND. nn_leapy == 0) CALL ctl_stop('fld_clopn: weekly file (' // TRIM(sdf(jf) % clrootname) // ') needs nn_leapy = 1')
+      IF (sdf(jf) % cltype(1 : 4) == 'week' .AND. sdf(jf) % ln_clim) CALL ctl_stop('fld_clopn: weekly file (' // TRIM(sdf(jf) % clrootname) // ') needs ln_clim = .FALSE.')
       sdf(jf) % nreclast = - 1
     END DO
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
       IF (.NOT. PRESENT(knoprint)) THEN
-        WRITE(numout, FMT = *) TRIM(cdcaller) // ' : ' // TRIM(cdtitle)
-        WRITE(numout, FMT = *) (/('~', jf = 1, LEN_TRIM(cdcaller))/)
+        WRITE(numout, *) TRIM(cdcaller) // ' : ' // TRIM(cdtitle)
+        WRITE(numout, *) (/('~', jf = 1, LEN_TRIM(cdcaller))/)
       END IF
-      WRITE(numout, FMT = *) '   fld_fill : fill data structure with information from namelist ' // TRIM(cdnam)
-      WRITE(numout, FMT = *) '   ~~~~~~~~'
-      WRITE(numout, FMT = *) '      list of files and frequency (>0: in hours ; <0 in months)'
+      WRITE(numout, *) '   fld_fill : fill data structure with information from namelist ' // TRIM(cdnam)
+      WRITE(numout, *) '   ~~~~~~~~'
+      WRITE(numout, *) '      list of files and frequency (>0: in hours ; <0 in months)'
       DO jf = 1, SIZE(sdf)
-        WRITE(numout, FMT = *) '      root filename: ', TRIM(sdf(jf) % clrootname), '   variable name: ', TRIM(sdf(jf) % clvar)
-        WRITE(numout, FMT = *) '         frequency: ', sdf(jf) % nfreqh, '   time interp: ', sdf(jf) % ln_tint, '   climatology: &
-&', sdf(jf) % ln_clim
-        WRITE(numout, FMT = *) '         weights: ', TRIM(sdf(jf) % wgtname), '   pairing: ', TRIM(sdf(jf) % vcomp), '   data &
-&type: ', sdf(jf) % cltype, '   land/sea mask:', TRIM(sdf(jf) % lsmname)
+        WRITE(numout, *) '      root filename: ', TRIM(sdf(jf) % clrootname), '   variable name: ', TRIM(sdf(jf) % clvar)
+        WRITE(numout, *) '         frequency: ', sdf(jf) % nfreqh, '   time interp: ', sdf(jf) % ln_tint, '   climatology: ', sdf(jf) % ln_clim
+        WRITE(numout, *) '         weights: ', TRIM(sdf(jf) % wgtname), '   pairing: ', TRIM(sdf(jf) % vcomp), '   data type: ', sdf(jf) % cltype, '   land/sea mask:', TRIM(sdf(jf) % lsmname)
         CALL flush(numout)
       END DO
     END IF
@@ -1073,20 +1048,20 @@ MODULE fldread
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('wgt_print', 'r0', 0, 0)
     DO kw = 1, nxt_wgt - 1
-      WRITE(numout, FMT = *) 'weight file:  ', TRIM(ref_wgts(kw) % wgtname)
-      WRITE(numout, FMT = *) '      ddims:  ', ref_wgts(kw) % ddims(1), ref_wgts(kw) % ddims(2)
-      WRITE(numout, FMT = *) '     numwgt:  ', ref_wgts(kw) % numwgt
-      WRITE(numout, FMT = *) '     jpiwgt:  ', ref_wgts(kw) % jpiwgt
-      WRITE(numout, FMT = *) '     jpjwgt:  ', ref_wgts(kw) % jpjwgt
-      WRITE(numout, FMT = *) '    botleft:  ', ref_wgts(kw) % botleft
-      WRITE(numout, FMT = *) '   topright:  ', ref_wgts(kw) % topright
+      WRITE(numout, *) 'weight file:  ', TRIM(ref_wgts(kw) % wgtname)
+      WRITE(numout, *) '      ddims:  ', ref_wgts(kw) % ddims(1), ref_wgts(kw) % ddims(2)
+      WRITE(numout, *) '     numwgt:  ', ref_wgts(kw) % numwgt
+      WRITE(numout, *) '     jpiwgt:  ', ref_wgts(kw) % jpiwgt
+      WRITE(numout, *) '     jpjwgt:  ', ref_wgts(kw) % jpjwgt
+      WRITE(numout, *) '    botleft:  ', ref_wgts(kw) % botleft
+      WRITE(numout, *) '   topright:  ', ref_wgts(kw) % topright
       IF (ref_wgts(kw) % cyclic) THEN
-        WRITE(numout, FMT = *) '       cyclical'
-        IF (ref_wgts(kw) % overlap > 0) WRITE(numout, FMT = *) '              with overlap of ', ref_wgts(kw) % overlap
+        WRITE(numout, *) '       cyclical'
+        IF (ref_wgts(kw) % overlap > 0) WRITE(numout, *) '              with overlap of ', ref_wgts(kw) % overlap
       ELSE
-        WRITE(numout, FMT = *) '       not cyclical'
+        WRITE(numout, *) '       not cyclical'
       END IF
-      IF (ASSOCIATED(ref_wgts(kw) % data_wgt)) WRITE(numout, FMT = *) '       allocated'
+      IF (ASSOCIATED(ref_wgts(kw) % data_wgt)) WRITE(numout, *) '       allocated'
     END DO
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE wgt_print
@@ -1144,17 +1119,16 @@ MODULE fldread
       ALLOCATE(ref_wgts(nxt_wgt) % data_wgt(jpi, jpj, ref_wgts(nxt_wgt) % numwgt))
       DO jn = 1, 4
         aname = ' '
-        WRITE(aname, FMT = '(a3,i2.2)') 'src', jn
+        WRITE(aname, '(a3,i2.2)') 'src', jn
         data_tmp(:, :) = 0
         CALL iom_get(inum, jpdom_data, aname, data_tmp(:, :))
         data_src(:, :) = INT(data_tmp(:, :))
         ref_wgts(nxt_wgt) % data_jpj(:, :, jn) = 1 + (data_src(:, :) - 1) / ref_wgts(nxt_wgt) % ddims(1)
-        ref_wgts(nxt_wgt) % data_jpi(:, :, jn) = data_src(:, :) - ref_wgts(nxt_wgt) % ddims(1) * (ref_wgts(nxt_wgt) % data_jpj(:, &
-&:, jn) - 1)
+        ref_wgts(nxt_wgt) % data_jpi(:, :, jn) = data_src(:, :) - ref_wgts(nxt_wgt) % ddims(1) * (ref_wgts(nxt_wgt) % data_jpj(:, :, jn) - 1)
       END DO
       DO jn = 1, ref_wgts(nxt_wgt) % numwgt
         aname = ' '
-        WRITE(aname, FMT = '(a3,i2.2)') 'wgt', jn
+        WRITE(aname, '(a3,i2.2)') 'wgt', jn
         ref_wgts(nxt_wgt) % data_wgt(:, :, jn) = 0.0
         CALL iom_get(inum, jpdom_data, aname, ref_wgts(nxt_wgt) % data_wgt(:, :, jn))
       END DO
@@ -1315,8 +1289,7 @@ MODULE fldread
       CASE DEFAULT
         CALL iom_get(num, jpdom_unknown, clvar, ztmp_fly_dta(jpi1_lsm : jpi2_lsm, jpj1_lsm : jpj2_lsm, :), nrec, rec1_lsm, recn_lsm)
       END SELECT
-      CALL apply_seaoverland(lsmfile, ztmp_fly_dta(jpi1_lsm : jpi2_lsm, jpj1_lsm : jpj2_lsm, :), jpi1_lsm, jpi2_lsm, jpj1_lsm, &
-&jpj2_lsm, itmpi, itmpj, itmpz, rec1_lsm, recn_lsm)
+      CALL apply_seaoverland(lsmfile, ztmp_fly_dta(jpi1_lsm : jpi2_lsm, jpj1_lsm : jpj2_lsm, :), jpi1_lsm, jpi2_lsm, jpj1_lsm, jpj2_lsm, itmpi, itmpj, itmpz, rec1_lsm, recn_lsm)
       ii_lsm1 = (rec1(1) - rec1_lsm(1)) + 1
       ii_lsm2 = (ii_lsm1 + recn(1)) - 1
       ij_lsm1 = (rec1(2) - rec1_lsm(2)) + 1
@@ -1388,8 +1361,7 @@ MODULE fldread
           DO jm = 1, jpi
             ni = ref_wgts(kw) % data_jpi(jm, jn, jk)
             nj = ref_wgts(kw) % data_jpj(jm, jn, jk)
-            dta(jm, jn, :) = dta(jm, jn, :) + ref_wgts(kw) % data_wgt(jm, jn, jk + 4) * 0.5 * (ref_wgts(kw) % fly_dta(ni + 2, nj + &
-&1, :) - ref_wgts(kw) % fly_dta(ni, nj + 1, :))
+            dta(jm, jn, :) = dta(jm, jn, :) + ref_wgts(kw) % data_wgt(jm, jn, jk + 4) * 0.5 * (ref_wgts(kw) % fly_dta(ni + 2, nj + 1, :) - ref_wgts(kw) % fly_dta(ni, nj + 1, :))
           END DO
         END DO
       END DO
@@ -1398,8 +1370,7 @@ MODULE fldread
           DO jm = 1, jpi
             ni = ref_wgts(kw) % data_jpi(jm, jn, jk)
             nj = ref_wgts(kw) % data_jpj(jm, jn, jk)
-            dta(jm, jn, :) = dta(jm, jn, :) + ref_wgts(kw) % data_wgt(jm, jn, jk + 8) * 0.5 * (ref_wgts(kw) % fly_dta(ni + 1, nj + &
-&2, :) - ref_wgts(kw) % fly_dta(ni + 1, nj, :))
+            dta(jm, jn, :) = dta(jm, jn, :) + ref_wgts(kw) % data_wgt(jm, jn, jk + 8) * 0.5 * (ref_wgts(kw) % fly_dta(ni + 1, nj + 2, :) - ref_wgts(kw) % fly_dta(ni + 1, nj, :))
           END DO
         END DO
       END DO
@@ -1408,8 +1379,7 @@ MODULE fldread
           DO jm = 1, jpi
             ni = ref_wgts(kw) % data_jpi(jm, jn, jk)
             nj = ref_wgts(kw) % data_jpj(jm, jn, jk)
-            dta(jm, jn, :) = dta(jm, jn, :) + ref_wgts(kw) % data_wgt(jm, jn, jk + 12) * 0.25 * ((ref_wgts(kw) % fly_dta(ni + 2, &
-&nj + 2, :) - ref_wgts(kw) % fly_dta(ni, nj + 2, :)) - (ref_wgts(kw) % fly_dta(ni + 2, nj, :) - ref_wgts(kw) % fly_dta(ni, nj, :)))
+            dta(jm, jn, :) = dta(jm, jn, :) + ref_wgts(kw) % data_wgt(jm, jn, jk + 12) * 0.25 * ((ref_wgts(kw) % fly_dta(ni + 2, nj + 2, :) - ref_wgts(kw) % fly_dta(ni, nj + 2, :)) - (ref_wgts(kw) % fly_dta(ni + 2, nj, :) - ref_wgts(kw) % fly_dta(ni, nj, :)))
           END DO
         END DO
       END DO

@@ -85,27 +85,26 @@ MODULE sbc_oce
     ierr(:) = 0
     !$ACC END KERNELS
     ALLOCATE(utau(jpi, jpj), utau_b(jpi, jpj), taum(jpi, jpj), vtau(jpi, jpj), vtau_b(jpi, jpj), wndm(jpi, jpj), STAT = ierr(1))
-    ALLOCATE(qns_tot(jpi, jpj), qns(jpi, jpj), qns_b(jpi, jpj), qsr_tot(jpi, jpj), qsr(jpi, jpj), emp(jpi, jpj), emp_b(jpi, jpj), &
-&sfx(jpi, jpj), sfx_b(jpi, jpj), emp_tot(jpi, jpj), fmmflx(jpi, jpj), STAT = ierr(2))
-    ALLOCATE(fwfisf(jpi, jpj), rnf(jpi, jpj), sbc_tsc(jpi, jpj, jpts), qsr_hc(jpi, jpj, jpk), fwfisf_b(jpi, jpj), rnf_b(jpi, jpj), &
-&sbc_tsc_b(jpi, jpj, jpts), qsr_hc_b(jpi, jpj, jpk), fwficb(jpi, jpj), fwficb_b(jpi, jpj), STAT = ierr(3))
-    ALLOCATE(tprecip(jpi, jpj), sprecip(jpi, jpj), fr_i(jpi, jpj), atm_co2(jpi, jpj), ssu_m(jpi, jpj), sst_m(jpi, jpj), frq_m(jpi, &
-&jpj), ssv_m(jpi, jpj), sss_m(jpi, jpj), ssh_m(jpi, jpj), STAT = ierr(4))
+    ALLOCATE(qns_tot(jpi, jpj), qns(jpi, jpj), qns_b(jpi, jpj), qsr_tot(jpi, jpj), qsr(jpi, jpj), emp(jpi, jpj), emp_b(jpi, jpj), sfx(jpi, jpj), sfx_b(jpi, jpj), emp_tot(jpi, jpj), fmmflx(jpi, jpj), STAT = ierr(2))
+    ALLOCATE(fwfisf(jpi, jpj), rnf(jpi, jpj), sbc_tsc(jpi, jpj, jpts), qsr_hc(jpi, jpj, jpk), fwfisf_b(jpi, jpj), rnf_b(jpi, jpj), sbc_tsc_b(jpi, jpj, jpts), qsr_hc_b(jpi, jpj, jpk), fwficb(jpi, jpj), fwficb_b(jpi, jpj), STAT = ierr(3))
+    ALLOCATE(tprecip(jpi, jpj), sprecip(jpi, jpj), fr_i(jpi, jpj), atm_co2(jpi, jpj), ssu_m(jpi, jpj), sst_m(jpi, jpj), frq_m(jpi, jpj), ssv_m(jpi, jpj), sss_m(jpi, jpj), ssh_m(jpi, jpj), STAT = ierr(4))
     ALLOCATE(e3t_m(jpi, jpj), STAT = ierr(5))
     sbc_oce_alloc = MAXVAL(ierr)
     CALL mpp_sum('sbc_oce', sbc_oce_alloc)
     IF (sbc_oce_alloc > 0) CALL ctl_warn('sbc_oce_alloc: allocation of arrays failed')
   END FUNCTION sbc_oce_alloc
   SUBROUTINE sbc_tau2wnd
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     USE dom_oce
     USE lbclnk
     REAL(KIND = wp) :: zrhoa = 1.22
     REAL(KIND = wp) :: zcdrag = 1.5E-3
     REAL(KIND = wp) :: ztx, zty, ztau, zcoef
     INTEGER :: ji, jj
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     !$ACC KERNELS
     zcoef = 0.5 / (zrhoa * zcdrag)
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         ztx = utau(ji - 1, jj) + utau(ji, jj)
@@ -115,6 +114,8 @@ MODULE sbc_oce
       END DO
     END DO
     !$ACC END KERNELS
+    CALL profile_psy_data0 % PreStart('sbc_tau2wnd', 'r0', 0, 0)
     CALL lbc_lnk('sbc_oce', wndm(:, :), 'T', 1.)
+    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE sbc_tau2wnd
 END MODULE sbc_oce

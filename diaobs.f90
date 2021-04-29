@@ -68,8 +68,7 @@ MODULE diaobs
     INTEGER :: jvar
     INTEGER :: jfile
     INTEGER :: jnumsstbias
-    CHARACTER(LEN = 128), DIMENSION(jpmaxnfiles) :: cn_profbfiles, cn_sstfbfiles, cn_sssfbfiles, cn_slafbfiles, cn_sicfbfiles, &
-&cn_velfbfiles, cn_sstbiasfiles
+    CHARACTER(LEN = 128), DIMENSION(jpmaxnfiles) :: cn_profbfiles, cn_sstfbfiles, cn_sssfbfiles, cn_slafbfiles, cn_sicfbfiles, cn_velfbfiles, cn_sstbiasfiles
     CHARACTER(LEN = 128) :: cn_altbiasfile
     CHARACTER(LEN = 128), DIMENSION(:, :), ALLOCATABLE :: clproffiles, clsurffiles
     LOGICAL :: ln_t3d
@@ -93,12 +92,7 @@ MODULE diaobs
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zglam1, zglam2
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zgphi1, zgphi2
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zmask1, zmask2
-    NAMELIST /namobs/ ln_diaobs, ln_t3d, ln_s3d, ln_sla, ln_sst, ln_sic, ln_sss, ln_vel3d, ln_altbias, ln_sstbias, ln_nea, &
-&ln_grid_global, ln_grid_search_lookup, ln_ignmis, ln_s_at_t, ln_bound_reject, ln_sstnight, ln_sla_fp_indegs, ln_sst_fp_indegs, &
-&ln_sss_fp_indegs, ln_sic_fp_indegs, cn_profbfiles, cn_slafbfiles, cn_sstfbfiles, cn_sicfbfiles, cn_velfbfiles, cn_sssfbfiles, &
-&cn_sstbiasfiles, cn_altbiasfile, cn_gridsearchfile, rn_gridsearchres, rn_dobsini, rn_dobsend, rn_sla_avglamscl, rn_sla_avgphiscl, &
-&rn_sst_avglamscl, rn_sst_avgphiscl, rn_sss_avglamscl, rn_sss_avgphiscl, rn_sic_avglamscl, rn_sic_avgphiscl, nn_1dint, nn_2dint, &
-&nn_2dint_sla, nn_2dint_sst, nn_2dint_sss, nn_2dint_sic, nn_msshc, rn_mdtcorr, rn_mdtcutoff, nn_profdavtypes
+    NAMELIST /namobs/ ln_diaobs, ln_t3d, ln_s3d, ln_sla, ln_sst, ln_sic, ln_sss, ln_vel3d, ln_altbias, ln_sstbias, ln_nea, ln_grid_global, ln_grid_search_lookup, ln_ignmis, ln_s_at_t, ln_bound_reject, ln_sstnight, ln_sla_fp_indegs, ln_sst_fp_indegs, ln_sss_fp_indegs, ln_sic_fp_indegs, cn_profbfiles, cn_slafbfiles, cn_sstfbfiles, cn_sicfbfiles, cn_velfbfiles, cn_sssfbfiles, cn_sstbiasfiles, cn_altbiasfile, cn_gridsearchfile, rn_gridsearchres, rn_dobsini, rn_dobsend, rn_sla_avglamscl, rn_sla_avgphiscl, rn_sst_avglamscl, rn_sst_avgphiscl, rn_sss_avglamscl, rn_sss_avgphiscl, rn_sic_avglamscl, rn_sic_avgphiscl, nn_1dint, nn_2dint, nn_2dint_sla, nn_2dint_sst, nn_2dint_sss, nn_2dint_sic, nn_msshc, rn_mdtcorr, rn_mdtcutoff, nn_profdavtypes
     cn_profbfiles(:) = ''
     cn_slafbfiles(:) = ''
     cn_sstfbfiles(:) = ''
@@ -117,41 +111,40 @@ MODULE diaobs
 902 IF (ios > 0) CALL ctl_nam(ios, 'namobs in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namobs)
     IF (.NOT. ln_diaobs) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'dia_obs_init : NO Observation diagnostic used'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'dia_obs_init : NO Observation diagnostic used'
+      IF (lwp) WRITE(numout, *) '~~~~~~~~~~~~'
       RETURN
     END IF
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dia_obs_init : Observation diagnostic initialization'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namobs : set observation diagnostic parameters'
-      WRITE(numout, FMT = *) '      Logical switch for T profile observations                ln_t3d = ', ln_t3d
-      WRITE(numout, FMT = *) '      Logical switch for S profile observations                ln_s3d = ', ln_s3d
-      WRITE(numout, FMT = *) '      Logical switch for SLA observations                      ln_sla = ', ln_sla
-      WRITE(numout, FMT = *) '      Logical switch for SST observations                      ln_sst = ', ln_sst
-      WRITE(numout, FMT = *) '      Logical switch for Sea Ice observations                  ln_sic = ', ln_sic
-      WRITE(numout, FMT = *) '      Logical switch for velocity observations               ln_vel3d = ', ln_vel3d
-      WRITE(numout, FMT = *) '      Logical switch for SSS observations                      ln_sss = ', ln_sss
-      WRITE(numout, FMT = *) '      Global distribution of observations              ln_grid_global = ', ln_grid_global
-      WRITE(numout, FMT = *) '      Logical switch for obs grid search lookup ln_grid_search_lookup = ', ln_grid_search_lookup
-      IF (ln_grid_search_lookup) WRITE(numout, FMT = *) '      Grid search lookup file header                cn_gridsearchfile = &
-&', cn_gridsearchfile
-      WRITE(numout, FMT = *) '      Initial date in window YYYYMMDD.HHMMSS               rn_dobsini = ', rn_dobsini
-      WRITE(numout, FMT = *) '      Final date in window YYYYMMDD.HHMMSS                 rn_dobsend = ', rn_dobsend
-      WRITE(numout, FMT = *) '      Type of vertical interpolation method                  nn_1dint = ', nn_1dint
-      WRITE(numout, FMT = *) '      Type of horizontal interpolation method                nn_2dint = ', nn_2dint
-      WRITE(numout, FMT = *) '      Rejection of observations near land switch               ln_nea = ', ln_nea
-      WRITE(numout, FMT = *) '      Rejection of obs near open bdys                 ln_bound_reject = ', ln_bound_reject
-      WRITE(numout, FMT = *) '      MSSH correction scheme                                 nn_msshc = ', nn_msshc
-      WRITE(numout, FMT = *) '      MDT  correction                                      rn_mdtcorr = ', rn_mdtcorr
-      WRITE(numout, FMT = *) '      MDT cutoff for computed correction                 rn_mdtcutoff = ', rn_mdtcutoff
-      WRITE(numout, FMT = *) '      Logical switch for alt bias                          ln_altbias = ', ln_altbias
-      WRITE(numout, FMT = *) '      Logical switch for sst bias                          ln_sstbias = ', ln_sstbias
-      WRITE(numout, FMT = *) '      Logical switch for ignoring missing files             ln_ignmis = ', ln_ignmis
-      WRITE(numout, FMT = *) '      Daily average types                             nn_profdavtypes = ', nn_profdavtypes
-      WRITE(numout, FMT = *) '      Logical switch for night-time SST obs               ln_sstnight = ', ln_sstnight
+      WRITE(numout, *)
+      WRITE(numout, *) 'dia_obs_init : Observation diagnostic initialization'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist namobs : set observation diagnostic parameters'
+      WRITE(numout, *) '      Logical switch for T profile observations                ln_t3d = ', ln_t3d
+      WRITE(numout, *) '      Logical switch for S profile observations                ln_s3d = ', ln_s3d
+      WRITE(numout, *) '      Logical switch for SLA observations                      ln_sla = ', ln_sla
+      WRITE(numout, *) '      Logical switch for SST observations                      ln_sst = ', ln_sst
+      WRITE(numout, *) '      Logical switch for Sea Ice observations                  ln_sic = ', ln_sic
+      WRITE(numout, *) '      Logical switch for velocity observations               ln_vel3d = ', ln_vel3d
+      WRITE(numout, *) '      Logical switch for SSS observations                      ln_sss = ', ln_sss
+      WRITE(numout, *) '      Global distribution of observations              ln_grid_global = ', ln_grid_global
+      WRITE(numout, *) '      Logical switch for obs grid search lookup ln_grid_search_lookup = ', ln_grid_search_lookup
+      IF (ln_grid_search_lookup) WRITE(numout, *) '      Grid search lookup file header                cn_gridsearchfile = ', cn_gridsearchfile
+      WRITE(numout, *) '      Initial date in window YYYYMMDD.HHMMSS               rn_dobsini = ', rn_dobsini
+      WRITE(numout, *) '      Final date in window YYYYMMDD.HHMMSS                 rn_dobsend = ', rn_dobsend
+      WRITE(numout, *) '      Type of vertical interpolation method                  nn_1dint = ', nn_1dint
+      WRITE(numout, *) '      Type of horizontal interpolation method                nn_2dint = ', nn_2dint
+      WRITE(numout, *) '      Rejection of observations near land switch               ln_nea = ', ln_nea
+      WRITE(numout, *) '      Rejection of obs near open bdys                 ln_bound_reject = ', ln_bound_reject
+      WRITE(numout, *) '      MSSH correction scheme                                 nn_msshc = ', nn_msshc
+      WRITE(numout, *) '      MDT  correction                                      rn_mdtcorr = ', rn_mdtcorr
+      WRITE(numout, *) '      MDT cutoff for computed correction                 rn_mdtcutoff = ', rn_mdtcutoff
+      WRITE(numout, *) '      Logical switch for alt bias                          ln_altbias = ', ln_altbias
+      WRITE(numout, *) '      Logical switch for sst bias                          ln_sstbias = ', ln_sstbias
+      WRITE(numout, *) '      Logical switch for ignoring missing files             ln_ignmis = ', ln_ignmis
+      WRITE(numout, *) '      Daily average types                             nn_profdavtypes = ', nn_profdavtypes
+      WRITE(numout, *) '      Logical switch for night-time SST obs               ln_sstnight = ', ln_sstnight
     END IF
     nproftypes = COUNT((/ln_t3d .OR. ln_s3d, ln_vel3d/))
     nsurftypes = COUNT((/ln_sla, ln_sst, ln_sic, ln_sss/))
@@ -162,8 +155,7 @@ MODULE diaobs
       lmask(:) = .FALSE.
     END IF
     IF (nproftypes == 0 .AND. nsurftypes == 0) THEN
-      CALL ctl_warn('dia_obs_init: ln_diaobs is set to true, but all obs operator logical flags', ' (ln_t3d, ln_s3d, ln_sla, &
-&ln_sst, ln_sic, ln_vel3d)', ' are set to .FALSE. so turning off calls to dia_obs')
+      CALL ctl_warn('dia_obs_init: ln_diaobs is set to true, but all obs operator logical flags', ' (ln_t3d, ln_s3d, ln_sla, ln_sst, ln_sic, ln_vel3d)', ' are set to .FALSE. so turning off calls to dia_obs')
       ln_diaobs = .FALSE.
       RETURN
     END IF
@@ -194,20 +186,17 @@ MODULE diaobs
       IF (ln_sla) THEN
         jtype = jtype + 1
         CALL obs_settypefiles(nsurftypes, jpmaxnfiles, jtype, 'sla   ', cn_slafbfiles, ifilessurf, cobstypessurf, clsurffiles)
-        CALL obs_setinterpopts(nsurftypes, jtype, 'sla   ', nn_2dint, nn_2dint_sla, rn_sla_avglamscl, rn_sla_avgphiscl, &
-&ln_sla_fp_indegs, .FALSE., n2dintsurf, zavglamscl, zavgphiscl, lfpindegs, llnightav)
+        CALL obs_setinterpopts(nsurftypes, jtype, 'sla   ', nn_2dint, nn_2dint_sla, rn_sla_avglamscl, rn_sla_avgphiscl, ln_sla_fp_indegs, .FALSE., n2dintsurf, zavglamscl, zavgphiscl, lfpindegs, llnightav)
       END IF
       IF (ln_sst) THEN
         jtype = jtype + 1
         CALL obs_settypefiles(nsurftypes, jpmaxnfiles, jtype, 'sst   ', cn_sstfbfiles, ifilessurf, cobstypessurf, clsurffiles)
-        CALL obs_setinterpopts(nsurftypes, jtype, 'sst   ', nn_2dint, nn_2dint_sst, rn_sst_avglamscl, rn_sst_avgphiscl, &
-&ln_sst_fp_indegs, ln_sstnight, n2dintsurf, zavglamscl, zavgphiscl, lfpindegs, llnightav)
+        CALL obs_setinterpopts(nsurftypes, jtype, 'sst   ', nn_2dint, nn_2dint_sst, rn_sst_avglamscl, rn_sst_avgphiscl, ln_sst_fp_indegs, ln_sstnight, n2dintsurf, zavglamscl, zavgphiscl, lfpindegs, llnightav)
       END IF
       IF (ln_sss) THEN
         jtype = jtype + 1
         CALL obs_settypefiles(nsurftypes, jpmaxnfiles, jtype, 'sss   ', cn_sssfbfiles, ifilessurf, cobstypessurf, clsurffiles)
-        CALL obs_setinterpopts(nsurftypes, jtype, 'sss   ', nn_2dint, nn_2dint_sss, rn_sss_avglamscl, rn_sss_avgphiscl, &
-&ln_sss_fp_indegs, .FALSE., n2dintsurf, zavglamscl, zavgphiscl, lfpindegs, llnightav)
+        CALL obs_setinterpopts(nsurftypes, jtype, 'sss   ', nn_2dint, nn_2dint_sss, rn_sss_avglamscl, rn_sss_avgphiscl, ln_sss_fp_indegs, .FALSE., n2dintsurf, zavglamscl, zavgphiscl, lfpindegs, llnightav)
       END IF
     END IF
     IF (ln_vel3d .AND. .NOT. ln_grid_global) THEN
@@ -253,14 +242,11 @@ MODULE diaobs
           zgphi2 = gphiv
           zmask2 = vmask
         END IF
-        CALL obs_rea_prof(profdata(jtype), ifilesprof(jtype), clproffiles(jtype, 1 : ifilesprof(jtype)), nvarsprof(jtype), &
-&nextrprof(jtype), nitend - nit000 + 2, rn_dobsini, rn_dobsend, llvar1, llvar2, ln_ignmis, ln_s_at_t, .FALSE., &
-&kdailyavtypes = nn_profdavtypes)
+        CALL obs_rea_prof(profdata(jtype), ifilesprof(jtype), clproffiles(jtype, 1 : ifilesprof(jtype)), nvarsprof(jtype), nextrprof(jtype), nitend - nit000 + 2, rn_dobsini, rn_dobsend, llvar1, llvar2, ln_ignmis, ln_s_at_t, .FALSE., kdailyavtypes = nn_profdavtypes)
         DO jvar = 1, nvarsprof(jtype)
           CALL obs_prof_staend(profdata(jtype), jvar)
         END DO
-        CALL obs_pre_prof(profdata(jtype), profdataqc(jtype), llvar1, llvar2, jpi, jpj, jpk, zmask1, zglam1, zgphi1, zmask2, &
-&zglam2, zgphi2, ln_nea, ln_bound_reject, kdailyavtypes = nn_profdavtypes)
+        CALL obs_pre_prof(profdata(jtype), profdataqc(jtype), llvar1, llvar2, jpi, jpj, jpk, zmask1, zglam1, zgphi1, zmask2, zglam2, zgphi2, ln_nea, ln_bound_reject, kdailyavtypes = nn_profdavtypes)
       END DO
       DEALLOCATE(ifilesprof, clproffiles)
     END IF
@@ -273,8 +259,7 @@ MODULE diaobs
         llnightav(jtype) = .FALSE.
         IF (TRIM(cobstypessurf(jtype)) == 'sla') nextrsurf(jtype) = 2
         IF (TRIM(cobstypessurf(jtype)) == 'sst') llnightav(jtype) = ln_sstnight
-        CALL obs_rea_surf(surfdata(jtype), ifilessurf(jtype), clsurffiles(jtype, 1 : ifilessurf(jtype)), nvarssurf(jtype), &
-&nextrsurf(jtype), nitend - nit000 + 2, rn_dobsini, rn_dobsend, ln_ignmis, .FALSE., llnightav(jtype))
+        CALL obs_rea_surf(surfdata(jtype), ifilessurf(jtype), clsurffiles(jtype, 1 : ifilessurf(jtype)), nvarssurf(jtype), nextrsurf(jtype), nitend - nit000 + 2, rn_dobsini, rn_dobsend, ln_ignmis, .FALSE., llnightav(jtype))
         CALL obs_pre_surf(surfdata(jtype), surfdataqc(jtype), ln_nea, ln_bound_reject)
         IF (TRIM(cobstypessurf(jtype)) == 'sla') THEN
           CALL obs_rea_mdt(surfdataqc(jtype), n2dintsurf(jtype))
@@ -311,9 +296,9 @@ MODULE diaobs
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('dia_obs', 'r0', 0, 0)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dia_obs : Call the observation operators', kstp
-      WRITE(numout, FMT = *) '~~~~~~~'
+      WRITE(numout, *)
+      WRITE(numout, *) 'dia_obs : Call the observation operators', kstp
+      WRITE(numout, *) '~~~~~~~'
     END IF
     idaystp = NINT(rday / rdt)
     IF (nproftypes > 0) THEN
@@ -340,8 +325,7 @@ MODULE diaobs
         CASE DEFAULT
           CALL ctl_stop('Unknown profile observation type ' // TRIM(cobstypesprof(jtype)) // ' in dia_obs')
         END SELECT
-        CALL obs_prof_opt(profdataqc(jtype), kstp, jpi, jpj, jpk, nit000, idaystp, zprofvar1, zprofvar2, gdept_n(:, :, :), &
-&gdepw_n(:, :, :), zprofmask1, zprofmask2, zglam1, zglam2, zgphi1, zgphi2, nn_1dint, nn_2dint, kdailyavtypes = nn_profdavtypes)
+        CALL obs_prof_opt(profdataqc(jtype), kstp, jpi, jpj, jpk, nit000, idaystp, zprofvar1, zprofvar2, gdept_n(:, :, :), gdepw_n(:, :, :), zprofmask1, zprofmask2, zglam1, zglam2, zgphi1, zgphi2, nn_1dint, nn_2dint, kdailyavtypes = nn_profdavtypes)
       END DO
     END IF
     IF (nsurftypes > 0) THEN
@@ -358,7 +342,7 @@ MODULE diaobs
           IF (kstp == 0) THEN
             IF (lwp .AND. surfdataqc(jtype) % nsstpmpp(1) > 0) THEN
               CALL ctl_warn('Sea-ice not initialised on zeroth ' // 'time-step but some obs are valid then.')
-              WRITE(numout, FMT = *) surfdataqc(jtype) % nsstpmpp(1), ' sea-ice obs will be missed'
+              WRITE(numout, *) surfdataqc(jtype) % nsstpmpp(1), ' sea-ice obs will be missed'
             END IF
             surfdataqc(jtype) % nsurfup = surfdataqc(jtype) % nsurfup + surfdataqc(jtype) % nsstp(1)
             CYCLE
@@ -366,8 +350,7 @@ MODULE diaobs
             CALL ctl_stop(' Trying to run sea-ice observation operator', ' but no sea-ice model appears to have been defined')
           END IF
         END SELECT
-        CALL obs_surf_opt(surfdataqc(jtype), kstp, jpi, jpj, nit000, idaystp, zsurfvar, zsurfmask, n2dintsurf(jtype), &
-&llnightav(jtype), zavglamscl(jtype), zavgphiscl(jtype), lfpindegs(jtype))
+        CALL obs_surf_opt(surfdataqc(jtype), kstp, jpi, jpj, nit000, idaystp, zsurfvar, zsurfmask, n2dintsurf(jtype), llnightav(jtype), zavglamscl(jtype), zavgphiscl(jtype), lfpindegs(jtype))
       END DO
     END IF
     CALL profile_psy_data0 % PostEnd
@@ -416,8 +399,7 @@ MODULE diaobs
     IMPLICIT NONE
     CALL obs_grid_deallocate
     IF (nproftypes > 0) DEALLOCATE(cobstypesprof, profdata, profdataqc, nvarsprof, nextrprof)
-    IF (nsurftypes > 0) DEALLOCATE(cobstypessurf, surfdata, surfdataqc, nvarssurf, nextrsurf, n2dintsurf, zavglamscl, zavgphiscl, &
-&lfpindegs, llnightav)
+    IF (nsurftypes > 0) DEALLOCATE(cobstypessurf, surfdata, surfdataqc, nvarssurf, nextrsurf, n2dintsurf, zavglamscl, zavgphiscl, lfpindegs, llnightav)
   END SUBROUTINE dia_obs_dealloc
   SUBROUTINE calc_date(kstp, ddobs)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -467,14 +449,22 @@ MODULE diaobs
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE calc_date
   SUBROUTINE ini_date(ddobsini)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     IMPLICIT NONE
     REAL(KIND = dp), INTENT(OUT) :: ddobsini
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    CALL profile_psy_data0 % PreStart('ini_date', 'r0', 0, 0)
     CALL calc_date(nit000 - 1, ddobsini)
+    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE ini_date
   SUBROUTINE fin_date(ddobsfin)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     IMPLICIT NONE
     REAL(KIND = dp), INTENT(OUT) :: ddobsfin
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    CALL profile_psy_data0 % PreStart('fin_date', 'r0', 0, 0)
     CALL calc_date(nitend, ddobsfin)
+    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE fin_date
   SUBROUTINE obs_settypefiles(ntypes, jpmaxnfiles, jtype, ctypein, cfilestype, ifiles, cobstypes, cfiles)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -499,15 +489,14 @@ MODULE diaobs
       CALL ctl_stop('Logical for observation type ' // TRIM(ctypein) // ' set to true but no files available to read')
     END IF
     IF (lwp) THEN
-      WRITE(numout, FMT = *) '             ' // cobstypes(jtype) // ' input observation file names:'
+      WRITE(numout, *) '             ' // cobstypes(jtype) // ' input observation file names:'
       DO jfile = 1, ifiles(jtype)
-        WRITE(numout, FMT = *) '                ' // TRIM(cfiles(jtype, jfile))
+        WRITE(numout, *) '                ' // TRIM(cfiles(jtype, jfile))
       END DO
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE obs_settypefiles
-  SUBROUTINE obs_setinterpopts(ntypes, jtype, ctypein, n2dint_default, n2dint_type, zavglamscl_type, zavgphiscl_type, &
-&lfp_indegs_type, lavnight_type, n2dint, zavglamscl, zavgphiscl, lfpindegs, lavnight)
+  SUBROUTINE obs_setinterpopts(ntypes, jtype, ctypein, n2dint_default, n2dint_type, zavglamscl_type, zavgphiscl_type, lfp_indegs_type, lavnight_type, n2dint, zavglamscl, zavgphiscl, lfpindegs, lavnight)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     INTEGER, INTENT(IN) :: ntypes
     INTEGER, INTENT(IN) :: jtype
@@ -543,15 +532,15 @@ MODULE diaobs
     END IF
     IF (lwp) THEN
       IF (n2dint(jtype) <= 4) THEN
-        WRITE(numout, FMT = *) '             ' // TRIM(ctypein) // ' model counterparts will be interpolated horizontally'
+        WRITE(numout, *) '             ' // TRIM(ctypein) // ' model counterparts will be interpolated horizontally'
       ELSE IF (n2dint(jtype) <= 6) THEN
-        WRITE(numout, FMT = *) '             ' // TRIM(ctypein) // ' model counterparts will be averaged horizontally'
-        WRITE(numout, FMT = *) '             ' // '    with E/W scale: ', zavglamscl(jtype)
-        WRITE(numout, FMT = *) '             ' // '    with N/S scale: ', zavgphiscl(jtype)
+        WRITE(numout, *) '             ' // TRIM(ctypein) // ' model counterparts will be averaged horizontally'
+        WRITE(numout, *) '             ' // '    with E/W scale: ', zavglamscl(jtype)
+        WRITE(numout, *) '             ' // '    with N/S scale: ', zavgphiscl(jtype)
         IF (lfpindegs(jtype)) THEN
-          WRITE(numout, FMT = *) '             ' // '    (in degrees)'
+          WRITE(numout, *) '             ' // '    (in degrees)'
         ELSE
-          WRITE(numout, FMT = *) '             ' // '    (in metres)'
+          WRITE(numout, *) '             ' // '    (in metres)'
         END IF
       END IF
     END IF

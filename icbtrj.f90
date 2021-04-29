@@ -34,19 +34,17 @@ MODULE icbtrj
     TYPE(iceberg), POINTER :: this
     TYPE(point), POINTER :: pt
     CALL ju2ymds(fjulday, iyear, imonth, iday, zsec)
-    WRITE(cldate_ini, FMT = '(i4.4,2i2.2)') iyear, imonth, iday
+    WRITE(cldate_ini, '(i4.4,2i2.2)') iyear, imonth, iday
     zfjulday = fjulday + rdt / rday * REAL(nitend - nit000 + 1, wp)
     IF (ABS(zfjulday - REAL(NINT(zfjulday), wp)) < 0.1 / rday) zfjulday = REAL(NINT(zfjulday), wp)
     CALL ju2ymds(zfjulday, iyear, imonth, iday, zsec)
-    WRITE(cldate_end, FMT = '(i4.4,2i2.2)') iyear, imonth, iday
+    WRITE(cldate_end, '(i4.4,2i2.2)') iyear, imonth, iday
     IF (lk_mpp) THEN
-      WRITE(cl_filename, FMT = '("trajectory_icebergs_",A,"-",A,"_",I6.6,".nc")') TRIM(ADJUSTL(cldate_ini)), &
-&TRIM(ADJUSTL(cldate_end)), narea - 1
+      WRITE(cl_filename, '("trajectory_icebergs_",A,"-",A,"_",I6.6,".nc")') TRIM(ADJUSTL(cldate_ini)), TRIM(ADJUSTL(cldate_end)), narea - 1
     ELSE
-      WRITE(cl_filename, FMT = '("trajectory_icebergs_",A,"-",A         ,".nc")') TRIM(ADJUSTL(cldate_ini)), &
-&TRIM(ADJUSTL(cldate_end))
+      WRITE(cl_filename, '("trajectory_icebergs_",A,"-",A         ,".nc")') TRIM(ADJUSTL(cldate_ini)), TRIM(ADJUSTL(cldate_end))
     END IF
-    IF (lwp .AND. nn_verbose_level >= 0) WRITE(numout, FMT = '(2a)') 'icebergs, icb_trj_init: creating ', TRIM(cl_filename)
+    IF (lwp .AND. nn_verbose_level >= 0) WRITE(numout, '(2a)') 'icebergs, icb_trj_init: creating ', TRIM(cl_filename)
     iret = NF90_CREATE(TRIM(cl_filename), NF90_CLOBBER, ntrajid)
     IF (iret .NE. NF90_NOERR) CALL ctl_stop('icebergs, icb_trj_init: nf_create failed')
     iret = NF90_DEF_DIM(ntrajid, 'n', NF90_UNLIMITED, n_dim)
@@ -183,7 +181,7 @@ MODULE icbtrj
       iret = NF90_PUT_VAR(ntrajid, nheat_density_id, pt % heat_density, (/jn/))
       this => this % next
     END DO
-    IF (lwp .AND. nn_verbose_level > 0) WRITE(numout, FMT = *) 'trajectory write to frame ', jn
+    IF (lwp .AND. nn_verbose_level > 0) WRITE(numout, *) 'trajectory write to frame ', jn
     num_traj = jn
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_trj_write

@@ -21,11 +21,11 @@ MODULE diatmb
 902 IF (ios > 0) CALL ctl_nam(ios, 'nam_diatmb in configuration namelist', lwp)
     IF (lwm) WRITE(numond, nam_diatmb)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dia_tmb_init : Output Top, Middle, Bottom Diagnostics'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist nam_diatmb : set tmb outputs '
-      WRITE(numout, FMT = *) '      Switch for TMB diagnostics (T) or not (F)  ln_diatmb  = ', ln_diatmb
+      WRITE(numout, *)
+      WRITE(numout, *) 'dia_tmb_init : Output Top, Middle, Bottom Diagnostics'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist nam_diatmb : set tmb outputs '
+      WRITE(numout, *) '      Switch for TMB diagnostics (T) or not (F)  ln_diatmb  = ', ln_diatmb
     END IF
   END SUBROUTINE dia_tmb_init
   SUBROUTINE dia_calctmb(pfield, ptmb)
@@ -35,7 +35,7 @@ MODULE diatmb
     INTEGER :: itop, imid, ibot
     REAL(KIND = wp) :: zmdi = 1.E+20_wp
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         itop = mikt(ji, jj)

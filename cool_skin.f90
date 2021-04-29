@@ -25,6 +25,7 @@ MODULE cool_skin
     x_csthick = 0.
   END SUBROUTINE diurnal_sst_coolskin_init
   SUBROUTINE diurnal_sst_coolskin_step(psqflux, pstauflux, psrho, rdt)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), INTENT(IN), DIMENSION(jpi, jpj) :: psqflux
     REAL(KIND = wp), INTENT(IN), DIMENSION(jpi, jpj) :: pstauflux
     REAL(KIND = wp), INTENT(IN), DIMENSION(jpi, jpj) :: psrho
@@ -37,9 +38,12 @@ MODULE cool_skin
     REAL(KIND = wp) :: z_zty
     REAL(KIND = wp) :: z_zmod
     INTEGER :: ji, jj
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    CALL profile_psy_data0 % PreStart('diurnal_sst_coolskin_step', 'r0', 0, 0)
     IF (.NOT. ln_blk) CALL ctl_stop("cool_skin.f90: diurnal flux processing only implemented for bulk forcing")
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         IF (tmask(ji, jj, 1) == 1. .AND. pstauflux(ji, jj) /= 0 .AND. psrho(ji, jj) /= 0) THEN

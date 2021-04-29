@@ -36,15 +36,14 @@ MODULE iscplini
     nstp_iscpl = MIN(nn_fiscpl, nitend - nit000 + 1)
     rdt_iscpl = nstp_iscpl * rn_rdt
     IF (lwp) THEN
-      WRITE(numout, FMT = *) 'iscpl_rst:'
-      WRITE(numout, FMT = *) '~~~~~~~~~'
-      WRITE(numout, FMT = *) ' coupling     flag (ln_iscpl )            = ', ln_iscpl
-      WRITE(numout, FMT = *) ' conservation flag (ln_hsb   )            = ', ln_hsb
-      WRITE(numout, FMT = *) ' nb of stp for cons (rn_fiscpl)           = ', nstp_iscpl
-      IF (nstp_iscpl .NE. nn_fiscpl) WRITE(numout, FMT = *) 'W A R N I N G: nb of stp for cons has been modified                   &
-&                         (larger than run length)'
-      WRITE(numout, FMT = *) ' coupling time step                       = ', rdt_iscpl
-      WRITE(numout, FMT = *) ' number of call of the extrapolation loop = ', nn_drown
+      WRITE(numout, *) 'iscpl_rst:'
+      WRITE(numout, *) '~~~~~~~~~'
+      WRITE(numout, *) ' coupling     flag (ln_iscpl )            = ', ln_iscpl
+      WRITE(numout, *) ' conservation flag (ln_hsb   )            = ', ln_hsb
+      WRITE(numout, *) ' nb of stp for cons (rn_fiscpl)           = ', nstp_iscpl
+      IF (nstp_iscpl .NE. nn_fiscpl) WRITE(numout, *) 'W A R N I N G: nb of stp for cons has been modified                                            (larger than run length)'
+      WRITE(numout, *) ' coupling time step                       = ', rdt_iscpl
+      WRITE(numout, *) ' number of call of the extrapolation loop = ', nn_drown
     END IF
   END SUBROUTINE iscpl_init
 END MODULE iscplini

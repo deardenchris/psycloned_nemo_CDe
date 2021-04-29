@@ -37,8 +37,7 @@ MODULE diurnal_bulk
       END IF
     END IF
   END SUBROUTINE diurnal_sst_bulk_init
-  SUBROUTINE diurnal_sst_takaya_step(kt, psolflux, pqflux, ptauflux, prho, p_rdt, pla, pthick, pcoolthick, pmu, p_fvel_bkginc, &
-&p_hflux_bkginc)
+  SUBROUTINE diurnal_sst_takaya_step(kt, psolflux, pqflux, ptauflux, prho, p_rdt, pla, pthick, pcoolthick, pmu, p_fvel_bkginc, p_hflux_bkginc)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     INTEGER, INTENT(IN) :: kt
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: psolflux
@@ -61,7 +60,6 @@ MODULE diurnal_bulk
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     IF (.NOT. PRESENT(pthick)) THEN
       !$ACC KERNELS
       zthick(:, :) = 3._wp
@@ -102,8 +100,7 @@ MODULE diurnal_bulk
     IF (kt == nit000) THEN
       DO jj = 1, jpj
         DO ji = 1, jpi
-          IF ((x_solfrac(ji, jj) == 0._wp) .AND. (tmask(ji, jj, 1) == 1._wp)) x_solfrac(ji, jj) = solfrac(zcoolthick(ji, jj), &
-&zthick(ji, jj))
+          IF ((x_solfrac(ji, jj) == 0._wp) .AND. (tmask(ji, jj, 1) == 1._wp)) x_solfrac(ji, jj) = solfrac(zcoolthick(ji, jj), zthick(ji, jj))
         END DO
       END DO
     END IF
@@ -137,10 +134,8 @@ MODULE diurnal_bulk
     ELSEWHERE
       z_fla(:, :) = 0._wp
     END WHERE
-    !$ACC END KERNELS
-    CALL profile_psy_data3 % PreStart('diurnal_sst_takaya_step', 'r3', 0, 0)
     x_dsst(:, :) = t_imp(x_dsst(:, :), p_rdt, z_abflux(:, :), z_fvel(:, :), z_fla(:, :), zmu(:, :), zthick(:, :), prho(:, :))
-    CALL profile_psy_data3 % PostEnd
+    !$ACC END KERNELS
   END SUBROUTINE diurnal_sst_takaya_step
   FUNCTION t_imp(p_dsst, p_rdt, p_abflux, p_fvel, p_fla, pmu, pthick, prho)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -195,8 +190,7 @@ MODULE diurnal_bulk
       END DO
     END DO
     IF (lwarn) THEN
-      WRITE(warn_string, FMT = *) "diurnal_sst_takaya step: " // "friction velocity < minimum\n" // "Setting friction velocity =", &
-&pp_min_fvel
+      WRITE(warn_string, *) "diurnal_sst_takaya step: " // "friction velocity < minimum\n" // "Setting friction velocity =", pp_min_fvel
       CALL ctl_warn(warn_string)
     END IF
     CALL profile_psy_data0 % PostEnd

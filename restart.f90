@@ -49,26 +49,26 @@ MODULE restart
           zfjulday = fjulday + rdt / rday
           IF (ABS(zfjulday - REAL(NINT(zfjulday), wp)) < 0.1 / rday) zfjulday = REAL(NINT(zfjulday), wp)
           CALL ju2ymds(zfjulday, iyear, imonth, iday, zsec)
-          WRITE(clkt, FMT = '(i4.4,2i2.2)') iyear, imonth, iday
+          WRITE(clkt, '(i4.4,2i2.2)') iyear, imonth, iday
         ELSE
           IF (nitrst > 999999999) THEN
-            WRITE(clkt, FMT = *) nitrst
+            WRITE(clkt, *) nitrst
           ELSE
-            WRITE(clkt, FMT = '(i8.8)') nitrst
+            WRITE(clkt, '(i8.8)') nitrst
           END IF
         END IF
         clname = TRIM(cexper) // "_" // TRIM(ADJUSTL(clkt)) // "_" // TRIM(cn_ocerst_out)
         clpath = TRIM(cn_ocerst_outdir)
         IF (clpath(LEN_TRIM(clpath) :) /= '/') clpath = TRIM(clpath) // '/'
         IF (lwp) THEN
-          WRITE(numout, FMT = *)
+          WRITE(numout, *)
           IF (.NOT. lwxios) THEN
-            WRITE(numout, FMT = *) '             open ocean restart NetCDF file: ', TRIM(clpath) // TRIM(clname)
-            IF (snc4set % luse) WRITE(numout, FMT = *) '             opened for NetCDF4 chunking and compression'
+            WRITE(numout, *) '             open ocean restart NetCDF file: ', TRIM(clpath) // TRIM(clname)
+            IF (snc4set % luse) WRITE(numout, *) '             opened for NetCDF4 chunking and compression'
             IF (kt == nitrst - 1) THEN
-              WRITE(numout, FMT = *) '             kt = nitrst - 1 = ', kt
+              WRITE(numout, *) '             kt = nitrst - 1 = ', kt
             ELSE
-              WRITE(numout, FMT = *) '             kt = ', kt
+              WRITE(numout, *) '             kt = ', kt
             END IF
           END IF
         END IF
@@ -138,10 +138,10 @@ MODULE restart
     CALL profile_psy_data0 % PreStart('rst_read_open', 'r0', 0, 0)
     IF (numror <= 0) THEN
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) 'rst_read : read oce NetCDF restart file'
-        IF (snc4set % luse) WRITE(numout, FMT = *) 'rst_read : configured with NetCDF4 support'
-        WRITE(numout, FMT = *) '~~~~~~~~'
+        WRITE(numout, *)
+        WRITE(numout, *) 'rst_read : read oce NetCDF restart file'
+        IF (snc4set % luse) WRITE(numout, *) 'rst_read : configured with NetCDF4 support'
+        WRITE(numout, *) '~~~~~~~~'
       END IF
       lxios_sini = .FALSE.
       clpath = TRIM(cn_ocerst_indir)
@@ -151,14 +151,14 @@ MODULE restart
       IF (lrxios) THEN
         crxios_context = 'nemo_rst'
         IF (.NOT. lxios_set) THEN
-          IF (lwp) WRITE(numout, FMT = *) 'Enable restart reading by XIOS'
+          IF (lwp) WRITE(numout, *) 'Enable restart reading by XIOS'
           CALL iom_init(crxios_context, ld_tmppatch = .FALSE.)
           lxios_set = .TRUE.
         END IF
       END IF
       IF (TRIM(Agrif_CFixed()) /= '0' .AND. lrxios) THEN
         CALL iom_init(crxios_context, ld_tmppatch = .FALSE.)
-        IF (lwp) WRITE(numout, FMT = *) 'Enable restart reading by XIOS for AGRIF'
+        IF (lwp) WRITE(numout, *) 'Enable restart reading by XIOS for AGRIF'
         lxios_set = .TRUE.
       END IF
     END IF
@@ -183,7 +183,7 @@ MODULE restart
     CALL profile_psy_data0 % PostEnd
     IF (ln_diurnal_only) THEN
       CALL profile_psy_data1 % PreStart('rst_read', 'r1', 0, 0)
-      IF (lwp) WRITE(numout, FMT = *) "rst_read:- ln_diurnal_only set, setting rhop=rau0"
+      IF (lwp) WRITE(numout, *) "rst_read:- ln_diurnal_only set, setting rhop=rau0"
       rhop = rau0
       CALL iom_get(numror, jpdom_autoglo, 'tn', w3d, ldxios = lrxios)
       CALL profile_psy_data1 % PostEnd

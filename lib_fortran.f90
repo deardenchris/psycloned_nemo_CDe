@@ -12,6 +12,7 @@ MODULE lib_fortran
   PUBLIC :: sum3x3
   PUBLIC :: DDPDD
   PUBLIC :: glob_min, glob_max
+  PUBLIC :: SIGN
   INTERFACE glob_sum
     MODULE PROCEDURE glob_sum_1d, glob_sum_2d, glob_sum_3d
   END INTERFACE
@@ -29,6 +30,9 @@ MODULE lib_fortran
   END INTERFACE
   INTERFACE glob_max
     MODULE PROCEDURE glob_max_2d, glob_max_3d
+  END INTERFACE
+  INTERFACE SIGN
+    MODULE PROCEDURE SIGN_SCALAR, SIGN_ARRAY_1D, SIGN_ARRAY_2D, SIGN_ARRAY_3D, SIGN_ARRAY_1D_A, SIGN_ARRAY_2D_A, SIGN_ARRAY_3D_A, SIGN_ARRAY_1D_B, SIGN_ARRAY_2D_B, SIGN_ARRAY_3D_B
   END INTERFACE
   CONTAINS
   FUNCTION glob_sum_c1d(ptab, kdim, ldcom, cdname)
@@ -327,7 +331,6 @@ MODULE lib_fortran
       END DO
     END DO
     CALL lbc_lnk('lib_fortran', p2d, 'T', 1.)
-    !$ACC KERNELS
     IF (nbondi /= - 1) THEN
       IF (MOD(mig(1), 3) == 1) p2d(1, :) = p2d(2, :)
       IF (MOD(mig(1), 3) == 2) p2d(2, :) = p2d(1, :)
@@ -344,7 +347,6 @@ MODULE lib_fortran
       IF (MOD(mjg(jpj - 2), 3) == 1) p2d(:, jpj) = p2d(:, jpj - 1)
       IF (MOD(mjg(jpj - 2), 3) == 0) p2d(:, jpj - 1) = p2d(:, jpj)
     END IF
-    !$ACC END KERNELS
     CALL lbc_lnk('lib_fortran', p2d, 'T', 1.)
   END SUBROUTINE sum3x3_2d
   SUBROUTINE sum3x3_3d(p3d)
@@ -370,7 +372,6 @@ MODULE lib_fortran
       END DO
     END DO
     CALL lbc_lnk('lib_fortran', p3d, 'T', 1.)
-    !$ACC KERNELS
     IF (nbondi /= - 1) THEN
       IF (MOD(mig(1), 3) == 1) p3d(1, :, :) = p3d(2, :, :)
       IF (MOD(mig(1), 3) == 2) p3d(2, :, :) = p3d(1, :, :)
@@ -387,7 +388,6 @@ MODULE lib_fortran
       IF (MOD(mjg(jpj - 2), 3) == 1) p3d(:, jpj, :) = p3d(:, jpj - 1, :)
       IF (MOD(mjg(jpj - 2), 3) == 0) p3d(:, jpj - 1, :) = p3d(:, jpj, :)
     END IF
-    !$ACC END KERNELS
     CALL lbc_lnk('lib_fortran', p3d, 'T', 1.)
   END SUBROUTINE sum3x3_3d
   SUBROUTINE DDPDD(ydda, yddb)
@@ -403,4 +403,94 @@ MODULE lib_fortran
     yddb = CMPLX(zt1 + zt2, zt2 - ((zt1 + zt2) - zt1), wp)
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE DDPDD
+  FUNCTION SIGN_SCALAR(pa, pb)
+    REAL(KIND = wp) :: pa, pb
+    REAL(KIND = wp) :: SIGN_SCALAR
+    IF (pb >= 0.E0) THEN
+      sign_scalar = ABS(pa)
+    ELSE
+      sign_scalar = - ABS(pa)
+    END IF
+  END FUNCTION SIGN_SCALAR
+  FUNCTION SIGN_ARRAY_1D(pa, pb)
+    REAL(KIND = wp) :: pa, pb(:)
+    REAL(KIND = wp) :: SIGN_ARRAY_1D(SIZE(pb, 1))
+    WHERE (pb >= 0.E0)
+      sign_array_1d = ABS(pa)
+    ELSEWHERE
+      sign_array_1d = - ABS(pa)
+    END WHERE
+  END FUNCTION SIGN_ARRAY_1D
+  FUNCTION SIGN_ARRAY_2D(pa, pb)
+    REAL(KIND = wp) :: pa, pb(:, :)
+    REAL(KIND = wp) :: SIGN_ARRAY_2D(SIZE(pb, 1), SIZE(pb, 2))
+    WHERE (pb >= 0.E0)
+      sign_array_2d = ABS(pa)
+    ELSEWHERE
+      sign_array_2d = - ABS(pa)
+    END WHERE
+  END FUNCTION SIGN_ARRAY_2D
+  FUNCTION SIGN_ARRAY_3D(pa, pb)
+    REAL(KIND = wp) :: pa, pb(:, :, :)
+    REAL(KIND = wp) :: SIGN_ARRAY_3D(SIZE(pb, 1), SIZE(pb, 2), SIZE(pb, 3))
+    WHERE (pb >= 0.E0)
+      sign_array_3d = ABS(pa)
+    ELSEWHERE
+      sign_array_3d = - ABS(pa)
+    END WHERE
+  END FUNCTION SIGN_ARRAY_3D
+  FUNCTION SIGN_ARRAY_1D_A(pa, pb)
+    REAL(KIND = wp) :: pa(:), pb(:)
+    REAL(KIND = wp) :: SIGN_ARRAY_1D_A(SIZE(pb, 1))
+    WHERE (pb >= 0.E0)
+      sign_array_1d_a = ABS(pa)
+    ELSEWHERE
+      sign_array_1d_a = - ABS(pa)
+    END WHERE
+  END FUNCTION SIGN_ARRAY_1D_A
+  FUNCTION SIGN_ARRAY_2D_A(pa, pb)
+    REAL(KIND = wp) :: pa(:, :), pb(:, :)
+    REAL(KIND = wp) :: SIGN_ARRAY_2D_A(SIZE(pb, 1), SIZE(pb, 2))
+    WHERE (pb >= 0.E0)
+      sign_array_2d_a = ABS(pa)
+    ELSEWHERE
+      sign_array_2d_a = - ABS(pa)
+    END WHERE
+  END FUNCTION SIGN_ARRAY_2D_A
+  FUNCTION SIGN_ARRAY_3D_A(pa, pb)
+    REAL(KIND = wp) :: pa(:, :, :), pb(:, :, :)
+    REAL(KIND = wp) :: SIGN_ARRAY_3D_A(SIZE(pb, 1), SIZE(pb, 2), SIZE(pb, 3))
+    WHERE (pb >= 0.E0)
+      sign_array_3d_a = ABS(pa)
+    ELSEWHERE
+      sign_array_3d_a = - ABS(pa)
+    END WHERE
+  END FUNCTION SIGN_ARRAY_3D_A
+  FUNCTION SIGN_ARRAY_1D_B(pa, pb)
+    REAL(KIND = wp) :: pa(:), pb
+    REAL(KIND = wp) :: SIGN_ARRAY_1D_B(SIZE(pa, 1))
+    IF (pb >= 0.E0) THEN
+      sign_array_1d_b = ABS(pa)
+    ELSE
+      sign_array_1d_b = - ABS(pa)
+    END IF
+  END FUNCTION SIGN_ARRAY_1D_B
+  FUNCTION SIGN_ARRAY_2D_B(pa, pb)
+    REAL(KIND = wp) :: pa(:, :), pb
+    REAL(KIND = wp) :: SIGN_ARRAY_2D_B(SIZE(pa, 1), SIZE(pa, 2))
+    IF (pb >= 0.E0) THEN
+      sign_array_2d_b = ABS(pa)
+    ELSE
+      sign_array_2d_b = - ABS(pa)
+    END IF
+  END FUNCTION SIGN_ARRAY_2D_B
+  FUNCTION SIGN_ARRAY_3D_B(pa, pb)
+    REAL(KIND = wp) :: pa(:, :, :), pb
+    REAL(KIND = wp) :: SIGN_ARRAY_3D_B(SIZE(pa, 1), SIZE(pa, 2), SIZE(pa, 3))
+    IF (pb >= 0.E0) THEN
+      sign_array_3d_b = ABS(pa)
+    ELSE
+      sign_array_3d_b = - ABS(pa)
+    END IF
+  END FUNCTION SIGN_ARRAY_3D_B
 END MODULE lib_fortran

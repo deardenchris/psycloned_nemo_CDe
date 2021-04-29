@@ -34,19 +34,19 @@ MODULE zdfric
 902 IF (ios > 0) CALL ctl_nam(ios, 'namzdf_ric in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namzdf_ric)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'zdf_ric_init : Ri depend vertical mixing scheme'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namzdf_ric : set Kz=F(Ri) parameters'
-      WRITE(numout, FMT = *) '      maximum vertical viscosity        rn_avmri  = ', rn_avmri
-      WRITE(numout, FMT = *) '      coefficient                       rn_alp    = ', rn_alp
-      WRITE(numout, FMT = *) '      exponent                          nn_ric    = ', nn_ric
-      WRITE(numout, FMT = *) '      Ekman layer enhanced mixing       ln_mldw   = ', ln_mldw
-      WRITE(numout, FMT = *) '         Ekman Factor Coeff             rn_ekmfc  = ', rn_ekmfc
-      WRITE(numout, FMT = *) '         minimum mixed layer depth      rn_mldmin = ', rn_mldmin
-      WRITE(numout, FMT = *) '         maximum mixed layer depth      rn_mldmax = ', rn_mldmax
-      WRITE(numout, FMT = *) '         Vertical eddy Diff. in the ML  rn_wtmix  = ', rn_wtmix
-      WRITE(numout, FMT = *) '         Vertical eddy Visc. in the ML  rn_wvmix  = ', rn_wvmix
+      WRITE(numout, *)
+      WRITE(numout, *) 'zdf_ric_init : Ri depend vertical mixing scheme'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist namzdf_ric : set Kz=F(Ri) parameters'
+      WRITE(numout, *) '      maximum vertical viscosity        rn_avmri  = ', rn_avmri
+      WRITE(numout, *) '      coefficient                       rn_alp    = ', rn_alp
+      WRITE(numout, *) '      exponent                          nn_ric    = ', nn_ric
+      WRITE(numout, *) '      Ekman layer enhanced mixing       ln_mldw   = ', ln_mldw
+      WRITE(numout, *) '         Ekman Factor Coeff             rn_ekmfc  = ', rn_ekmfc
+      WRITE(numout, *) '         minimum mixed layer depth      rn_mldmin = ', rn_mldmin
+      WRITE(numout, *) '         maximum mixed layer depth      rn_mldmax = ', rn_mldmax
+      WRITE(numout, *) '         Vertical eddy Diff. in the ML  rn_wtmix  = ', rn_wtmix
+      WRITE(numout, *) '         Vertical eddy Visc. in the ML  rn_wvmix  = ', rn_wvmix
     END IF
     CALL ric_rst(nit000, 'READ')
     IF (lwxios) THEN
@@ -64,7 +64,7 @@ MODULE zdfric
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zh_ekm
     !$ACC KERNELS
     DO jk = 2, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           zcfRi = 1._wp / (1._wp + rn_alp * MAX(0._wp, avm(ji, jj, jk) * rn2(ji, jj, jk) / (p_sh2(ji, jj, jk) + 1.E-20)))
@@ -77,7 +77,7 @@ MODULE zdfric
     !$ACC END KERNELS
     IF (ln_mldw) THEN
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zustar = SQRT(taum(ji, jj) * r1_rau0)
@@ -86,7 +86,7 @@ MODULE zdfric
         END DO
       END DO
       DO jk = 2, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             IF (pdept(ji, jj, jk) < zh_ekm(ji, jj)) THEN
@@ -114,7 +114,7 @@ MODULE zdfric
         END IF
       END IF
     ELSE IF (TRIM(cdrw) == 'WRITE') THEN
-      IF (lwp) WRITE(numout, FMT = *) '---- ric-rst ----'
+      IF (lwp) WRITE(numout, *) '---- ric-rst ----'
       IF (lwxios) CALL iom_swap(cwxios_context)
       CALL iom_rstput(kt, nitrst, numrow, 'avt_k', avt_k, ldxios = lwxios)
       CALL iom_rstput(kt, nitrst, numrow, 'avm_k', avm_k, ldxios = lwxios)

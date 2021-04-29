@@ -55,11 +55,11 @@ MODULE sbctide
       CALL profile_psy_data1 % PreStart('sbc_tide', 'r1', 0, 0)
       CALL tide_harmo(omega_tide, v0tide, utide, ftide, ntide, nb_harmo)
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) 'sbc_tide : Update of the components and (re)Init. the potential at kt=', kt
-        WRITE(numout, FMT = *) '~~~~~~~~ '
+        WRITE(numout, *)
+        WRITE(numout, *) 'sbc_tide : Update of the components and (re)Init. the potential at kt=', kt
+        WRITE(numout, *) '~~~~~~~~ '
         DO jk = 1, nb_harmo
-          WRITE(numout, FMT = *) Wave(ntide(jk)) % cname_tide, utide(jk), ftide(jk), v0tide(jk), omega_tide(jk)
+          WRITE(numout, *) Wave(ntide(jk)) % cname_tide, utide(jk), ftide(jk), v0tide(jk), omega_tide(jk)
         END DO
       END IF
       IF (ln_tide_pot) CALL tide_init_potential
@@ -100,9 +100,9 @@ MODULE sbctide
     INTEGER :: ji, jj, itide
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: ztr, zti
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'tide_init_load : Initialization of load potential from file'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~~~ '
+      WRITE(numout, *)
+      WRITE(numout, *) 'tide_init_load : Initialization of load potential from file'
+      WRITE(numout, *) '~~~~~~~~~~~~~~ '
     END IF
     CALL iom_open(cn_tide_load, inum)
     DO itide = 1, nb_harmo

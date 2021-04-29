@@ -68,8 +68,7 @@ MODULE sbcblk_algo_ecmwf
     ztmp2 = Ri_bulk(zu, t_zu, dt_zu, q_zu, dq_zu, U_blk)
     ztmp1 = 0.5 + SIGN(0.5, ztmp2)
     func_m = ztmp0 * ztmp2
-    func_h = (1. - ztmp1) * (func_m / (1. + ztmp2 / (- zu / (zi0 * 0.004 * Beta0 ** 3)))) + ztmp1 * (func_m * (1. + 27. / 9. * &
-&ztmp2 / ztmp0))
+    func_h = (1. - ztmp1) * (func_m / (1. + ztmp2 / (- zu / (zi0 * 0.004 * Beta0 ** 3)))) + ztmp1 * (func_m * (1. + 27. / 9. * ztmp2 / ztmp0))
     ztmp0 = vkarmn / (LOG(zu * z0t) - psi_h_ecmwf(func_h))
     u_star = U_blk * vkarmn / (LOG(zu) - LOG(z0) - psi_m_ecmwf(func_h))
     t_star = dt_zu * ztmp0
@@ -147,7 +146,7 @@ MODULE sbcblk_algo_ecmwf
     INTEGER :: ji, jj
     REAL(KIND = wp) :: zzeta, zx, ztmp, psi_unst, psi_stab, stab
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zzeta = MIN(pzeta(ji, jj), 5.)
@@ -168,14 +167,13 @@ MODULE sbcblk_algo_ecmwf
     INTEGER :: ji, jj
     REAL(KIND = wp) :: zzeta, zx, psi_unst, psi_stab, stab
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zzeta = MIN(pzeta(ji, jj), 5.)
         zx = ABS(1. - 16. * zzeta) ** .25
         psi_unst = 2. * LOG(0.5 * (1. + zx * zx))
-        psi_stab = - 2. / 3. * (zzeta - 5. / 0.35) * EXP(- 0.35 * zzeta) - ABS(1. + 2. / 3. * zzeta) ** 1.5 - 2. / 3. * 5. / 0.35 &
-&+ 1.
+        psi_stab = - 2. / 3. * (zzeta - 5. / 0.35) * EXP(- 0.35 * zzeta) - ABS(1. + 2. / 3. * zzeta) ** 1.5 - 2. / 3. * 5. / 0.35 + 1.
         stab = 0.5 + SIGN(0.5, zzeta)
         psi_h_ecmwf(ji, jj) = (1. - stab) * psi_unst + stab * psi_stab
       END DO
@@ -202,7 +200,7 @@ MODULE sbcblk_algo_ecmwf
     INTEGER :: ji, jj
     REAL(KIND = wp) :: ztc, ztc2
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         ztc = ptak(ji, jj) - rt0

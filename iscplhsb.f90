@@ -36,6 +36,7 @@ MODULE iscplhsb
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     !$ACC KERNELS
     zde3t = 0._wp
     zdsal = 0._wp
@@ -56,10 +57,8 @@ MODULE iscplhsb
         DO ji = 2, jpim1
           IF (tmask_h(ji, jj) == 1._wp) THEN
             zde3t = e3t_n(ji, jj, jk) * tmask(ji, jj, jk) - pe3t_b(ji, jj, jk) * ptmask_b(ji, jj, jk)
-            zdtem = tsn(ji, jj, jk, jp_tem) * e3t_n(ji, jj, jk) * tmask(ji, jj, jk) - tsb(ji, jj, jk, jp_tem) * pe3t_b(ji, jj, jk) &
-&* ptmask_b(ji, jj, jk)
-            zdsal = tsn(ji, jj, jk, jp_sal) * e3t_n(ji, jj, jk) * tmask(ji, jj, jk) - tsb(ji, jj, jk, jp_sal) * pe3t_b(ji, jj, jk) &
-&* ptmask_b(ji, jj, jk)
+            zdtem = tsn(ji, jj, jk, jp_tem) * e3t_n(ji, jj, jk) * tmask(ji, jj, jk) - tsb(ji, jj, jk, jp_tem) * pe3t_b(ji, jj, jk) * ptmask_b(ji, jj, jk)
+            zdsal = tsn(ji, jj, jk, jp_sal) * e3t_n(ji, jj, jk) * tmask(ji, jj, jk) - tsb(ji, jj, jk, jp_sal) * pe3t_b(ji, jj, jk) * ptmask_b(ji, jj, jk)
             IF (ptmask_b(ji, jj, jk) == 1._wp .OR. tmask(ji, jj, jk) == 1._wp) THEN
               zde3t = zde3t + zdssh(ji, jj)
               zdssh(ji, jj) = 0._wp
@@ -72,8 +71,7 @@ MODULE iscplhsb
               jim1 = ji - 1
               jjp1 = jj + 1
               jjm1 = jj - 1
-              zsum = e1e2t(ji, jjp1) * tmask(ji, jjp1, jk) + e1e2t(ji, jjm1) * tmask(ji, jjm1, jk) + e1e2t(jim1, jj) * tmask(jim1, &
-&jj, jk) + e1e2t(jip1, jj) * tmask(jip1, jj, jk)
+              zsum = e1e2t(ji, jjp1) * tmask(ji, jjp1, jk) + e1e2t(ji, jjm1) * tmask(ji, jjm1, jk) + e1e2t(jim1, jj) * tmask(jim1, jj, jk) + e1e2t(jip1, jj) * tmask(jip1, jj, jk)
               IF (zsum /= 0._wp) THEN
                 zjip1_ratio = e1e2t(jip1, jj) * tmask(jip1, jj, jk) / zsum
                 zjim1_ratio = e1e2t(jim1, jj) * tmask(jim1, jj, jk) / zsum
@@ -104,10 +102,10 @@ MODULE iscplhsb
                   pts_flx(ji, jj, jk, jp_tem) = 0._wp
                 ELSE
                   IF (lwp) THEN
-                    WRITE(numout, FMT = *) 'W A R N I N G iscpl: no adjacent cell on the vertical and horizontal'
-                    WRITE(numout, FMT = *) '                     ', mig(ji), ' ', mjg(jj), ' ', jk
-                    WRITE(numout, FMT = *) '                     ', ji, ' ', jj, ' ', jk, ' ', narea
-                    WRITE(numout, FMT = *) ' we are now looking for the closest wet cell on the horizontal '
+                    WRITE(numout, *) 'W A R N I N G iscpl: no adjacent cell on the vertical and horizontal'
+                    WRITE(numout, *) '                     ', mig(ji), ' ', mjg(jj), ' ', jk
+                    WRITE(numout, *) '                     ', ji, ' ', jj, ' ', jk, ' ', narea
+                    WRITE(numout, *) ' we are now looking for the closest wet cell on the horizontal '
                   END IF
                 END IF
               END IF
@@ -122,11 +120,10 @@ MODULE iscplhsb
     !$ACC KERNELS
     inpts(:) = 0
     DO jk = 1, jpk - 1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpj - 1
         DO ji = 2, jpim1
-          IF (ptmask_b(ji, jj, jk) == 1._wp .AND. tmask(ji, jj, jk + 1) == 0._wp .AND. tmask_h(ji, jj) == 1._wp .AND. SUM(tmask(ji &
-&- 1 : ji + 1, jj, jk)) + SUM(tmask(ji, jj - 1 : jj + 1, jk)) == 0._wp) THEN
+          IF (ptmask_b(ji, jj, jk) == 1._wp .AND. tmask(ji, jj, jk + 1) == 0._wp .AND. tmask_h(ji, jj) == 1._wp .AND. SUM(tmask(ji - 1 : ji + 1, jj, jk)) + SUM(tmask(ji, jj - 1 : jj + 1, jk)) == 0._wp) THEN
             inpts(narea) = inpts(narea) + 1
           END IF
         END DO
@@ -149,11 +146,10 @@ MODULE iscplhsb
     zcorr_tem(:) = - 1.0E20_wp
     jpts = SUM(inpts(1 : narea - 1))
     DO jk = 1, jpk - 1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpj - 1
         DO ji = 2, jpim1
-          IF (ptmask_b(ji, jj, jk) == 1._wp .AND. tmask(ji, jj, jk + 1) == 0._wp .AND. tmask_h(ji, jj) == 1._wp .AND. SUM(tmask(ji &
-&- 1 : ji + 1, jj, jk)) + SUM(tmask(ji, jj - 1 : jj + 1, jk)) == 0._wp) THEN
+          IF (ptmask_b(ji, jj, jk) == 1._wp .AND. tmask(ji, jj, jk + 1) == 0._wp .AND. tmask_h(ji, jj) == 1._wp .AND. SUM(tmask(ji - 1 : ji + 1, jj, jk)) + SUM(tmask(ji, jj - 1 : jj + 1, jk)) == 0._wp) THEN
             jpts = jpts + 1
             ixpts(jpts) = ji
             iypts(jpts) = jj
@@ -180,9 +176,11 @@ MODULE iscplhsb
     CALL mpp_max('iscplhsb', zcorr_tem, npts)
     CALL profile_psy_data2 % PostEnd
     DO jpts = 1, npts
+      CALL profile_psy_data3 % PreStart('iscpl_cons', 'r3', 0, 0)
       CALL dom_ngb(zlon(jpts), zlat(jpts), ixpts(jpts), iypts(jpts), 'T', izpts(jpts))
+      CALL profile_psy_data3 % PostEnd
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = mj0(iypts(jpts)), mj1(iypts(jpts))
         DO ji = mi0(ixpts(jpts)), mi1(ixpts(jpts))
           jk = izpts(jpts)
@@ -198,10 +196,10 @@ MODULE iscplhsb
       END DO
       !$ACC END KERNELS
     END DO
-    CALL profile_psy_data3 % PreStart('iscpl_cons', 'r3', 0, 0)
+    CALL profile_psy_data4 % PreStart('iscpl_cons', 'r4', 0, 0)
     DEALLOCATE(inpts)
     DEALLOCATE(ixpts, iypts, izpts, zcorr_vol, zcorr_sal, zcorr_tem, zlon, zlat)
-    CALL profile_psy_data3 % PostEnd
+    CALL profile_psy_data4 % PostEnd
     !$ACC KERNELS
     pvol_flx(:, :, :) = pvol_flx(:, :, :) * tmask(:, :, :)
     pts_flx(:, :, :, jp_sal) = pts_flx(:, :, :, jp_sal) * tmask(:, :, :)
@@ -213,7 +211,7 @@ MODULE iscplhsb
     INTEGER :: ji, jj, jk
     !$ACC KERNELS
     DO jk = 1, jpk
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           phdivn(ji, jj, jk) = phdivn(ji, jj, jk) + hdiv_iscpl(ji, jj, jk) / e3t_n(ji, jj, jk)

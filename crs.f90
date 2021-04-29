@@ -108,43 +108,21 @@ MODULE crs
     !$ACC KERNELS
     ierr(:) = 0
     !$ACC END KERNELS
-    ALLOCATE(mis2_crs(jpiglo_crs), mie2_crs(jpiglo_crs), mjs2_crs(jpjglo_crs), mje2_crs(jpjglo_crs), mi0_crs(jpiglo_crs), &
-&mi1_crs(jpiglo_crs), mj0_crs(jpjglo_crs), mj1_crs(jpjglo_crs), mig_crs(jpi_crs), mjg_crs(jpj_crs), STAT = ierr(1))
-    ALLOCATE(tmask_crs(jpi_crs, jpj_crs, jpk), fmask_crs(jpi_crs, jpj_crs, jpk), umask_crs(jpi_crs, jpj_crs, jpk), &
-&vmask_crs(jpi_crs, jpj_crs, jpk), STAT = ierr(2))
-    ALLOCATE(tmask_i_crs(jpi_crs, jpj_crs), rnfmsk_crs(jpi_crs, jpj_crs), tpol_crs(jpiglo_crs, jpjglo_crs), fpol_crs(jpiglo_crs, &
-&jpjglo_crs), STAT = ierr(3))
-    ALLOCATE(gphit_crs(jpi_crs, jpj_crs), glamt_crs(jpi_crs, jpj_crs), gphiu_crs(jpi_crs, jpj_crs), glamu_crs(jpi_crs, jpj_crs), &
-&gphiv_crs(jpi_crs, jpj_crs), glamv_crs(jpi_crs, jpj_crs), gphif_crs(jpi_crs, jpj_crs), glamf_crs(jpi_crs, jpj_crs), &
-&ff_crs(jpi_crs, jpj_crs), STAT = ierr(4))
-    ALLOCATE(e1t_crs(jpi_crs, jpj_crs), e2t_crs(jpi_crs, jpj_crs), e1u_crs(jpi_crs, jpj_crs), e2u_crs(jpi_crs, jpj_crs), &
-&e1v_crs(jpi_crs, jpj_crs), e2v_crs(jpi_crs, jpj_crs), e1f_crs(jpi_crs, jpj_crs), e2f_crs(jpi_crs, jpj_crs), e1e2t_crs(jpi_crs, &
-&jpj_crs), STAT = ierr(5))
-    ALLOCATE(e3t_crs(jpi_crs, jpj_crs, jpk), e3w_crs(jpi_crs, jpj_crs, jpk), e3u_crs(jpi_crs, jpj_crs, jpk), e3v_crs(jpi_crs, &
-&jpj_crs, jpk), e3f_crs(jpi_crs, jpj_crs, jpk), e1e2w_msk(jpi_crs, jpj_crs, jpk), e2e3u_msk(jpi_crs, jpj_crs, jpk), &
-&e1e3v_msk(jpi_crs, jpj_crs, jpk), e1e2w_crs(jpi_crs, jpj_crs, jpk), e2e3u_crs(jpi_crs, jpj_crs, jpk), e1e3v_crs(jpi_crs, jpj_crs, &
-&jpk), e3t_max_crs(jpi_crs, jpj_crs, jpk), e3w_max_crs(jpi_crs, jpj_crs, jpk), e3u_max_crs(jpi_crs, jpj_crs, jpk), &
-&e3v_max_crs(jpi_crs, jpj_crs, jpk), STAT = ierr(6))
-    ALLOCATE(facsurfv(jpi_crs, jpj_crs, jpk), facsurfu(jpi_crs, jpj_crs, jpk), facvol_t(jpi_crs, jpj_crs, jpk), facvol_w(jpi_crs, &
-&jpj_crs, jpk), ocean_volume_crs_t(jpi_crs, jpj_crs, jpk), ocean_volume_crs_w(jpi_crs, jpj_crs, jpk), bt_crs(jpi_crs, jpj_crs, &
-&jpk), r1_bt_crs(jpi_crs, jpj_crs, jpk), STAT = ierr(7))
-    ALLOCATE(crs_surfu_wgt(jpi_crs, jpj_crs, jpk), crs_surfv_wgt(jpi_crs, jpj_crs, jpk), crs_surfw_wgt(jpi_crs, jpj_crs, jpk), &
-&crs_volt_wgt(jpi_crs, jpj_crs, jpk), STAT = ierr(8))
-    ALLOCATE(mbathy_crs(jpi_crs, jpj_crs), mbkt_crs(jpi_crs, jpj_crs), mbku_crs(jpi_crs, jpj_crs), mbkv_crs(jpi_crs, jpj_crs), &
-&STAT = ierr(9))
-    ALLOCATE(gdept_crs(jpi_crs, jpj_crs, jpk), gdepu_crs(jpi_crs, jpj_crs, jpk), gdepv_crs(jpi_crs, jpj_crs, jpk), &
-&gdepw_crs(jpi_crs, jpj_crs, jpk), STAT = ierr(10))
-    ALLOCATE(un_crs(jpi_crs, jpj_crs, jpk), vn_crs(jpi_crs, jpj_crs, jpk), wn_crs(jpi_crs, jpj_crs, jpk), hdivn_crs(jpi_crs, &
-&jpj_crs, jpk), STAT = ierr(11))
-    ALLOCATE(sshn_crs(jpi_crs, jpj_crs), emp_crs(jpi_crs, jpj_crs), emp_b_crs(jpi_crs, jpj_crs), qsr_crs(jpi_crs, jpj_crs), &
-&wndm_crs(jpi_crs, jpj_crs), utau_crs(jpi_crs, jpj_crs), vtau_crs(jpi_crs, jpj_crs), rnf_crs(jpi_crs, jpj_crs), fr_i_crs(jpi_crs, &
-&jpj_crs), sfx_crs(jpi_crs, jpj_crs), STAT = ierr(12))
+    ALLOCATE(mis2_crs(jpiglo_crs), mie2_crs(jpiglo_crs), mjs2_crs(jpjglo_crs), mje2_crs(jpjglo_crs), mi0_crs(jpiglo_crs), mi1_crs(jpiglo_crs), mj0_crs(jpjglo_crs), mj1_crs(jpjglo_crs), mig_crs(jpi_crs), mjg_crs(jpj_crs), STAT = ierr(1))
+    ALLOCATE(tmask_crs(jpi_crs, jpj_crs, jpk), fmask_crs(jpi_crs, jpj_crs, jpk), umask_crs(jpi_crs, jpj_crs, jpk), vmask_crs(jpi_crs, jpj_crs, jpk), STAT = ierr(2))
+    ALLOCATE(tmask_i_crs(jpi_crs, jpj_crs), rnfmsk_crs(jpi_crs, jpj_crs), tpol_crs(jpiglo_crs, jpjglo_crs), fpol_crs(jpiglo_crs, jpjglo_crs), STAT = ierr(3))
+    ALLOCATE(gphit_crs(jpi_crs, jpj_crs), glamt_crs(jpi_crs, jpj_crs), gphiu_crs(jpi_crs, jpj_crs), glamu_crs(jpi_crs, jpj_crs), gphiv_crs(jpi_crs, jpj_crs), glamv_crs(jpi_crs, jpj_crs), gphif_crs(jpi_crs, jpj_crs), glamf_crs(jpi_crs, jpj_crs), ff_crs(jpi_crs, jpj_crs), STAT = ierr(4))
+    ALLOCATE(e1t_crs(jpi_crs, jpj_crs), e2t_crs(jpi_crs, jpj_crs), e1u_crs(jpi_crs, jpj_crs), e2u_crs(jpi_crs, jpj_crs), e1v_crs(jpi_crs, jpj_crs), e2v_crs(jpi_crs, jpj_crs), e1f_crs(jpi_crs, jpj_crs), e2f_crs(jpi_crs, jpj_crs), e1e2t_crs(jpi_crs, jpj_crs), STAT = ierr(5))
+    ALLOCATE(e3t_crs(jpi_crs, jpj_crs, jpk), e3w_crs(jpi_crs, jpj_crs, jpk), e3u_crs(jpi_crs, jpj_crs, jpk), e3v_crs(jpi_crs, jpj_crs, jpk), e3f_crs(jpi_crs, jpj_crs, jpk), e1e2w_msk(jpi_crs, jpj_crs, jpk), e2e3u_msk(jpi_crs, jpj_crs, jpk), e1e3v_msk(jpi_crs, jpj_crs, jpk), e1e2w_crs(jpi_crs, jpj_crs, jpk), e2e3u_crs(jpi_crs, jpj_crs, jpk), e1e3v_crs(jpi_crs, jpj_crs, jpk), e3t_max_crs(jpi_crs, jpj_crs, jpk), e3w_max_crs(jpi_crs, jpj_crs, jpk), e3u_max_crs(jpi_crs, jpj_crs, jpk), e3v_max_crs(jpi_crs, jpj_crs, jpk), STAT = ierr(6))
+    ALLOCATE(facsurfv(jpi_crs, jpj_crs, jpk), facsurfu(jpi_crs, jpj_crs, jpk), facvol_t(jpi_crs, jpj_crs, jpk), facvol_w(jpi_crs, jpj_crs, jpk), ocean_volume_crs_t(jpi_crs, jpj_crs, jpk), ocean_volume_crs_w(jpi_crs, jpj_crs, jpk), bt_crs(jpi_crs, jpj_crs, jpk), r1_bt_crs(jpi_crs, jpj_crs, jpk), STAT = ierr(7))
+    ALLOCATE(crs_surfu_wgt(jpi_crs, jpj_crs, jpk), crs_surfv_wgt(jpi_crs, jpj_crs, jpk), crs_surfw_wgt(jpi_crs, jpj_crs, jpk), crs_volt_wgt(jpi_crs, jpj_crs, jpk), STAT = ierr(8))
+    ALLOCATE(mbathy_crs(jpi_crs, jpj_crs), mbkt_crs(jpi_crs, jpj_crs), mbku_crs(jpi_crs, jpj_crs), mbkv_crs(jpi_crs, jpj_crs), STAT = ierr(9))
+    ALLOCATE(gdept_crs(jpi_crs, jpj_crs, jpk), gdepu_crs(jpi_crs, jpj_crs, jpk), gdepv_crs(jpi_crs, jpj_crs, jpk), gdepw_crs(jpi_crs, jpj_crs, jpk), STAT = ierr(10))
+    ALLOCATE(un_crs(jpi_crs, jpj_crs, jpk), vn_crs(jpi_crs, jpj_crs, jpk), wn_crs(jpi_crs, jpj_crs, jpk), hdivn_crs(jpi_crs, jpj_crs, jpk), STAT = ierr(11))
+    ALLOCATE(sshn_crs(jpi_crs, jpj_crs), emp_crs(jpi_crs, jpj_crs), emp_b_crs(jpi_crs, jpj_crs), qsr_crs(jpi_crs, jpj_crs), wndm_crs(jpi_crs, jpj_crs), utau_crs(jpi_crs, jpj_crs), vtau_crs(jpi_crs, jpj_crs), rnf_crs(jpi_crs, jpj_crs), fr_i_crs(jpi_crs, jpj_crs), sfx_crs(jpi_crs, jpj_crs), STAT = ierr(12))
     ALLOCATE(tsn_crs(jpi_crs, jpj_crs, jpk, jpts), avt_crs(jpi_crs, jpj_crs, jpk), avs_crs(jpi_crs, jpj_crs, jpk), STAT = ierr(13))
-    ALLOCATE(nmln_crs(jpi_crs, jpj_crs), hmld_crs(jpi_crs, jpj_crs), hmlp_crs(jpi_crs, jpj_crs), hmlpt_crs(jpi_crs, jpj_crs), STAT &
-&= ierr(14))
-    ALLOCATE(nimppt_crs(jpnij), nlcit_crs(jpnij), nldit_crs(jpnij), nleit_crs(jpnij), nimppt_full(jpnij), nlcit_full(jpnij), &
-&nldit_full(jpnij), nleit_full(jpnij), njmppt_crs(jpnij), nlcjt_crs(jpnij), nldjt_crs(jpnij), nlejt_crs(jpnij), &
-&njmppt_full(jpnij), nlcjt_full(jpnij), nldjt_full(jpnij), nlejt_full(jpnij), STAT = ierr(15))
+    ALLOCATE(nmln_crs(jpi_crs, jpj_crs), hmld_crs(jpi_crs, jpj_crs), hmlp_crs(jpi_crs, jpj_crs), hmlpt_crs(jpi_crs, jpj_crs), STAT = ierr(14))
+    ALLOCATE(nimppt_crs(jpnij), nlcit_crs(jpnij), nldit_crs(jpnij), nleit_crs(jpnij), nimppt_full(jpnij), nlcit_full(jpnij), nldit_full(jpnij), nleit_full(jpnij), njmppt_crs(jpnij), nlcjt_crs(jpnij), nldjt_crs(jpnij), nlejt_crs(jpnij), njmppt_full(jpnij), nlcjt_full(jpnij), nldjt_full(jpnij), nlejt_full(jpnij), STAT = ierr(15))
     crs_dom_alloc = MAXVAL(ierr)
   END FUNCTION crs_dom_alloc
   INTEGER FUNCTION crs_dom_alloc2()

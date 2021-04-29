@@ -31,15 +31,14 @@ MODULE dia25h
 902 IF (ios > 0) CALL ctl_nam(ios, 'nam_dia25h in configuration namelist', lwp)
     IF (lwm) WRITE(numond, nam_dia25h)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dia_25h_init : Output 25 hour mean diagnostics'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist nam_dia25h : set 25h outputs '
-      WRITE(numout, FMT = *) '      Switch for 25h diagnostics (T) or not (F)  ln_dia25h  = ', ln_dia25h
+      WRITE(numout, *)
+      WRITE(numout, *) 'dia_25h_init : Output 25 hour mean diagnostics'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist nam_dia25h : set 25h outputs '
+      WRITE(numout, *) '      Switch for 25h diagnostics (T) or not (F)  ln_dia25h  = ', ln_dia25h
     END IF
     IF (.NOT. ln_dia25h) RETURN
-    ALLOCATE(tn_25h(jpi, jpj, jpk), sn_25h(jpi, jpj, jpk), sshn_25h(jpi, jpj), un_25h(jpi, jpj, jpk), vn_25h(jpi, jpj, jpk), &
-&wn_25h(jpi, jpj, jpk), avt_25h(jpi, jpj, jpk), avm_25h(jpi, jpj, jpk), STAT = ierror)
+    ALLOCATE(tn_25h(jpi, jpj, jpk), sn_25h(jpi, jpj, jpk), sshn_25h(jpi, jpj), un_25h(jpi, jpj, jpk), vn_25h(jpi, jpj, jpk), wn_25h(jpi, jpj, jpk), avt_25h(jpi, jpj, jpk), avm_25h(jpi, jpj, jpk), STAT = ierror)
     IF (ierror > 0) THEN
       CALL ctl_stop('dia_25h: unable to allocate ocean arrays')
       RETURN
@@ -97,6 +96,16 @@ MODULE dia25h
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data9
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data10
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data11
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data12
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data13
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data14
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data15
     CALL profile_psy_data0 % PreStart('dia_25h', 'r0', 0, 0)
     IF (MOD(3600, NINT(rdt)) == 0) THEN
       i_steps = 3600 / NINT(rdt)
@@ -113,8 +122,8 @@ MODULE dia25h
     IF (MOD(kt, i_steps) == 0 .AND. kt /= nn_it000) THEN
       CALL profile_psy_data1 % PreStart('dia_25h', 'r1', 0, 0)
       IF (lwp) THEN
-        WRITE(numout, FMT = *) 'dia_wri_tide : Summing instantaneous hourly diagnostics at timestep ', kt
-        WRITE(numout, FMT = *) '~~~~~~~~~~~~ '
+        WRITE(numout, *) 'dia_wri_tide : Summing instantaneous hourly diagnostics at timestep ', kt
+        WRITE(numout, *) '~~~~~~~~~~~~ '
       END IF
       CALL profile_psy_data1 % PostEnd
       !$ACC KERNELS
@@ -141,15 +150,15 @@ MODULE dia25h
       CALL profile_psy_data2 % PreStart('dia_25h', 'r2', 0, 0)
       cnt_25h = cnt_25h + 1
       IF (lwp) THEN
-        WRITE(numout, FMT = *) 'dia_tide : Summed the following number of hourly values so far', cnt_25h
+        WRITE(numout, *) 'dia_tide : Summed the following number of hourly values so far', cnt_25h
       END IF
       CALL profile_psy_data2 % PostEnd
     END IF
     IF (cnt_25h == 25 .AND. MOD(kt, i_steps * 24) == 0 .AND. kt /= nn_it000) THEN
       CALL profile_psy_data3 % PreStart('dia_25h', 'r3', 0, 0)
       IF (lwp) THEN
-        WRITE(numout, FMT = *) 'dia_wri_tide : Writing 25 hour mean tide diagnostics at timestep', kt
-        WRITE(numout, FMT = *) '~~~~~~~~~~~~ '
+        WRITE(numout, *) 'dia_wri_tide : Writing 25 hour mean tide diagnostics at timestep', kt
+        WRITE(numout, *) '~~~~~~~~~~~~ '
       END IF
       CALL profile_psy_data3 % PostEnd
       !$ACC KERNELS
@@ -173,61 +182,81 @@ MODULE dia25h
         rmxln_25h(:, :, :) = rmxln_25h(:, :, :) * r1_25
         !$ACC END KERNELS
       END IF
-      IF (lwp) WRITE(numout, FMT = *) 'dia_wri_tide : Mean calculated by dividing 25 hour sums and writing output'
+      IF (lwp) WRITE(numout, *) 'dia_wri_tide : Mean calculated by dividing 25 hour sums and writing output'
       !$ACC KERNELS
       zmdi = 1.E+20
       zw3d(:, :, :) = tn_25h(:, :, :) * tmask(:, :, :) + zmdi * (1.0 - tmask(:, :, :))
       !$ACC END KERNELS
+      CALL profile_psy_data4 % PreStart('dia_25h', 'r4', 0, 0)
       CALL iom_put("temper25h", zw3d)
+      CALL profile_psy_data4 % PostEnd
       !$ACC KERNELS
       zw3d(:, :, :) = sn_25h(:, :, :) * tmask(:, :, :) + zmdi * (1.0 - tmask(:, :, :))
       !$ACC END KERNELS
+      CALL profile_psy_data5 % PreStart('dia_25h', 'r5', 0, 0)
       CALL iom_put("salin25h", zw3d)
+      CALL profile_psy_data5 % PostEnd
       !$ACC KERNELS
       zw2d(:, :) = sshn_25h(:, :) * tmask(:, :, 1) + zmdi * (1.0 - tmask(:, :, 1))
       !$ACC END KERNELS
-      CALL profile_psy_data4 % PreStart('dia_25h', 'r4', 0, 0)
+      CALL profile_psy_data6 % PreStart('dia_25h', 'r6', 0, 0)
       IF (ll_wd) THEN
         CALL iom_put("ssh25h", zw2d + ssh_ref)
       ELSE
         CALL iom_put("ssh25h", zw2d)
       END IF
-      CALL profile_psy_data4 % PostEnd
+      CALL profile_psy_data6 % PostEnd
       !$ACC KERNELS
       zw3d(:, :, :) = un_25h(:, :, :) * umask(:, :, :) + zmdi * (1.0 - umask(:, :, :))
       !$ACC END KERNELS
+      CALL profile_psy_data7 % PreStart('dia_25h', 'r7', 0, 0)
       CALL iom_put("vozocrtx25h", zw3d)
+      CALL profile_psy_data7 % PostEnd
       !$ACC KERNELS
       zw3d(:, :, :) = vn_25h(:, :, :) * vmask(:, :, :) + zmdi * (1.0 - vmask(:, :, :))
       !$ACC END KERNELS
+      CALL profile_psy_data8 % PreStart('dia_25h', 'r8', 0, 0)
       CALL iom_put("vomecrty25h", zw3d)
+      CALL profile_psy_data8 % PostEnd
       !$ACC KERNELS
       zw3d(:, :, :) = wn_25h(:, :, :) * wmask(:, :, :) + zmdi * (1.0 - tmask(:, :, :))
       !$ACC END KERNELS
+      CALL profile_psy_data9 % PreStart('dia_25h', 'r9', 0, 0)
       CALL iom_put("vovecrtz25h", zw3d)
+      CALL profile_psy_data9 % PostEnd
       !$ACC KERNELS
       zw3d(:, :, :) = avt_25h(:, :, :) * wmask(:, :, :) + zmdi * (1.0 - tmask(:, :, :))
       !$ACC END KERNELS
+      CALL profile_psy_data10 % PreStart('dia_25h', 'r10', 0, 0)
       CALL iom_put("avt25h", zw3d)
+      CALL profile_psy_data10 % PostEnd
       !$ACC KERNELS
       zw3d(:, :, :) = avm_25h(:, :, :) * wmask(:, :, :) + zmdi * (1.0 - tmask(:, :, :))
       !$ACC END KERNELS
+      CALL profile_psy_data11 % PreStart('dia_25h', 'r11', 0, 0)
       CALL iom_put("avm25h", zw3d)
+      CALL profile_psy_data11 % PostEnd
       IF (ln_zdftke) THEN
         !$ACC KERNELS
         zw3d(:, :, :) = en_25h(:, :, :) * wmask(:, :, :) + zmdi * (1.0 - tmask(:, :, :))
         !$ACC END KERNELS
+        CALL profile_psy_data12 % PreStart('dia_25h', 'r12', 0, 0)
         CALL iom_put("tke25h", zw3d)
+        CALL profile_psy_data12 % PostEnd
       END IF
       IF (ln_zdfgls) THEN
         !$ACC KERNELS
         zw3d(:, :, :) = en_25h(:, :, :) * wmask(:, :, :) + zmdi * (1.0 - tmask(:, :, :))
         !$ACC END KERNELS
+        CALL profile_psy_data13 % PreStart('dia_25h', 'r13', 0, 0)
         CALL iom_put("tke25h", zw3d)
+        CALL profile_psy_data13 % PostEnd
         !$ACC KERNELS
         zw3d(:, :, :) = rmxln_25h(:, :, :) * wmask(:, :, :) + zmdi * (1.0 - tmask(:, :, :))
         !$ACC END KERNELS
+        CALL profile_psy_data14 % PreStart('dia_25h', 'r14', 0, 0)
         CALL iom_put("mxln25h", zw3d)
+        CALL profile_psy_data14 % PostEnd
       END IF
       !$ACC KERNELS
       tn_25h(:, :, :) = tsn(:, :, :, jp_tem)
@@ -250,11 +279,10 @@ MODULE dia25h
         rmxln_25h(:, :, :) = hmxl_n(:, :, :)
         !$ACC END KERNELS
       END IF
-      CALL profile_psy_data5 % PreStart('dia_25h', 'r5', 0, 0)
+      CALL profile_psy_data15 % PreStart('dia_25h', 'r15', 0, 0)
       cnt_25h = 1
-      IF (lwp) WRITE(numout, FMT = *) 'dia_wri_tide :       After 25hr mean write, reset sum to current value and cnt_25h to one &
-&for overlapping average', cnt_25h
-      CALL profile_psy_data5 % PostEnd
+      IF (lwp) WRITE(numout, *) 'dia_wri_tide :       After 25hr mean write, reset sum to current value and cnt_25h to one for overlapping average', cnt_25h
+      CALL profile_psy_data15 % PostEnd
     END IF
   END SUBROUTINE dia_25h
 END MODULE dia25h

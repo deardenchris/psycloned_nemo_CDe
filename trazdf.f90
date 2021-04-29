@@ -27,12 +27,13 @@ MODULE trazdf
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('tra_zdf', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('tra_zdf')
     IF (kt == nit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'tra_zdf : implicit vertical mixing on T & S'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~ '
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'tra_zdf : implicit vertical mixing on T & S'
+      IF (lwp) WRITE(numout, *) '~~~~~~~ '
     END IF
     IF (neuler == 0 .AND. kt == nit000) THEN
       r2dt = rdt
@@ -47,31 +48,30 @@ MODULE trazdf
       ztrds(:, :, :) = tsa(:, :, :, jp_sal)
       !$ACC END KERNELS
     END IF
+    CALL profile_psy_data1 % PreStart('tra_zdf', 'r1', 0, 0)
     CALL tra_zdf_imp(kt, nit000, 'TRA', r2dt, tsb, tsa, jpts)
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     WHERE (tsa(:, :, :, jp_sal) < 0._wp) tsa(:, :, :, jp_sal) = 0.1_wp
     !$ACC END KERNELS
     IF (l_trdtra) THEN
+      !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC KERNELS
-        ztrdt(:, :, jk) = ((tsa(:, :, jk, jp_tem) * e3t_a(:, :, jk) - tsb(:, :, jk, jp_tem) * e3t_b(:, :, jk)) / (e3t_n(:, :, jk) &
-&* r2dt)) - ztrdt(:, :, jk)
-        ztrds(:, :, jk) = ((tsa(:, :, jk, jp_sal) * e3t_a(:, :, jk) - tsb(:, :, jk, jp_sal) * e3t_b(:, :, jk)) / (e3t_n(:, :, jk) &
-&* r2dt)) - ztrds(:, :, jk)
-        !$ACC END KERNELS
+        ztrdt(:, :, jk) = ((tsa(:, :, jk, jp_tem) * e3t_a(:, :, jk) - tsb(:, :, jk, jp_tem) * e3t_b(:, :, jk)) / (e3t_n(:, :, jk) * r2dt)) - ztrdt(:, :, jk)
+        ztrds(:, :, jk) = ((tsa(:, :, jk, jp_sal) * e3t_a(:, :, jk) - tsb(:, :, jk, jp_sal) * e3t_b(:, :, jk)) / (e3t_n(:, :, jk) * r2dt)) - ztrds(:, :, jk)
       END DO
-      CALL profile_psy_data1 % PreStart('tra_zdf', 'r1', 0, 0)
+      !$ACC END KERNELS
+      CALL profile_psy_data2 % PreStart('tra_zdf', 'r2', 0, 0)
       CALL lbc_lnk_multi('trazdf', ztrdt, 'T', 1., ztrds, 'T', 1.)
       CALL trd_tra(kt, 'TRA', jp_tem, jptra_zdf, ztrdt)
       CALL trd_tra(kt, 'TRA', jp_sal, jptra_zdf, ztrds)
       DEALLOCATE(ztrdt, ztrds)
-      CALL profile_psy_data1 % PostEnd
+      CALL profile_psy_data2 % PostEnd
     END IF
-    CALL profile_psy_data2 % PreStart('tra_zdf', 'r2', 0, 0)
-    IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsa(:, :, :, jp_tem), clinfo1 = ' zdf  - Ta: ', mask1 = tmask, tab3d_2 = tsa(:, :, :, &
-&jp_sal), clinfo2 = ' Sa: ', mask2 = tmask, clinfo3 = 'tra')
+    CALL profile_psy_data3 % PreStart('tra_zdf', 'r3', 0, 0)
+    IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsa(:, :, :, jp_tem), clinfo1 = ' zdf  - Ta: ', mask1 = tmask, tab3d_2 = tsa(:, :, :, jp_sal), clinfo2 = ' Sa: ', mask2 = tmask, clinfo3 = 'tra')
     IF (ln_timing) CALL timing_stop('tra_zdf')
-    CALL profile_psy_data2 % PostEnd
+    CALL profile_psy_data3 % PostEnd
   END SUBROUTINE tra_zdf
   SUBROUTINE tra_zdf_imp(kt, kit000, cdtype, p2dt, ptb, pta, kjpt)
     INTEGER, INTENT(IN) :: kt
@@ -98,7 +98,7 @@ MODULE trazdf
           IF (ln_traldf_msc) THEN
             !$ACC KERNELS
             DO jk = 2, jpkm1
-              !$ACC LOOP INDEPENDENT COLLAPSE(2)
+              !$ACC loop independent collapse(2)
               DO jj = 2, jpjm1
                 DO ji = 2, jpim1
                   zwt(ji, jj, jk) = zwt(ji, jj, jk) + akz(ji, jj, jk)
@@ -109,7 +109,7 @@ MODULE trazdf
           ELSE
             !$ACC KERNELS
             DO jk = 2, jpkm1
-              !$ACC LOOP INDEPENDENT COLLAPSE(2)
+              !$ACC loop independent collapse(2)
               DO jj = 2, jpjm1
                 DO ji = 2, jpim1
                   zwt(ji, jj, jk) = zwt(ji, jj, jk) + ah_wslp2(ji, jj, jk)
@@ -122,13 +122,12 @@ MODULE trazdf
         IF (ln_zad_Aimp) THEN
           !$ACC KERNELS
           DO jk = 1, jpkm1
-            !$ACC LOOP INDEPENDENT COLLAPSE(2)
+            !$ACC loop independent collapse(2)
             DO jj = 2, jpjm1
               DO ji = 2, jpim1
                 zzwi = - p2dt * zwt(ji, jj, jk) / e3w_n(ji, jj, jk)
                 zzws = - p2dt * zwt(ji, jj, jk + 1) / e3w_n(ji, jj, jk + 1)
-                zwd(ji, jj, jk) = e3t_a(ji, jj, jk) - zzwi - zzws + p2dt * (MAX(wi(ji, jj, jk), 0._wp) - MIN(wi(ji, jj, jk + 1), &
-&0._wp))
+                zwd(ji, jj, jk) = e3t_a(ji, jj, jk) - zzwi - zzws + p2dt * (MAX(wi(ji, jj, jk), 0._wp) - MIN(wi(ji, jj, jk + 1), 0._wp))
                 zwi(ji, jj, jk) = zzwi + p2dt * MIN(wi(ji, jj, jk), 0._wp)
                 zws(ji, jj, jk) = zzws - p2dt * MAX(wi(ji, jj, jk + 1), 0._wp)
               END DO
@@ -138,7 +137,7 @@ MODULE trazdf
         ELSE
           !$ACC KERNELS
           DO jk = 1, jpkm1
-            !$ACC LOOP INDEPENDENT COLLAPSE(2)
+            !$ACC loop independent collapse(2)
             DO jj = 2, jpjm1
               DO ji = 2, jpim1
                 zwi(ji, jj, jk) = - p2dt * zwt(ji, jj, jk) / e3w_n(ji, jj, jk)
@@ -150,14 +149,14 @@ MODULE trazdf
           !$ACC END KERNELS
         END IF
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zwt(ji, jj, 1) = zwd(ji, jj, 1)
           END DO
         END DO
         DO jk = 2, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               zwt(ji, jj, jk) = zwd(ji, jj, jk) - zwi(ji, jj, jk) * zws(ji, jj, jk - 1) / zwt(ji, jj, jk - 1)
@@ -167,14 +166,14 @@ MODULE trazdf
         !$ACC END KERNELS
       END IF
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           pta(ji, jj, 1, jn) = e3t_b(ji, jj, 1) * ptb(ji, jj, 1, jn) + p2dt * e3t_n(ji, jj, 1) * pta(ji, jj, 1, jn)
         END DO
       END DO
       DO jk = 2, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zrhs = e3t_b(ji, jj, jk) * ptb(ji, jj, jk, jn) + p2dt * e3t_n(ji, jj, jk) * pta(ji, jj, jk, jn)
@@ -182,18 +181,17 @@ MODULE trazdf
           END DO
         END DO
       END DO
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           pta(ji, jj, jpkm1, jn) = pta(ji, jj, jpkm1, jn) / zwt(ji, jj, jpkm1) * tmask(ji, jj, jpkm1)
         END DO
       END DO
       DO jk = jpk - 2, 1, - 1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            pta(ji, jj, jk, jn) = (pta(ji, jj, jk, jn) - zws(ji, jj, jk) * pta(ji, jj, jk + 1, jn)) / zwt(ji, jj, jk) * tmask(ji, &
-&jj, jk)
+            pta(ji, jj, jk, jn) = (pta(ji, jj, jk, jn) - zws(ji, jj, jk) * pta(ji, jj, jk + 1, jn)) / zwt(ji, jj, jk) * tmask(ji, jj, jk)
           END DO
         END DO
       END DO

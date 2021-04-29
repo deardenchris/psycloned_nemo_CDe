@@ -35,8 +35,7 @@ MODULE icbthm
     DO WHILE (ASSOCIATED(this))
       pt => this % current_point
       nknberg = this % number(1)
-      CALL icb_utl_interp(pt % xi, pt % e1, pt % uo, pt % ui, pt % ua, pt % ssh_x, pt % yj, pt % e2, pt % vo, pt % vi, pt % va, &
-&pt % ssh_y, pt % sst, pt % cn, pt % hi, zff)
+      CALL icb_utl_interp(pt % xi, pt % e1, pt % uo, pt % ui, pt % ua, pt % ssh_x, pt % yj, pt % e2, pt % vo, pt % vi, pt % va, pt % ssh_y, pt % sst, pt % cn, pt % hi, zff)
       zSST = pt % sst
       zIC = MIN(1._wp, pt % cn + rn_sicn_shift)
       zM = pt % mass
@@ -111,12 +110,11 @@ MODULE icbthm
         zheat_hcflux = zmelt * pt % heat_density
         zheat_latent = - zmelt * rLfus
         berg_grid % calving_hflx(ii, ij) = berg_grid % calving_hflx(ii, ij) + (zheat_hcflux + zheat_latent) * z1_e1e2
-        CALL icb_dia_melt(ii, ij, zMnew, zheat_hcflux, zheat_latent, this % mass_scaling, zdM, zdMbitsE, zdMbitsM, zdMb, zdMe, &
-&zdMv, z1_dt_e1e2)
+        CALL icb_dia_melt(ii, ij, zMnew, zheat_hcflux, zheat_latent, this % mass_scaling, zdM, zdMbitsE, zdMbitsM, zdMb, zdMe, zdMv, z1_dt_e1e2)
       ELSE
-        WRITE(numout, FMT = *) 'icb_thm: berg ', this % number(:), ' appears to have grounded  at ', narea, ii, ij
+        WRITE(numout, *) 'icb_thm: berg ', this % number(:), ' appears to have grounded  at ', narea, ii, ij
         CALL icb_utl_print_berg(this, kt)
-        WRITE(numout, FMT = *) 'msk=', tmask(ii, ij, 1), e1e2t(ii, ij)
+        WRITE(numout, *) 'msk=', tmask(ii, ij, 1), e1e2t(ii, ij)
         CALL ctl_stop('icb_thm', 'berg appears to have grounded!')
       END IF
       zDn = (rn_rho_bergs / pp_rho_seawater) * zTn

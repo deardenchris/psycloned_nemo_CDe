@@ -32,9 +32,9 @@ MODULE trc_oce
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('trc_oce_rgb', 'r0', 0, 0)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '   trc_oce_rgb : Initialisation of the optical look-up table'
-      WRITE(numout, FMT = *) '   ~~~~~~~~~~~ '
+      WRITE(numout, *)
+      WRITE(numout, *) '   trc_oce_rgb : Initialisation of the optical look-up table'
+      WRITE(numout, *) '   ~~~~~~~~~~~ '
     END IF
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
@@ -286,13 +286,13 @@ MODULE trc_oce
     r_si2 = 1.E0 / zrgb(2, 1)
     !$ACC END KERNELS
     CALL profile_psy_data1 % PreStart('trc_oce_rgb', 'r1', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *) '      RGB longest depth of extinction    r_si2 = ', r_si2
+    IF (lwp) WRITE(numout, *) '      RGB longest depth of extinction    r_si2 = ', r_si2
     DO jc = 1, 61
       zchl = zrgb(1, jc)
       irgb = NINT(41 + 20. * LOG10(zchl) + 1.E-15)
-      IF (lwp .AND. nn_print >= 1) WRITE(numout, FMT = *) '    jc =', jc, '  Chl = ', zchl, '  irgb = ', irgb
+      IF (lwp .AND. nn_print >= 1) WRITE(numout, *) '    jc =', jc, '  Chl = ', zchl, '  irgb = ', irgb
       IF (irgb /= jc) THEN
-        IF (lwp) WRITE(numout, FMT = *) '    jc =', jc, '  Chl = ', zchl, '  Chl class = ', irgb
+        IF (lwp) WRITE(numout, *) '    jc =', jc, '  Chl = ', zchl, '  Chl class = ', irgb
         CALL ctl_stop('trc_oce_rgb : inconsistency in Chl tabulated attenuation coeff.')
       END IF
     END DO
@@ -308,24 +308,24 @@ MODULE trc_oce
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('trc_oce_rgb_read', 'r0', 0, 0)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) ' trc_oce_rgb_read : optical look-up table read in kRGB61.txt file'
-      WRITE(numout, FMT = *) ' ~~~~~~~~~~~~~~~~'
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
+      WRITE(numout, *) ' trc_oce_rgb_read : optical look-up table read in kRGB61.txt file'
+      WRITE(numout, *) ' ~~~~~~~~~~~~~~~~'
+      WRITE(numout, *)
     END IF
     CALL ctl_opn(numlight, 'kRGB61.txt', 'OLD', 'FORMATTED', 'SEQUENTIAL', - 1, numout, lwp)
     DO jc = 1, 61
-      READ(numlight, FMT = *) zchl, (prgb(jb, jc), jb = 1, 3)
+      READ(numlight, *) zchl, (prgb(jb, jc), jb = 1, 3)
       irgb = NINT(41 + 20. * LOG10(zchl) + 1.E-15)
-      IF (lwp) WRITE(numout, FMT = *) '    jc =', jc, '  Chl = ', zchl, '  irgb = ', irgb
+      IF (lwp) WRITE(numout, *) '    jc =', jc, '  Chl = ', zchl, '  irgb = ', irgb
       IF (irgb /= jc) THEN
-        IF (lwp) WRITE(numout, FMT = *) '    jc =', jc, '  Chl = ', zchl, '  Chl class = ', irgb
+        IF (lwp) WRITE(numout, *) '    jc =', jc, '  Chl = ', zchl, '  Chl class = ', irgb
         CALL ctl_stop('trc_oce_rgb_read : inconsistency in Chl tabulated attenuation coeff.')
       END IF
     END DO
     CLOSE(UNIT = numlight)
     r_si2 = 1.E0 / prgb(1, 1)
-    IF (lwp) WRITE(numout, FMT = *) '      RGB longest depth of extinction    r_si2 = ', r_si2
+    IF (lwp) WRITE(numout, *) '      RGB longest depth of extinction    r_si2 = ', r_si2
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE trc_oce_rgb_read
   FUNCTION trc_oce_ext_lev(prldex, pqsr_frc) RESULT(pjl)

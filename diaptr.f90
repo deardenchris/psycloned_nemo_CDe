@@ -72,12 +72,26 @@ MODULE diaptr
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data22
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data23
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data24
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data25
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data26
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data27
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data28
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data29
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data30
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data31
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data32
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data33
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data34
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data35
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data36
+    CALL profile_psy_data0 % PreStart('dia_ptr', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('dia_ptr')
+    CALL profile_psy_data0 % PostEnd
     IF (PRESENT(pvtr)) THEN
       IF (iom_use("zomsfglo")) THEN
-        CALL profile_psy_data0 % PreStart('dia_ptr', 'r0', 0, 0)
+        CALL profile_psy_data1 % PreStart('dia_ptr', 'r1', 0, 0)
         z3d(1, :, :) = ptr_sjk(pvtr(:, :, :))
-        CALL profile_psy_data0 % PostEnd
+        CALL profile_psy_data1 % PostEnd
         !$ACC KERNELS
         DO jk = 2, jpkm1
           z3d(1, :, jk) = z3d(1, :, jk - 1) + z3d(1, :, jk)
@@ -86,14 +100,14 @@ MODULE diaptr
           z3d(ji, :, :) = z3d(1, :, :)
         END DO
         !$ACC END KERNELS
-        CALL profile_psy_data1 % PreStart('dia_ptr', 'r1', 0, 0)
+        CALL profile_psy_data2 % PreStart('dia_ptr', 'r2', 0, 0)
         cl1 = TRIM('zomsf' // clsubb(1))
         CALL iom_put(cl1, z3d * rc_sv)
-        CALL profile_psy_data1 % PostEnd
+        CALL profile_psy_data2 % PostEnd
         DO jn = 2, nptr
-          CALL profile_psy_data2 % PreStart('dia_ptr', 'r2', 0, 0)
+          CALL profile_psy_data3 % PreStart('dia_ptr', 'r3', 0, 0)
           z3d(1, :, :) = ptr_sjk(pvtr(:, :, :), btmsk(:, :, jn) * btm30(:, :))
-          CALL profile_psy_data2 % PostEnd
+          CALL profile_psy_data3 % PostEnd
           !$ACC KERNELS
           DO jk = 2, jpkm1
             z3d(1, :, jk) = z3d(1, :, jk - 1) + z3d(1, :, jk)
@@ -102,10 +116,10 @@ MODULE diaptr
             z3d(ji, :, :) = z3d(1, :, :)
           END DO
           !$ACC END KERNELS
-          CALL profile_psy_data3 % PreStart('dia_ptr', 'r3', 0, 0)
+          CALL profile_psy_data4 % PreStart('dia_ptr', 'r4', 0, 0)
           cl1 = TRIM('zomsf' // clsubb(jn))
           CALL iom_put(cl1, z3d * rc_sv)
-          CALL profile_psy_data3 % PostEnd
+          CALL profile_psy_data4 % PostEnd
         END DO
       END IF
       IF (iom_use("sopstove") .OR. iom_use("sophtove") .OR. iom_use("sopstbtr") .OR. iom_use("sophtbtr")) THEN
@@ -114,7 +128,7 @@ MODULE diaptr
         zts(:, :, :, :) = 0._wp
         zvn(:, :, :) = 0._wp
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpi
               zvfc = e1v(ji, jj) * e3v_n(ji, jj, jk)
@@ -128,18 +142,18 @@ MODULE diaptr
         !$ACC END KERNELS
       END IF
       IF (iom_use("sopstove") .OR. iom_use("sophtove")) THEN
-        CALL profile_psy_data4 % PreStart('dia_ptr', 'r4', 0, 0)
+        CALL profile_psy_data5 % PreStart('dia_ptr', 'r5', 0, 0)
         sjk(:, :, 1) = ptr_sjk(zmask(:, :, :), btmsk(:, :, 1))
-        CALL profile_psy_data4 % PostEnd
+        CALL profile_psy_data5 % PostEnd
         !$ACC KERNELS
         r1_sjk(:, :, 1) = 0._wp
         WHERE (sjk(:, :, 1) /= 0._wp) r1_sjk(:, :, 1) = 1._wp / sjk(:, :, 1)
         !$ACC END KERNELS
-        CALL profile_psy_data5 % PreStart('dia_ptr', 'r5', 0, 0)
+        CALL profile_psy_data6 % PreStart('dia_ptr', 'r6', 0, 0)
         tn_jk(:, :, 1) = ptr_sjk(zts(:, :, :, jp_tem)) * r1_sjk(:, :, 1)
         sn_jk(:, :, 1) = ptr_sjk(zts(:, :, :, jp_sal)) * r1_sjk(:, :, 1)
         v_msf(:, :, 1) = ptr_sjk(zvn(:, :, :))
-        CALL profile_psy_data5 % PostEnd
+        CALL profile_psy_data6 % PostEnd
         !$ACC KERNELS
         htr_ove(:, 1) = SUM(v_msf(:, :, 1) * tn_jk(:, :, 1), 2)
         str_ove(:, 1) = SUM(v_msf(:, :, 1) * sn_jk(:, :, 1), 2)
@@ -149,7 +163,9 @@ MODULE diaptr
         END DO
         cl1 = 'sophtove'
         !$ACC END KERNELS
+        CALL profile_psy_data7 % PreStart('dia_ptr', 'r7', 0, 0)
         CALL iom_put(TRIM(cl1), z2d)
+        CALL profile_psy_data7 % PostEnd
         !$ACC KERNELS
         z2d(1, :) = str_ove(:, 1) * rc_ggram
         DO ji = 1, jpi
@@ -157,21 +173,23 @@ MODULE diaptr
         END DO
         cl1 = 'sopstove'
         !$ACC END KERNELS
+        CALL profile_psy_data8 % PreStart('dia_ptr', 'r8', 0, 0)
         CALL iom_put(TRIM(cl1), z2d)
+        CALL profile_psy_data8 % PostEnd
         IF (ln_subbas) THEN
           DO jn = 2, nptr
-            CALL profile_psy_data6 % PreStart('dia_ptr', 'r6', 0, 0)
+            CALL profile_psy_data9 % PreStart('dia_ptr', 'r9', 0, 0)
             sjk(:, :, jn) = ptr_sjk(zmask(:, :, :), btmsk(:, :, jn))
-            CALL profile_psy_data6 % PostEnd
+            CALL profile_psy_data9 % PostEnd
             !$ACC KERNELS
             r1_sjk(:, :, jn) = 0._wp
             WHERE (sjk(:, :, jn) /= 0._wp) r1_sjk(:, :, jn) = 1._wp / sjk(:, :, jn)
             !$ACC END KERNELS
-            CALL profile_psy_data7 % PreStart('dia_ptr', 'r7', 0, 0)
+            CALL profile_psy_data10 % PreStart('dia_ptr', 'r10', 0, 0)
             tn_jk(:, :, jn) = ptr_sjk(zts(:, :, :, jp_tem), btmsk(:, :, jn)) * r1_sjk(:, :, jn)
             sn_jk(:, :, jn) = ptr_sjk(zts(:, :, :, jp_sal), btmsk(:, :, jn)) * r1_sjk(:, :, jn)
             v_msf(:, :, jn) = ptr_sjk(zvn(:, :, :), btmsk(:, :, jn))
-            CALL profile_psy_data7 % PostEnd
+            CALL profile_psy_data10 % PostEnd
             !$ACC KERNELS
             htr_ove(:, jn) = SUM(v_msf(:, :, jn) * tn_jk(:, :, jn), 2)
             str_ove(:, jn) = SUM(v_msf(:, :, jn) * sn_jk(:, :, jn), 2)
@@ -180,36 +198,36 @@ MODULE diaptr
               z2d(ji, :) = z2d(1, :)
             END DO
             !$ACC END KERNELS
-            CALL profile_psy_data8 % PreStart('dia_ptr', 'r8', 0, 0)
+            CALL profile_psy_data11 % PreStart('dia_ptr', 'r11', 0, 0)
             cl1 = TRIM('sophtove_' // clsubb(jn))
             CALL iom_put(cl1, z2d)
-            CALL profile_psy_data8 % PostEnd
+            CALL profile_psy_data11 % PostEnd
             !$ACC KERNELS
             z2d(1, :) = str_ove(:, jn) * rc_ggram
             DO ji = 1, jpi
               z2d(ji, :) = z2d(1, :)
             END DO
             !$ACC END KERNELS
-            CALL profile_psy_data9 % PreStart('dia_ptr', 'r9', 0, 0)
+            CALL profile_psy_data12 % PreStart('dia_ptr', 'r12', 0, 0)
             cl1 = TRIM('sopstove_' // clsubb(jn))
             CALL iom_put(cl1, z2d)
-            CALL profile_psy_data9 % PostEnd
+            CALL profile_psy_data12 % PostEnd
           END DO
         END IF
       END IF
       IF (iom_use("sopstbtr") .OR. iom_use("sophtbtr")) THEN
-        CALL profile_psy_data10 % PreStart('dia_ptr', 'r10', 0, 0)
+        CALL profile_psy_data13 % PreStart('dia_ptr', 'r13', 0, 0)
         sjk(:, 1, 1) = ptr_sj(zmask(:, :, :), btmsk(:, :, 1))
-        CALL profile_psy_data10 % PostEnd
+        CALL profile_psy_data13 % PostEnd
         !$ACC KERNELS
         r1_sjk(:, 1, 1) = 0._wp
         WHERE (sjk(:, 1, 1) /= 0._wp) r1_sjk(:, 1, 1) = 1._wp / sjk(:, 1, 1)
         !$ACC END KERNELS
-        CALL profile_psy_data11 % PreStart('dia_ptr', 'r11', 0, 0)
+        CALL profile_psy_data14 % PreStart('dia_ptr', 'r14', 0, 0)
         vsum = ptr_sj(zvn(:, :, :), btmsk(:, :, 1))
         tssum(:, jp_tem) = ptr_sj(zts(:, :, :, jp_tem), btmsk(:, :, 1))
         tssum(:, jp_sal) = ptr_sj(zts(:, :, :, jp_sal), btmsk(:, :, 1))
-        CALL profile_psy_data11 % PostEnd
+        CALL profile_psy_data14 % PostEnd
         !$ACC KERNELS
         htr_btr(:, 1) = vsum * tssum(:, jp_tem) * r1_sjk(:, 1, 1)
         str_btr(:, 1) = vsum * tssum(:, jp_sal) * r1_sjk(:, 1, 1)
@@ -219,7 +237,9 @@ MODULE diaptr
         END DO
         cl1 = 'sophtbtr'
         !$ACC END KERNELS
+        CALL profile_psy_data15 % PreStart('dia_ptr', 'r15', 0, 0)
         CALL iom_put(TRIM(cl1), z2d)
+        CALL profile_psy_data15 % PostEnd
         !$ACC KERNELS
         z2d(1, :) = str_btr(:, 1) * rc_ggram
         DO ji = 2, jpi
@@ -227,21 +247,23 @@ MODULE diaptr
         END DO
         cl1 = 'sopstbtr'
         !$ACC END KERNELS
+        CALL profile_psy_data16 % PreStart('dia_ptr', 'r16', 0, 0)
         CALL iom_put(TRIM(cl1), z2d)
+        CALL profile_psy_data16 % PostEnd
         IF (ln_subbas) THEN
           DO jn = 2, nptr
-            CALL profile_psy_data12 % PreStart('dia_ptr', 'r12', 0, 0)
+            CALL profile_psy_data17 % PreStart('dia_ptr', 'r17', 0, 0)
             sjk(:, 1, jn) = ptr_sj(zmask(:, :, :), btmsk(:, :, jn))
-            CALL profile_psy_data12 % PostEnd
+            CALL profile_psy_data17 % PostEnd
             !$ACC KERNELS
             r1_sjk(:, 1, jn) = 0._wp
             WHERE (sjk(:, 1, jn) /= 0._wp) r1_sjk(:, 1, jn) = 1._wp / sjk(:, 1, jn)
             !$ACC END KERNELS
-            CALL profile_psy_data13 % PreStart('dia_ptr', 'r13', 0, 0)
+            CALL profile_psy_data18 % PreStart('dia_ptr', 'r18', 0, 0)
             vsum = ptr_sj(zvn(:, :, :), btmsk(:, :, jn))
             tssum(:, jp_tem) = ptr_sj(zts(:, :, :, jp_tem), btmsk(:, :, jn))
             tssum(:, jp_sal) = ptr_sj(zts(:, :, :, jp_sal), btmsk(:, :, jn))
-            CALL profile_psy_data13 % PostEnd
+            CALL profile_psy_data18 % PostEnd
             !$ACC KERNELS
             htr_btr(:, jn) = vsum * tssum(:, jp_tem) * r1_sjk(:, 1, jn)
             str_btr(:, jn) = vsum * tssum(:, jp_sal) * r1_sjk(:, 1, jn)
@@ -250,20 +272,20 @@ MODULE diaptr
               z2d(ji, :) = z2d(1, :)
             END DO
             !$ACC END KERNELS
-            CALL profile_psy_data14 % PreStart('dia_ptr', 'r14', 0, 0)
+            CALL profile_psy_data19 % PreStart('dia_ptr', 'r19', 0, 0)
             cl1 = TRIM('sophtbtr_' // clsubb(jn))
             CALL iom_put(cl1, z2d)
-            CALL profile_psy_data14 % PostEnd
+            CALL profile_psy_data19 % PostEnd
             !$ACC KERNELS
             z2d(1, :) = str_btr(:, jn) * rc_ggram
             DO ji = 1, jpi
               z2d(ji, :) = z2d(1, :)
             END DO
             !$ACC END KERNELS
-            CALL profile_psy_data15 % PreStart('dia_ptr', 'r15', 0, 0)
+            CALL profile_psy_data20 % PreStart('dia_ptr', 'r20', 0, 0)
             cl1 = TRIM('sopstbtr_' // clsubb(jn))
             CALL iom_put(cl1, z2d)
-            CALL profile_psy_data15 % PostEnd
+            CALL profile_psy_data20 % PostEnd
           END DO
         END IF
       END IF
@@ -271,7 +293,7 @@ MODULE diaptr
       IF (iom_use("zotemglo")) THEN
         !$ACC KERNELS
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               zsfc = e1t(ji, jj) * e3t_n(ji, jj, jk)
@@ -283,31 +305,31 @@ MODULE diaptr
         END DO
         !$ACC END KERNELS
         DO jn = 1, nptr
-          CALL profile_psy_data16 % PreStart('dia_ptr', 'r16', 0, 0)
+          CALL profile_psy_data21 % PreStart('dia_ptr', 'r21', 0, 0)
           zmask(1, :, :) = ptr_sjk(zmask(:, :, :), btmsk(:, :, jn))
           cl1 = TRIM('zosrf' // clsubb(jn))
           CALL iom_put(cl1, zmask)
           z3d(1, :, :) = ptr_sjk(zts(:, :, :, jp_tem), btmsk(:, :, jn)) / MAX(zmask(1, :, :), 10.E-15)
-          CALL profile_psy_data16 % PostEnd
+          CALL profile_psy_data21 % PostEnd
           !$ACC KERNELS
           DO ji = 1, jpi
             z3d(ji, :, :) = z3d(1, :, :)
           END DO
           !$ACC END KERNELS
-          CALL profile_psy_data17 % PreStart('dia_ptr', 'r17', 0, 0)
+          CALL profile_psy_data22 % PreStart('dia_ptr', 'r22', 0, 0)
           cl1 = TRIM('zotem' // clsubb(jn))
           CALL iom_put(cl1, z3d)
           z3d(1, :, :) = ptr_sjk(zts(:, :, :, jp_sal), btmsk(:, :, jn)) / MAX(zmask(1, :, :), 10.E-15)
-          CALL profile_psy_data17 % PostEnd
+          CALL profile_psy_data22 % PostEnd
           !$ACC KERNELS
           DO ji = 1, jpi
             z3d(ji, :, :) = z3d(1, :, :)
           END DO
           !$ACC END KERNELS
-          CALL profile_psy_data18 % PreStart('dia_ptr', 'r18', 0, 0)
+          CALL profile_psy_data23 % PreStart('dia_ptr', 'r23', 0, 0)
           cl1 = TRIM('zosal' // clsubb(jn))
           CALL iom_put(cl1, z3d)
-          CALL profile_psy_data18 % PostEnd
+          CALL profile_psy_data23 % PostEnd
         END DO
       END IF
       IF (iom_use("sophtadv") .OR. iom_use("sopstadv")) THEN
@@ -318,7 +340,9 @@ MODULE diaptr
         END DO
         cl1 = 'sophtadv'
         !$ACC END KERNELS
+        CALL profile_psy_data24 % PreStart('dia_ptr', 'r24', 0, 0)
         CALL iom_put(TRIM(cl1), z2d)
+        CALL profile_psy_data24 % PostEnd
         !$ACC KERNELS
         z2d(1, :) = str_adv(:, 1) * rc_ggram
         DO ji = 1, jpi
@@ -326,7 +350,9 @@ MODULE diaptr
         END DO
         cl1 = 'sopstadv'
         !$ACC END KERNELS
+        CALL profile_psy_data25 % PreStart('dia_ptr', 'r25', 0, 0)
         CALL iom_put(TRIM(cl1), z2d)
+        CALL profile_psy_data25 % PostEnd
         IF (ln_subbas) THEN
           DO jn = 2, nptr
             !$ACC KERNELS
@@ -335,20 +361,20 @@ MODULE diaptr
               z2d(ji, :) = z2d(1, :)
             END DO
             !$ACC END KERNELS
-            CALL profile_psy_data19 % PreStart('dia_ptr', 'r19', 0, 0)
+            CALL profile_psy_data26 % PreStart('dia_ptr', 'r26', 0, 0)
             cl1 = TRIM('sophtadv_' // clsubb(jn))
             CALL iom_put(cl1, z2d)
-            CALL profile_psy_data19 % PostEnd
+            CALL profile_psy_data26 % PostEnd
             !$ACC KERNELS
             z2d(1, :) = str_adv(:, jn) * rc_ggram
             DO ji = 1, jpi
               z2d(ji, :) = z2d(1, :)
             END DO
             !$ACC END KERNELS
-            CALL profile_psy_data20 % PreStart('dia_ptr', 'r20', 0, 0)
+            CALL profile_psy_data27 % PreStart('dia_ptr', 'r27', 0, 0)
             cl1 = TRIM('sopstadv_' // clsubb(jn))
             CALL iom_put(cl1, z2d)
-            CALL profile_psy_data20 % PostEnd
+            CALL profile_psy_data27 % PostEnd
           END DO
         END IF
       END IF
@@ -360,7 +386,9 @@ MODULE diaptr
         END DO
         cl1 = 'sophtldf'
         !$ACC END KERNELS
+        CALL profile_psy_data28 % PreStart('dia_ptr', 'r28', 0, 0)
         CALL iom_put(TRIM(cl1), z2d)
+        CALL profile_psy_data28 % PostEnd
         !$ACC KERNELS
         z2d(1, :) = str_ldf(:, 1) * rc_ggram
         DO ji = 1, jpi
@@ -368,7 +396,9 @@ MODULE diaptr
         END DO
         cl1 = 'sopstldf'
         !$ACC END KERNELS
+        CALL profile_psy_data29 % PreStart('dia_ptr', 'r29', 0, 0)
         CALL iom_put(TRIM(cl1), z2d)
+        CALL profile_psy_data29 % PostEnd
         IF (ln_subbas) THEN
           DO jn = 2, nptr
             !$ACC KERNELS
@@ -377,20 +407,20 @@ MODULE diaptr
               z2d(ji, :) = z2d(1, :)
             END DO
             !$ACC END KERNELS
-            CALL profile_psy_data21 % PreStart('dia_ptr', 'r21', 0, 0)
+            CALL profile_psy_data30 % PreStart('dia_ptr', 'r30', 0, 0)
             cl1 = TRIM('sophtldf_' // clsubb(jn))
             CALL iom_put(cl1, z2d)
-            CALL profile_psy_data21 % PostEnd
+            CALL profile_psy_data30 % PostEnd
             !$ACC KERNELS
             z2d(1, :) = str_ldf(:, jn) * rc_ggram
             DO ji = 1, jpi
               z2d(ji, :) = z2d(1, :)
             END DO
             !$ACC END KERNELS
-            CALL profile_psy_data22 % PreStart('dia_ptr', 'r22', 0, 0)
+            CALL profile_psy_data31 % PreStart('dia_ptr', 'r31', 0, 0)
             cl1 = TRIM('sopstldf_' // clsubb(jn))
             CALL iom_put(cl1, z2d)
-            CALL profile_psy_data22 % PostEnd
+            CALL profile_psy_data31 % PostEnd
           END DO
         END IF
       END IF
@@ -402,7 +432,9 @@ MODULE diaptr
         END DO
         cl1 = 'sophteiv'
         !$ACC END KERNELS
+        CALL profile_psy_data32 % PreStart('dia_ptr', 'r32', 0, 0)
         CALL iom_put(TRIM(cl1), z2d)
+        CALL profile_psy_data32 % PostEnd
         !$ACC KERNELS
         z2d(1, :) = str_eiv(:, 1) * rc_ggram
         DO ji = 1, jpi
@@ -410,7 +442,9 @@ MODULE diaptr
         END DO
         cl1 = 'sopsteiv'
         !$ACC END KERNELS
+        CALL profile_psy_data33 % PreStart('dia_ptr', 'r33', 0, 0)
         CALL iom_put(TRIM(cl1), z2d)
+        CALL profile_psy_data33 % PostEnd
         IF (ln_subbas) THEN
           DO jn = 2, nptr
             !$ACC KERNELS
@@ -419,25 +453,27 @@ MODULE diaptr
               z2d(ji, :) = z2d(1, :)
             END DO
             !$ACC END KERNELS
-            CALL profile_psy_data23 % PreStart('dia_ptr', 'r23', 0, 0)
+            CALL profile_psy_data34 % PreStart('dia_ptr', 'r34', 0, 0)
             cl1 = TRIM('sophteiv_' // clsubb(jn))
             CALL iom_put(cl1, z2d)
-            CALL profile_psy_data23 % PostEnd
+            CALL profile_psy_data34 % PostEnd
             !$ACC KERNELS
             z2d(1, :) = str_eiv(:, jn) * rc_ggram
             DO ji = 1, jpi
               z2d(ji, :) = z2d(1, :)
             END DO
             !$ACC END KERNELS
-            CALL profile_psy_data24 % PreStart('dia_ptr', 'r24', 0, 0)
+            CALL profile_psy_data35 % PreStart('dia_ptr', 'r35', 0, 0)
             cl1 = TRIM('sopsteiv_' // clsubb(jn))
             CALL iom_put(cl1, z2d)
-            CALL profile_psy_data24 % PostEnd
+            CALL profile_psy_data35 % PostEnd
           END DO
         END IF
       END IF
     END IF
+    CALL profile_psy_data36 % PreStart('dia_ptr', 'r36', 0, 0)
     IF (ln_timing) CALL timing_stop('dia_ptr')
+    CALL profile_psy_data36 % PostEnd
   END SUBROUTINE dia_ptr
   SUBROUTINE dia_ptr_init
     INTEGER :: jn
@@ -452,12 +488,12 @@ MODULE diaptr
 902 IF (ios > 0) CALL ctl_nam(ios, 'namptr in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namptr)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dia_ptr_init : poleward transport and msf initialization'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namptr : set ptr parameters'
-      WRITE(numout, FMT = *) '      Poleward heat & salt transport (T) or not (F)      ln_diaptr  = ', ln_diaptr
-      WRITE(numout, FMT = *) '      Global (F) or glo/Atl/Pac/Ind/Indo-Pac basins      ln_subbas  = ', ln_subbas
+      WRITE(numout, *)
+      WRITE(numout, *) 'dia_ptr_init : poleward transport and msf initialization'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist namptr : set ptr parameters'
+      WRITE(numout, *) '      Poleward heat & salt transport (T) or not (F)      ln_diaptr  = ', ln_diaptr
+      WRITE(numout, *) '      Global (F) or glo/Atl/Pac/Ind/Indo-Pac basins      ln_subbas  = ', ln_subbas
     END IF
     IF (ln_diaptr) THEN
       IF (ln_subbas) THEN
@@ -575,8 +611,7 @@ MODULE diaptr
     !$ACC KERNELS
     ierr(:) = 0
     !$ACC END KERNELS
-    ALLOCATE(btmsk(jpi, jpj, nptr), htr_adv(jpj, nptr), str_adv(jpj, nptr), htr_eiv(jpj, nptr), str_eiv(jpj, nptr), htr_ove(jpj, &
-&nptr), str_ove(jpj, nptr), htr_btr(jpj, nptr), str_btr(jpj, nptr), htr_ldf(jpj, nptr), str_ldf(jpj, nptr), STAT = ierr(1))
+    ALLOCATE(btmsk(jpi, jpj, nptr), htr_adv(jpj, nptr), str_adv(jpj, nptr), htr_eiv(jpj, nptr), str_eiv(jpj, nptr), htr_ove(jpj, nptr), str_ove(jpj, nptr), htr_btr(jpj, nptr), str_btr(jpj, nptr), htr_ldf(jpj, nptr), str_ldf(jpj, nptr), STAT = ierr(1))
     ALLOCATE(p_fval1d(jpj), p_fval2d(jpj, jpk), STAT = ierr(2))
     ALLOCATE(btm30(jpi, jpj), STAT = ierr(3))
     dia_ptr_alloc = MAXVAL(ierr)
@@ -596,7 +631,7 @@ MODULE diaptr
     IF (PRESENT(pmsk)) THEN
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             p_fval(jj) = p_fval(jj) + pva(ji, jj, jk) * tmask_i(ji, jj) * pmsk(ji, jj)
@@ -607,7 +642,7 @@ MODULE diaptr
     ELSE
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             p_fval(jj) = p_fval(jj) + pva(ji, jj, jk) * tmask_i(ji, jj)
@@ -630,7 +665,7 @@ MODULE diaptr
     !$ACC END KERNELS
     IF (PRESENT(pmsk)) THEN
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = nldi, nlei
           p_fval(jj) = p_fval(jj) + pva(ji, jj) * tmask_i(ji, jj) * pmsk(ji, jj)
@@ -639,7 +674,7 @@ MODULE diaptr
       !$ACC END KERNELS
     ELSE
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = nldi, nlei
           p_fval(jj) = p_fval(jj) + pva(ji, jj) * tmask_i(ji, jj)
@@ -661,7 +696,7 @@ MODULE diaptr
     IF (PRESENT(pmsk)) THEN
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = nldi, nlei
             p_fval(jj, jk) = p_fval(jj, jk) + pta(ji, jj, jk) * pmsk(ji, jj)
@@ -672,7 +707,7 @@ MODULE diaptr
     ELSE
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = nldi, nlei
             p_fval(jj, jk) = p_fval(jj, jk) + pta(ji, jj, jk) * tmask_i(ji, jj)

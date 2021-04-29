@@ -65,8 +65,7 @@ MODULE sbcblk_algo_coare
     ztmp2 = grav * zu * (dt_zu + rctv0 * t_zu * dq_zu) / (t_zu * U_blk * U_blk)
     ztmp1 = 0.5 + SIGN(0.5, ztmp2)
     ztmp0 = ztmp0 * ztmp2
-    zeta_u = (1. - ztmp1) * (ztmp0 / (1. + ztmp2 / (- zu / (zi0 * 0.004 * Beta0 ** 3)))) + ztmp1 * (ztmp0 * (1. + 27. / 9. * ztmp2 &
-&/ ztmp0))
+    zeta_u = (1. - ztmp1) * (ztmp0 / (1. + ztmp2 / (- zu / (zi0 * 0.004 * Beta0 ** 3)))) + ztmp1 * (ztmp0 * (1. + 27. / 9. * ztmp2 / ztmp0))
     ztmp0 = vkarmn / (LOG(zu * z0t) - psi_h_coare(zeta_u))
     u_star = U_blk * vkarmn / (LOG(zu) - LOG(z0) - psi_m_coare(zeta_u))
     t_star = dt_zu * ztmp0
@@ -131,14 +130,13 @@ MODULE sbcblk_algo_coare
     INTEGER :: ji, jj
     REAL(KIND = wp) :: zw, zgt10, zgt18
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zw = pwnd(ji, jj)
         zgt10 = 0.5 + SIGN(0.5, (zw - 10.))
         zgt18 = 0.5 + SIGN(0.5, (zw - 18.))
-        alfa_charn(ji, jj) = (1. - zgt10) * 0.011 + zgt10 * ((1. - zgt18) * (0.011 + (0.018 - 0.011) * (zw - 10.) / (18. - 10.)) + &
-&zgt18 * (0.018))
+        alfa_charn(ji, jj) = (1. - zgt10) * 0.011 + zgt10 * ((1. - zgt18) * (0.011 + (0.018 - 0.011) * (zw - 10.) / (18. - 10.)) + zgt18 * (0.018))
       END DO
     END DO
     !$ACC END KERNELS
@@ -149,12 +147,11 @@ MODULE sbcblk_algo_coare
     INTEGER :: ji, jj
     REAL(KIND = wp) :: zqa
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zqa = (1. + rctv0 * pqa(ji, jj))
-        One_on_L(ji, jj) = grav * vkarmn * (pts(ji, jj) * zqa + rctv0 * ptha(ji, jj) * pqs(ji, jj)) / (pus(ji, jj) * pus(ji, jj) * &
-&ptha(ji, jj) * zqa)
+        One_on_L(ji, jj) = grav * vkarmn * (pts(ji, jj) * zqa + rctv0 * ptha(ji, jj) * pqs(ji, jj)) / (pus(ji, jj) * pus(ji, jj) * ptha(ji, jj) * zqa)
       END DO
     END DO
     !$ACC END KERNELS
@@ -165,7 +162,7 @@ MODULE sbcblk_algo_coare
     INTEGER :: ji, jj
     REAL(KIND = wp) :: zta, zphi_m, zphi_c, zpsi_k, zpsi_c, zf, zc, zstab
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zta = pzeta(ji, jj)
@@ -177,8 +174,7 @@ MODULE sbcblk_algo_coare
         zf = zf / (1. + zf)
         zc = MIN(50., 0.35 * zta)
         zstab = 0.5 + SIGN(0.5, zta)
-        psi_m_coare(ji, jj) = (1. - zstab) * ((1. - zf) * zpsi_k + zf * zpsi_c) - zstab * (1. + 1. * zta + 0.6667 * (zta - 14.28) &
-&/ EXP(zc) + 8.525)
+        psi_m_coare(ji, jj) = (1. - zstab) * ((1. - zf) * zpsi_k + zf * zpsi_c) - zstab * (1. + 1. * zta + 0.6667 * (zta - 14.28) / EXP(zc) + 8.525)
       END DO
     END DO
     !$ACC END KERNELS
@@ -189,7 +185,7 @@ MODULE sbcblk_algo_coare
     INTEGER :: ji, jj
     REAL(KIND = wp) :: zta, zphi_h, zphi_c, zpsi_k, zpsi_c, zf, zc, zstab
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zta = pzeta(ji, jj)
@@ -201,8 +197,7 @@ MODULE sbcblk_algo_coare
         zf = zf / (1. + zf)
         zc = MIN(50., 0.35 * zta)
         zstab = 0.5 + SIGN(0.5, zta)
-        psi_h_coare(ji, jj) = (1. - zstab) * ((1. - zf) * zpsi_k + zf * zpsi_c) - zstab * ((ABS(1. + 2. * zta / 3.)) ** 1.5 + &
-&.6667 * (zta - 14.28) / EXP(zc) + 8.525)
+        psi_h_coare(ji, jj) = (1. - zstab) * ((1. - zf) * zpsi_k + zf * zpsi_c) - zstab * ((ABS(1. + 2. * zta / 3.)) ** 1.5 + .6667 * (zta - 14.28) / EXP(zc) + 8.525)
       END DO
     END DO
     !$ACC END KERNELS
@@ -213,7 +208,7 @@ MODULE sbcblk_algo_coare
     INTEGER :: ji, jj
     REAL(KIND = wp) :: ztc, ztc2
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         ztc = ptak(ji, jj) - rt0

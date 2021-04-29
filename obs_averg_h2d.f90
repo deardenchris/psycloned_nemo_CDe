@@ -11,8 +11,7 @@ MODULE obs_averg_h2d
   PRIVATE :: obs_avg_h2d_rad, obs_avg_h2d_rec, obs_deg2dist, obs_dist2corners
   PUBLIC :: obs_avg_h2d, obs_avg_h2d_init, obs_max_fpsize
   CONTAINS
-  SUBROUTINE obs_avg_h2d_init(kpk, kpk2, kmaxifp, kmaxjfp, k2dint, plam, pphi, pglam, pgphi, pglamf, pgphif, pmask, plamscl, &
-&pphiscl, lindegrees, pweig, pobsmask, iminpoints)
+  SUBROUTINE obs_avg_h2d_init(kpk, kpk2, kmaxifp, kmaxjfp, k2dint, plam, pphi, pglam, pgphi, pglamf, pgphif, pmask, plamscl, pphiscl, lindegrees, pweig, pobsmask, iminpoints)
     INTEGER, INTENT(IN) :: kpk, kpk2, kmaxifp, kmaxjfp, k2dint
     REAL(KIND = wp), INTENT(INOUT) :: plam, pphi
     REAL(KIND = wp), DIMENSION(kmaxifp, kmaxjfp), INTENT(IN) :: pglam, pgphi
@@ -32,15 +31,12 @@ MODULE obs_averg_h2d
     END IF
     SELECT CASE (k2dint)
     CASE (5)
-      CALL obs_avg_h2d_rad(kpk2, ikmax, kmaxifp, kmaxjfp, plam, pphi, plamscl, pphiscl, lindegrees, pmask, pglam, pgphi, pglamf, &
-&pgphif, pweig)
+      CALL obs_avg_h2d_rad(kpk2, ikmax, kmaxifp, kmaxjfp, plam, pphi, plamscl, pphiscl, lindegrees, pmask, pglam, pgphi, pglamf, pgphif, pweig)
     CASE (6)
-      CALL obs_avg_h2d_rec(kpk2, ikmax, kmaxifp, kmaxjfp, plam, pphi, plamscl, pphiscl, lindegrees, pmask, pglam, pgphi, pglamf, &
-&pgphif, pweig)
+      CALL obs_avg_h2d_rec(kpk2, ikmax, kmaxifp, kmaxjfp, plam, pphi, plamscl, pphiscl, lindegrees, pmask, pglam, pgphi, pglamf, pgphif, pweig)
     END SELECT
   END SUBROUTINE obs_avg_h2d_init
-  SUBROUTINE obs_avg_h2d_rad(kpk2, kmax, kmaxifp, kmaxjfp, plam, pphi, plamscl, pphiscl, lindegrees, pmask, pglam, pgphi, pglamf, &
-&pgphif, pweig)
+  SUBROUTINE obs_avg_h2d_rad(kpk2, kmax, kmaxifp, kmaxjfp, plam, pphi, plamscl, pphiscl, lindegrees, pmask, pglam, pgphi, pglamf, pgphif, pweig)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     USE phycst, ONLY: ra, rpi
     INTEGER, INTENT(IN) :: kpk2, kmax
@@ -64,8 +60,7 @@ MODULE obs_averg_h2d
     CALL profile_psy_data0 % PreStart('obs_avg_h2d_rad', 'r0', 0, 0)
     pweig(:, :, :) = 0.0_wp
     IF (pphiscl /= plamscl) THEN
-      CALL ctl_warn('obs_avg_h2d_rad:', 'The two components of the obs footprint size are not equal', &
-&'yet the radial option has been selected - using pphiscl here')
+      CALL ctl_warn('obs_avg_h2d_rad:', 'The two components of the obs footprint size are not equal', 'yet the radial option has been selected - using pphiscl here')
     END IF
     DO jk = 1, kmax
       DO ji = 1, kmaxifp
@@ -76,11 +71,9 @@ MODULE obs_averg_h2d
             ELSE
               zphiscl_m = pphiscl
             END IF
-            CALL obs_dist2corners(pglamf(ji, jj), pglamf(ji + 1, jj), pglamf(ji, jj + 1), pglamf(ji + 1, jj + 1), pgphif(ji, jj), &
-&pgphif(ji + 1, jj), pgphif(ji, jj + 1), pgphif(ji + 1, jj + 1), pglam(ji, jj), pgphi(ji, jj), zxgrid, zygrid, zdgrid)
+            CALL obs_dist2corners(pglamf(ji, jj), pglamf(ji + 1, jj), pglamf(ji, jj + 1), pglamf(ji + 1, jj + 1), pgphif(ji, jj), pgphif(ji + 1, jj), pgphif(ji, jj + 1), pgphif(ji + 1, jj + 1), pglam(ji, jj), pgphi(ji, jj), zxgrid, zygrid, zdgrid)
             zareabox = ABS(zxgrid(1) - zxgrid(2)) * ABS(zygrid(1) - zygrid(4))
-            CALL obs_dist2corners(pglamf(ji, jj), pglamf(ji + 1, jj), pglamf(ji, jj + 1), pglamf(ji + 1, jj + 1), pgphif(ji, jj), &
-&pgphif(ji + 1, jj), pgphif(ji, jj + 1), pgphif(ji + 1, jj + 1), plam, pphi, zxvert, zyvert, zdist)
+            CALL obs_dist2corners(pglamf(ji, jj), pglamf(ji + 1, jj), pglamf(ji, jj + 1), pglamf(ji + 1, jj + 1), pgphif(ji, jj), pgphif(ji + 1, jj), pgphif(ji, jj + 1), pgphif(ji + 1, jj + 1), plam, pphi, zxvert, zyvert, zdist)
             jnumvert = 0
             jnumvertbig = 0
             DO jvert = 1, 4
@@ -111,8 +104,7 @@ MODULE obs_averg_h2d
     END DO
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE obs_avg_h2d_rad
-  SUBROUTINE obs_avg_h2d_rec(kpk2, kmax, kmaxifp, kmaxjfp, plam, pphi, plamscl, pphiscl, lindegrees, pmask, pglam, pgphi, pglamf, &
-&pgphif, pweig)
+  SUBROUTINE obs_avg_h2d_rec(kpk2, kmax, kmaxifp, kmaxjfp, plam, pphi, plamscl, pphiscl, lindegrees, pmask, pglam, pgphi, pglamf, pgphif, pweig)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     USE phycst, ONLY: ra, rpi
     INTEGER, INTENT(IN) :: kpk2, kmax
@@ -147,18 +139,14 @@ MODULE obs_averg_h2d
               zlamscl_m = plamscl
               zphiscl_m = pphiscl
             END IF
-            CALL obs_dist2corners(pglamf(ji, jj), pglamf(ji + 1, jj), pglamf(ji, jj + 1), pglamf(ji + 1, jj + 1), pgphif(ji, jj), &
-&pgphif(ji + 1, jj), pgphif(ji, jj + 1), pgphif(ji + 1, jj + 1), pglam(ji, jj), pgphi(ji, jj), zxgrid, zygrid, zdgrid)
+            CALL obs_dist2corners(pglamf(ji, jj), pglamf(ji + 1, jj), pglamf(ji, jj + 1), pglamf(ji + 1, jj + 1), pgphif(ji, jj), pgphif(ji + 1, jj), pgphif(ji, jj + 1), pgphif(ji + 1, jj + 1), pglam(ji, jj), pgphi(ji, jj), zxgrid, zygrid, zdgrid)
             z_awidth = ABS(zxgrid(1) - zxgrid(2))
             z_aheight = ABS(zygrid(1) - zygrid(4))
             zareabox = z_awidth * z_aheight
             zarea_fp = zlamscl_m * zphiscl_m
-            CALL obs_dist2corners(pglamf(ji, jj), pglamf(ji + 1, jj), pglamf(ji, jj + 1), pglamf(ji + 1, jj + 1), pgphif(ji, jj), &
-&pgphif(ji + 1, jj), pgphif(ji, jj + 1), pgphif(ji + 1, jj + 1), plam, pphi, zxvert, zyvert, zdist)
-            z_cwidth = MAX(zxvert(1), zxvert(2), - zlamscl_m / 2.0_wp, zlamscl_m / 2.0_wp) - MIN(zxvert(1), zxvert(2), - zlamscl_m &
-&/ 2.0_wp, zlamscl_m / 2.0_wp)
-            z_cheight = MAX(zyvert(1), zyvert(4), zphiscl_m / 2.0_wp, - zphiscl_m / 2.0_wp) - MIN(zyvert(1), zyvert(4), zphiscl_m &
-&/ 2.0_wp, - zphiscl_m / 2.0_wp)
+            CALL obs_dist2corners(pglamf(ji, jj), pglamf(ji + 1, jj), pglamf(ji, jj + 1), pglamf(ji + 1, jj + 1), pgphif(ji, jj), pgphif(ji + 1, jj), pgphif(ji, jj + 1), pgphif(ji + 1, jj + 1), plam, pphi, zxvert, zyvert, zdist)
+            z_cwidth = MAX(zxvert(1), zxvert(2), - zlamscl_m / 2.0_wp, zlamscl_m / 2.0_wp) - MIN(zxvert(1), zxvert(2), - zlamscl_m / 2.0_wp, zlamscl_m / 2.0_wp)
+            z_cheight = MAX(zyvert(1), zyvert(4), zphiscl_m / 2.0_wp, - zphiscl_m / 2.0_wp) - MIN(zyvert(1), zyvert(4), zphiscl_m / 2.0_wp, - zphiscl_m / 2.0_wp)
             IF ((z_cwidth >= z_awidth + zlamscl_m) .OR. (z_cheight >= z_aheight + zphiscl_m)) THEN
               pweig(ji, jj, jk) = 0.0_wp
             ELSE IF ((z_cwidth == zlamscl_m) .AND. (z_cheight == zphiscl_m)) THEN
@@ -285,8 +273,7 @@ MODULE obs_averg_h2d
     END DO
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE obs_deg2dist
-  SUBROUTINE obs_dist2corners(pglam_bl, pglam_br, pglam_tl, pglam_tr, pgphi_bl, pgphi_br, pgphi_tl, pgphi_tr, plam, pphi, pxvert, &
-&pyvert, pdist)
+  SUBROUTINE obs_dist2corners(pglam_bl, pglam_br, pglam_tl, pglam_tr, pgphi_bl, pgphi_br, pgphi_tl, pgphi_tr, plam, pphi, pxvert, pyvert, pdist)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), INTENT(IN) :: pglam_bl, pglam_br, pglam_tl, pglam_tr
     REAL(KIND = wp), INTENT(IN) :: pgphi_bl, pgphi_br, pgphi_tl, pgphi_tr

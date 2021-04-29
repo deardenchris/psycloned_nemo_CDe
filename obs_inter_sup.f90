@@ -91,6 +91,8 @@ MODULE obs_inter_sup
     INTEGER :: ij
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('obs_int_comm_3d_global', 'r0', 0, 0)
     IF ((MAXVAL(kgrdi) > jpiglo) .OR. (MINVAL(kgrdi) < 1) .OR. (MAXVAL(kgrdj) > jpjglo) .OR. (MINVAL(kgrdj) < 1)) THEN
       CALL ctl_stop('Error in obs_int_comm_3d_global', 'Point outside global domain')
@@ -103,7 +105,7 @@ MODULE obs_inter_sup
       !$ACC KERNELS
       iproc(:, :, :) = kproc(:, :, :)
       DO jobs = 1, kobs
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, kptsj
           DO ji = 1, kptsi
             nplocal(iproc(ji, jj, jobs)) = nplocal(iproc(ji, jj, jobs)) + 1
@@ -114,7 +116,7 @@ MODULE obs_inter_sup
     ELSE
       !$ACC KERNELS
       DO jobs = 1, kobs
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, kptsj
           DO ji = 1, kptsi
             iproc(ji, jj, jobs) = mppmap(kgrdi(ji, jj, jobs), kgrdj(ji, jj, jobs))
@@ -133,7 +135,7 @@ MODULE obs_inter_sup
     it = 0
     DO jp = 1, jpnij
       DO jobs = 1, kobs
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, kptsj
           DO ji = 1, kptsi
             IF (iproc(ji, jj, jobs) == jp) THEN
@@ -147,7 +149,9 @@ MODULE obs_inter_sup
       END DO
     END DO
     !$ACC END KERNELS
+    CALL profile_psy_data2 % PreStart('obs_int_comm_3d_global', 'r2', 0, 0)
     CALL mpp_alltoallv_int(igrdij_send, kptsi * kptsj * kobs * 2, nplocal(:) * 2, igrdij_recv, itot * 2, npglobal(:) * 2)
+    CALL profile_psy_data2 % PostEnd
     !$ACC KERNELS
     DO ji = 1, itot
       ii = mi1(igrdij_recv(2 * ji - 1))
@@ -159,10 +163,12 @@ MODULE obs_inter_sup
     nplocal(:) = kpk * nplocal(:)
     npglobal(:) = kpk * npglobal(:)
     !$ACC END KERNELS
+    CALL profile_psy_data3 % PreStart('obs_int_comm_3d_global', 'r3', 0, 0)
     CALL mpp_alltoallv_real(zsend, kpk * itot, npglobal, zrecv, kpk * kptsi * kptsj * kobs, nplocal)
+    CALL profile_psy_data3 % PostEnd
     !$ACC KERNELS
     DO jobs = 1, kobs
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, kptsj
         DO ji = 1, kptsi
           it = iorder(ji, jj, jobs)

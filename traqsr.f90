@@ -58,12 +58,13 @@ MODULE traqsr
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
     CALL profile_psy_data0 % PreStart('tra_qsr', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('tra_qsr')
     IF (kt == nit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'tra_qsr : penetration of the surface solar radiation'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'tra_qsr : penetration of the surface solar radiation'
+      IF (lwp) WRITE(numout, *) '~~~~~~~'
     END IF
     CALL profile_psy_data0 % PostEnd
     IF (l_trdtra) THEN
@@ -75,7 +76,7 @@ MODULE traqsr
     IF (kt == nit000) THEN
       IF (ln_rstart .AND. iom_varid(numror, 'qsr_hc_b', ldstop = .FALSE.) > 0) THEN
         CALL profile_psy_data1 % PreStart('tra_qsr', 'r1', 0, 0)
-        IF (lwp) WRITE(numout, FMT = *) '          nit000-1 qsr tracer content forcing field read in the restart file'
+        IF (lwp) WRITE(numout, *) '          nit000-1 qsr tracer content forcing field read in the restart file'
         z1_2 = 0.5_wp
         CALL iom_get(numror, jpdom_autoglo, 'qsr_hc_b', qsr_hc_b, ldxios = lrxios)
         CALL profile_psy_data1 % PostEnd
@@ -99,12 +100,14 @@ MODULE traqsr
       END DO
       !$ACC END KERNELS
     CASE (np_RGB, np_RGBc)
-      ALLOCATE(zekb(jpi, jpj), zekg(jpi, jpj), zekr(jpi, jpj), ze0(jpi, jpj, jpk), ze1(jpi, jpj, jpk), ze2(jpi, jpj, jpk), &
-&ze3(jpi, jpj, jpk), zea(jpi, jpj, jpk), zchl3d(jpi, jpj, jpk))
+      ALLOCATE(zekb(jpi, jpj), zekg(jpi, jpj), zekr(jpi, jpj), ze0(jpi, jpj, jpk), ze1(jpi, jpj, jpk), ze2(jpi, jpj, jpk), ze3(jpi, jpj, jpk), zea(jpi, jpj, jpk), zchl3d(jpi, jpj, jpk))
       IF (nqsr == np_RGBc) THEN
         CALL profile_psy_data2 % PreStart('tra_qsr', 'r2', 0, 0)
         CALL fld_read(kt, 1, sf_chl)
+        CALL profile_psy_data2 % PostEnd
+        !$ACC KERNELS
         DO jk = 1, nksr + 1
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               zchl = sf_chl(1) % fnow(ji, jj, 1)
@@ -124,7 +127,7 @@ MODULE traqsr
             END DO
           END DO
         END DO
-        CALL profile_psy_data2 % PostEnd
+        !$ACC END KERNELS
       ELSE
         !$ACC KERNELS
         DO jk = 1, nksr + 1
@@ -134,7 +137,7 @@ MODULE traqsr
       END IF
       !$ACC KERNELS
       zcoef = (1. - rn_abs) / 3._wp
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           ze0(ji, jj, 1) = rn_abs * qsr(ji, jj)
@@ -147,7 +150,7 @@ MODULE traqsr
       !$ACC END KERNELS
       DO jk = 2, nksr + 1
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zchl = MIN(10., MAX(0.03, zchl3d(ji, jj, jk)))
@@ -157,7 +160,7 @@ MODULE traqsr
             zekr(ji, jj) = rkrgb(3, irgb)
           END DO
         END DO
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zc0 = ze0(ji, jj, jk - 1) * EXP(- e3t_n(ji, jj, jk - 1) * xsi0r)
@@ -175,7 +178,7 @@ MODULE traqsr
       END DO
       !$ACC KERNELS
       DO jk = 1, nksr
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             qsr_hc(ji, jj, jk) = r1_rau0_rcp * (zea(ji, jj, jk) - zea(ji, jj, jk + 1))
@@ -189,7 +192,7 @@ MODULE traqsr
       zz0 = rn_abs * r1_rau0_rcp
       zz1 = (1. - rn_abs) * r1_rau0_rcp
       DO jk = 1, nksr
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zc0 = zz0 * EXP(- gdepw_n(ji, jj, jk) * xsi0r) + zz1 * EXP(- gdepw_n(ji, jj, jk) * xsi1r)
@@ -202,14 +205,14 @@ MODULE traqsr
     END SELECT
     !$ACC KERNELS
     DO jk = 1, nksr
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           tsa(ji, jj, jk, jp_tem) = tsa(ji, jj, jk, jp_tem) + z1_2 * (qsr_hc_b(ji, jj, jk) + qsr_hc(ji, jj, jk)) / e3t_n(ji, jj, jk)
         END DO
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         IF (qsr(ji, jj) /= 0._wp) THEN
@@ -220,7 +223,9 @@ MODULE traqsr
       END DO
     END DO
     !$ACC END KERNELS
+    CALL profile_psy_data3 % PreStart('tra_qsr', 'r3', 0, 0)
     CALL lbc_lnk('traqsr', fraqsr_1lev(:, :), 'T', 1._wp)
+    CALL profile_psy_data3 % PostEnd
     IF (iom_use('qsr3d')) THEN
       ALLOCATE(zetot(jpi, jpj, jpk))
       !$ACC KERNELS
@@ -229,32 +234,32 @@ MODULE traqsr
         zetot(:, :, jk) = zetot(:, :, jk + 1) + qsr_hc(:, :, jk) * rau0_rcp
       END DO
       !$ACC END KERNELS
-      CALL profile_psy_data3 % PreStart('tra_qsr', 'r3', 0, 0)
+      CALL profile_psy_data4 % PreStart('tra_qsr', 'r4', 0, 0)
       CALL iom_put('qsr3d', zetot)
       DEALLOCATE(zetot)
-      CALL profile_psy_data3 % PostEnd
+      CALL profile_psy_data4 % PostEnd
     END IF
-    CALL profile_psy_data4 % PreStart('tra_qsr', 'r4', 0, 0)
+    CALL profile_psy_data5 % PreStart('tra_qsr', 'r5', 0, 0)
     IF (lrst_oce) THEN
       IF (lwxios) CALL iom_swap(cwxios_context)
       CALL iom_rstput(kt, nitrst, numrow, 'qsr_hc_b', qsr_hc, ldxios = lwxios)
       CALL iom_rstput(kt, nitrst, numrow, 'fraqsr_1lev', fraqsr_1lev, ldxios = lwxios)
       IF (lwxios) CALL iom_swap(cxios_context)
     END IF
-    CALL profile_psy_data4 % PostEnd
+    CALL profile_psy_data5 % PostEnd
     IF (l_trdtra) THEN
       !$ACC KERNELS
       ztrdt(:, :, :) = tsa(:, :, :, jp_tem) - ztrdt(:, :, :)
       !$ACC END KERNELS
-      CALL profile_psy_data5 % PreStart('tra_qsr', 'r5', 0, 0)
+      CALL profile_psy_data6 % PreStart('tra_qsr', 'r6', 0, 0)
       CALL trd_tra(kt, 'TRA', jp_tem, jptra_qsr, ztrdt)
       DEALLOCATE(ztrdt)
-      CALL profile_psy_data5 % PostEnd
+      CALL profile_psy_data6 % PostEnd
     END IF
-    CALL profile_psy_data6 % PreStart('tra_qsr', 'r6', 0, 0)
+    CALL profile_psy_data7 % PreStart('tra_qsr', 'r7', 0, 0)
     IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsa(:, :, :, jp_tem), clinfo1 = ' qsr  - Ta: ', mask1 = tmask, clinfo3 = 'tra-ta')
     IF (ln_timing) CALL timing_stop('tra_qsr')
-    CALL profile_psy_data6 % PostEnd
+    CALL profile_psy_data7 % PostEnd
   END SUBROUTINE tra_qsr
   SUBROUTINE tra_qsr_init
     INTEGER :: ji, jj, jk
@@ -272,25 +277,24 @@ MODULE traqsr
 902 IF (ios > 0) CALL ctl_nam(ios, 'namtra_qsr in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namtra_qsr)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'tra_qsr_init : penetration of the surface solar radiation'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namtra_qsr : set the parameter of penetration'
-      WRITE(numout, FMT = *) '      RGB (Red-Green-Blue) light penetration       ln_qsr_rgb = ', ln_qsr_rgb
-      WRITE(numout, FMT = *) '      2 band               light penetration       ln_qsr_2bd = ', ln_qsr_2bd
-      WRITE(numout, FMT = *) '      bio-model            light penetration       ln_qsr_bio = ', ln_qsr_bio
-      WRITE(numout, FMT = *) '      RGB : Chl data (=1) or cst value (=0)        nn_chldta  = ', nn_chldta
-      WRITE(numout, FMT = *) '      RGB & 2 bands: fraction of light (rn_si1)    rn_abs     = ', rn_abs
-      WRITE(numout, FMT = *) '      RGB & 2 bands: shortess depth of extinction  rn_si0     = ', rn_si0
-      WRITE(numout, FMT = *) '      2 bands: longest depth of extinction         rn_si1     = ', rn_si1
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
+      WRITE(numout, *) 'tra_qsr_init : penetration of the surface solar radiation'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist namtra_qsr : set the parameter of penetration'
+      WRITE(numout, *) '      RGB (Red-Green-Blue) light penetration       ln_qsr_rgb = ', ln_qsr_rgb
+      WRITE(numout, *) '      2 band               light penetration       ln_qsr_2bd = ', ln_qsr_2bd
+      WRITE(numout, *) '      bio-model            light penetration       ln_qsr_bio = ', ln_qsr_bio
+      WRITE(numout, *) '      RGB : Chl data (=1) or cst value (=0)        nn_chldta  = ', nn_chldta
+      WRITE(numout, *) '      RGB & 2 bands: fraction of light (rn_si1)    rn_abs     = ', rn_abs
+      WRITE(numout, *) '      RGB & 2 bands: shortess depth of extinction  rn_si0     = ', rn_si0
+      WRITE(numout, *) '      2 bands: longest depth of extinction         rn_si1     = ', rn_si1
+      WRITE(numout, *)
     END IF
     ioptio = 0
     IF (ln_qsr_rgb) ioptio = ioptio + 1
     IF (ln_qsr_2bd) ioptio = ioptio + 1
     IF (ln_qsr_bio) ioptio = ioptio + 1
-    IF (ioptio /= 1) CALL ctl_stop('Choose ONE type of light penetration in namelist namtra_qsr', ' 2 bands, 3 RGB bands or &
-&bio-model light penetration')
+    IF (ioptio /= 1) CALL ctl_stop('Choose ONE type of light penetration in namelist namtra_qsr', ' 2 bands, 3 RGB bands or bio-model light penetration')
     IF (ln_qsr_rgb .AND. nn_chldta == 0) nqsr = np_RGB
     IF (ln_qsr_rgb .AND. nn_chldta == 1) nqsr = np_RGBc
     IF (ln_qsr_2bd) nqsr = np_2BD
@@ -299,12 +303,12 @@ MODULE traqsr
     xsi1r = 1._wp / rn_si1
     SELECT CASE (nqsr)
     CASE (np_RGB, np_RGBc)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   R-G-B   light penetration '
+      IF (lwp) WRITE(numout, *) '   ==>>>   R-G-B   light penetration '
       CALL trc_oce_rgb(rkrgb)
       nksr = trc_oce_ext_lev(r_si2, 33._wp)
-      IF (lwp) WRITE(numout, FMT = *) '        level of light extinction = ', nksr, ' ref depth = ', gdepw_1d(nksr + 1), ' m'
+      IF (lwp) WRITE(numout, *) '        level of light extinction = ', nksr, ' ref depth = ', gdepw_1d(nksr + 1), ' m'
       IF (nqsr == np_RGBc) THEN
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   Chlorophyll read in a file'
+        IF (lwp) WRITE(numout, *) '   ==>>>   Chlorophyll read in a file'
         ALLOCATE(sf_chl(1), STAT = ierror)
         IF (ierror > 0) THEN
           CALL ctl_stop('tra_qsr_init: unable to allocate sf_chl structure')
@@ -312,18 +316,17 @@ MODULE traqsr
         END IF
         ALLOCATE(sf_chl(1) % fnow(jpi, jpj, 1))
         IF (sn_chl % ln_tint) ALLOCATE(sf_chl(1) % fdta(jpi, jpj, 1, 2))
-        CALL fld_fill(sf_chl, (/sn_chl/), cn_dir, 'tra_qsr_init', 'Solar penetration function of read chlorophyll', 'namtra_qsr', &
-&no_print)
+        CALL fld_fill(sf_chl, (/sn_chl/), cn_dir, 'tra_qsr_init', 'Solar penetration function of read chlorophyll', 'namtra_qsr', no_print)
       END IF
       IF (nqsr == np_RGB) THEN
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   Constant Chlorophyll concentration = 0.05'
+        IF (lwp) WRITE(numout, *) '   ==>>>   Constant Chlorophyll concentration = 0.05'
       END IF
     CASE (np_2BD)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   2 bands light penetration'
+      IF (lwp) WRITE(numout, *) '   ==>>>   2 bands light penetration'
       nksr = trc_oce_ext_lev(rn_si1, 100._wp)
-      IF (lwp) WRITE(numout, FMT = *) '        level of light extinction = ', nksr, ' ref depth = ', gdepw_1d(nksr + 1), ' m'
+      IF (lwp) WRITE(numout, *) '        level of light extinction = ', nksr, ' ref depth = ', gdepw_1d(nksr + 1), ' m'
     CASE (np_BIO)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   bio-model light penetration'
+      IF (lwp) WRITE(numout, *) '   ==>>>   bio-model light penetration'
       IF (.NOT. lk_top) CALL ctl_stop('No bio model : ln_qsr_bio = true impossible ')
     END SELECT
     !$ACC KERNELS

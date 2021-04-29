@@ -28,10 +28,14 @@ MODULE dommsk
     LOGICAL :: ln_shlat2d
     CHARACTER(LEN = 256) :: cn_shlat2d_file, cn_shlat2d_var
     NAMELIST /namlbc/ rn_shlat, ln_vorlat, ln_shlat2d, cn_shlat2d_file, cn_shlat2d_var
-    NAMELIST /nambdy/ ln_bdy, nb_bdy, ln_coords_file, cn_coords_file, ln_mask_file, cn_mask_file, cn_dyn2d, nn_dyn2d_dta, &
-&cn_dyn3d, nn_dyn3d_dta, cn_tra, nn_tra_dta, ln_tra_dmp, ln_dyn3d_dmp, rn_time_dmp, rn_time_dmp_out, cn_ice, nn_ice_dta, &
-&rn_ice_tem, rn_ice_sal, rn_ice_age, ln_vol, nn_volctl, nn_rimwidth, nb_jpk_bdy
+    NAMELIST /nambdy/ ln_bdy, nb_bdy, ln_coords_file, cn_coords_file, ln_mask_file, cn_mask_file, cn_dyn2d, nn_dyn2d_dta, cn_dyn3d, nn_dyn3d_dta, cn_tra, nn_tra_dta, ln_tra_dmp, ln_dyn3d_dmp, rn_time_dmp, rn_time_dmp_out, cn_ice, nn_ice_dta, rn_ice_tem, rn_ice_sal, rn_ice_age, ln_vol, nn_volctl, nn_rimwidth, nb_jpk_bdy
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     CALL profile_psy_data0 % PreStart('dom_msk', 'r0', 0, 0)
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, namlbc, IOSTAT = ios, ERR = 901)
@@ -41,34 +45,37 @@ MODULE dommsk
 902 IF (ios > 0) CALL ctl_nam(ios, 'namlbc in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namlbc)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dommsk : ocean mask '
-      WRITE(numout, FMT = *) '~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namlbc'
-      WRITE(numout, FMT = *) '      lateral momentum boundary cond.    rn_shlat  = ', rn_shlat
-      WRITE(numout, FMT = *) '      consistency with analytical form   ln_vorlat = ', ln_vorlat
+      WRITE(numout, *)
+      WRITE(numout, *) 'dommsk : ocean mask '
+      WRITE(numout, *) '~~~~~~'
+      WRITE(numout, *) '   Namelist namlbc'
+      WRITE(numout, *) '      lateral momentum boundary cond.    rn_shlat  = ', rn_shlat
+      WRITE(numout, *) '      consistency with analytical form   ln_vorlat = ', ln_vorlat
     END IF
-    IF (lwp) WRITE(numout, FMT = *)
+    IF (lwp) WRITE(numout, *)
     IF (ln_shlat2d) THEN
-      IF (lwp) WRITE(numout, FMT = *) '         READ shlat as a 2D coefficient in a file '
+      IF (lwp) WRITE(numout, *) '         READ shlat as a 2D coefficient in a file '
       ALLOCATE(zshlat2d(jpi, jpj))
       CALL iom_open(TRIM(cn_shlat2d_file), inum)
       CALL iom_get(inum, jpdom_data, TRIM(cn_shlat2d_var), zshlat2d, 1)
       CALL iom_close(inum)
     ELSE
       IF (rn_shlat == 0.) THEN
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   ocean lateral  free-slip'
+        IF (lwp) WRITE(numout, *) '   ==>>>   ocean lateral  free-slip'
       ELSE IF (rn_shlat == 2.) THEN
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   ocean lateral  no-slip'
+        IF (lwp) WRITE(numout, *) '   ==>>>   ocean lateral  no-slip'
       ELSE IF (0. < rn_shlat .AND. rn_shlat < 2.) THEN
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   ocean lateral  partial-slip'
+        IF (lwp) WRITE(numout, *) '   ==>>>   ocean lateral  partial-slip'
       ELSE IF (2. < rn_shlat) THEN
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   ocean lateral  strong-slip'
+        IF (lwp) WRITE(numout, *) '   ==>>>   ocean lateral  strong-slip'
       ELSE
         CALL ctl_stop('dom_msk: wrong value for rn_shlat (i.e. a negalive value). We stop.')
       END IF
     END IF
+    CALL profile_psy_data0 % PostEnd
+    !$ACC KERNELS
     tmask(:, :, :) = 0._wp
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         iktop = k_top(ji, jj)
@@ -78,6 +85,8 @@ MODULE dommsk
         END IF
       END DO
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('dom_msk', 'r1', 0, 0)
     CALL lbc_lnk('dommsk', tmask, 'T', 1._wp)
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, nambdy, IOSTAT = ios, ERR = 903)
@@ -85,18 +94,25 @@ MODULE dommsk
     REWIND(UNIT = numnam_cfg)
     READ(numnam_cfg, nambdy, IOSTAT = ios, ERR = 904)
 904 IF (ios > 0) CALL ctl_nam(ios, 'nambdy in configuration namelist', lwp)
+    CALL profile_psy_data1 % PostEnd
     IF (ln_bdy .AND. ln_mask_file) THEN
+      CALL profile_psy_data2 % PreStart('dom_msk', 'r2', 0, 0)
       CALL iom_open(cn_mask_file, inum)
       CALL iom_get(inum, jpdom_data, 'bdy_msk', bdytmask(:, :))
       CALL iom_close(inum)
+      CALL profile_psy_data2 % PostEnd
+      !$ACC KERNELS
       DO jk = 1, jpkm1
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             tmask(ji, jj, jk) = tmask(ji, jj, jk) * bdytmask(ji, jj)
           END DO
         END DO
       END DO
+      !$ACC END KERNELS
     END IF
+    !$ACC KERNELS
     DO jk = 1, jpk
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
@@ -108,7 +124,11 @@ MODULE dommsk
         END DO
       END DO
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data3 % PreStart('dom_msk', 'r3', 0, 0)
     CALL lbc_lnk_multi('dommsk', umask, 'U', 1., vmask, 'V', 1., fmask, 'F', 1.)
+    CALL profile_psy_data3 % PostEnd
+    !$ACC KERNELS
     wmask(:, :, 1) = tmask(:, :, 1)
     wumask(:, :, 1) = umask(:, :, 1)
     wvmask(:, :, 1) = vmask(:, :, 1)
@@ -117,9 +137,13 @@ MODULE dommsk
       wumask(:, :, jk) = umask(:, :, jk) * umask(:, :, jk - 1)
       wvmask(:, :, jk) = vmask(:, :, jk) * vmask(:, :, jk - 1)
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data4 % PreStart('dom_msk', 'r4', 0, 0)
     ssmask(:, :) = MAXVAL(tmask(:, :, :), DIM = 3)
     ssumask(:, :) = MAXVAL(umask(:, :, :), DIM = 3)
     ssvmask(:, :) = MAXVAL(vmask(:, :, :), DIM = 3)
+    CALL profile_psy_data4 % PostEnd
+    !$ACC KERNELS
     iif = nn_hls
     iil = nlci - nn_hls + 1
     ijf = nn_hls
@@ -131,41 +155,53 @@ MODULE dommsk
     tmask_h(:, ijl : jpj) = 0._wp
     tpol(1 : jpiglo) = 1._wp
     fpol(1 : jpiglo) = 1._wp
+    !$ACC END KERNELS
     IF (jperio == 3 .OR. jperio == 4) THEN
+      !$ACC KERNELS
       tpol(jpiglo / 2 + 1 : jpiglo) = 0._wp
       fpol(1 : jpiglo) = 0._wp
+      !$ACC END KERNELS
       IF (mjg(nlej) == jpjglo) THEN
+        !$ACC KERNELS
         DO ji = iif + 1, iil - 1
           tmask_h(ji, nlej - 1) = tmask_h(ji, nlej - 1) * tpol(mig(ji))
         END DO
+        !$ACC END KERNELS
       END IF
     END IF
+    !$ACC KERNELS
     IF (jperio == 5 .OR. jperio == 6) THEN
       tpol(1 : jpiglo) = 0._wp
       fpol(jpiglo / 2 + 1 : jpiglo) = 0._wp
     END IF
     tmask_i(:, :) = ssmask(:, :) * tmask_h(:, :)
+    !$ACC END KERNELS
     IF (rn_shlat /= 0 .OR. ln_shlat2d) THEN
       DO jk = 1, jpk
         IF (ln_shlat2d) THEN
+          !$ACC KERNELS
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               IF (fmask(ji, jj, jk) == 0._wp) THEN
-                fmask(ji, jj, jk) = zshlat2d(ji, jj) * MIN(1._wp, MAX(umask(ji, jj, jk), umask(ji, jj + 1, jk), vmask(ji, jj, jk), &
-&vmask(ji + 1, jj, jk)))
+                fmask(ji, jj, jk) = zshlat2d(ji, jj) * MIN(1._wp, MAX(umask(ji, jj, jk), umask(ji, jj + 1, jk), vmask(ji, jj, jk), vmask(ji + 1, jj, jk)))
               END IF
             END DO
           END DO
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               IF (fmask(ji, jj, jk) == 0._wp) THEN
-                fmask(ji, jj, jk) = rn_shlat * MIN(1._wp, MAX(umask(ji, jj, jk), umask(ji, jj + 1, jk), vmask(ji, jj, jk), &
-&vmask(ji + 1, jj, jk)))
+                fmask(ji, jj, jk) = rn_shlat * MIN(1._wp, MAX(umask(ji, jj, jk), umask(ji, jj + 1, jk), vmask(ji, jj, jk), vmask(ji + 1, jj, jk)))
               END IF
             END DO
           END DO
+          !$ACC END KERNELS
         END IF
+        !$ACC KERNELS
         DO jj = 2, jpjm1
           IF (fmask(1, jj, jk) == 0._wp) THEN
             fmask(1, jj, jk) = rn_shlat * MIN(1._wp, MAX(vmask(2, jj, jk), umask(1, jj + 1, jk), umask(1, jj, jk)))
@@ -182,11 +218,15 @@ MODULE dommsk
             fmask(ji, jpj, jk) = rn_shlat * MIN(1._wp, MAX(vmask(ji + 1, jpj, jk), vmask(ji - 1, jpj, jk), umask(ji, jpjm1, jk)))
           END IF
         END DO
+        !$ACC END KERNELS
       END DO
+      CALL profile_psy_data5 % PreStart('dom_msk', 'r5', 0, 0)
       IF (ln_shlat2d) DEALLOCATE(zshlat2d)
       CALL lbc_lnk('dommsk', fmask, 'F', 1._wp)
+      CALL profile_psy_data5 % PostEnd
     END IF
+    CALL profile_psy_data6 % PreStart('dom_msk', 'r6', 0, 0)
     CALL usr_def_fmask(cn_cfg, nn_cfg, fmask)
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data6 % PostEnd
   END SUBROUTINE dom_msk
 END MODULE dommsk

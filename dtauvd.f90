@@ -34,21 +34,20 @@ MODULE dtauvd
     IF (lwm) WRITE(numond, namc1d_uvd)
     IF (PRESENT(ld_dyndmp)) ln_uvd_dyndmp = .TRUE.
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dta_uvd_init : U & V current data '
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~ '
-      WRITE(numout, FMT = *) '   Namelist namc1d_uvd : Set flags'
-      WRITE(numout, FMT = *) '      Initialization of ocean U & V current with input data   ln_uvd_init   = ', ln_uvd_init
-      WRITE(numout, FMT = *) '      Damping of ocean U & V current toward input data        ln_uvd_dyndmp = ', ln_uvd_dyndmp
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
+      WRITE(numout, *) 'dta_uvd_init : U & V current data '
+      WRITE(numout, *) '~~~~~~~~~~~~ '
+      WRITE(numout, *) '   Namelist namc1d_uvd : Set flags'
+      WRITE(numout, *) '      Initialization of ocean U & V current with input data   ln_uvd_init   = ', ln_uvd_init
+      WRITE(numout, *) '      Damping of ocean U & V current toward input data        ln_uvd_dyndmp = ', ln_uvd_dyndmp
+      WRITE(numout, *)
       IF (.NOT. ln_uvd_init .AND. .NOT. ln_uvd_dyndmp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '   U & V current data not used'
+        WRITE(numout, *)
+        WRITE(numout, *) '   U & V current data not used'
       END IF
     END IF
     IF (ln_rstart .AND. ln_uvd_init) THEN
-      CALL ctl_warn('dta_uvd_init: ocean restart and U & V current data initialization, ', &
-&'we keep the restart U & V current values and set ln_uvd_init to FALSE')
+      CALL ctl_warn('dta_uvd_init: ocean restart and U & V current data initialization, ', 'we keep the restart U & V current values and set ln_uvd_init to FALSE')
       ln_uvd_init = .FALSE.
     END IF
     IF (ln_uvd_init .OR. ln_uvd_dyndmp) THEN
@@ -85,15 +84,17 @@ MODULE dtauvd
     CALL profile_psy_data0 % PreStart('dta_uvd', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('dta_uvd')
     CALL fld_read(kt, 1, sf_uvd)
+    CALL profile_psy_data0 % PostEnd
+    !$ACC KERNELS
     puvd(:, :, :, 1) = sf_uvd(1) % fnow(:, :, :)
     puvd(:, :, :, 2) = sf_uvd(2) % fnow(:, :, :)
-    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
     IF (ln_sco) THEN
       CALL profile_psy_data1 % PreStart('dta_uvd', 'r1', 0, 0)
       ALLOCATE(zup(jpk), zvp(jpk))
       IF (kt == nit000 .AND. lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) 'dta_uvd: interpolate U & V current data onto the s- or mixed s-z-coordinate mesh'
+        WRITE(numout, *)
+        WRITE(numout, *) 'dta_uvd: interpolate U & V current data onto the s- or mixed s-z-coordinate mesh'
       END IF
       CALL profile_psy_data1 % PostEnd
       DO jj = 1, jpj
@@ -136,7 +137,7 @@ MODULE dtauvd
       !$ACC END KERNELS
       IF (ln_zps) THEN
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             ik = mbkt(ji, jj)
@@ -152,7 +153,7 @@ MODULE dtauvd
     END IF
     CALL profile_psy_data3 % PreStart('dta_uvd', 'r3', 0, 0)
     IF (.NOT. ln_uvd_dyndmp) THEN
-      IF (lwp) WRITE(numout, FMT = *) 'dta_uvd: deallocate U & V current arrays as they are only used to initialize the run'
+      IF (lwp) WRITE(numout, *) 'dta_uvd: deallocate U & V current arrays as they are only used to initialize the run'
       DEALLOCATE(sf_uvd(1) % fnow)
       IF (sf_uvd(1) % ln_tint) DEALLOCATE(sf_uvd(1) % fdta)
       DEALLOCATE(sf_uvd(2) % fnow)

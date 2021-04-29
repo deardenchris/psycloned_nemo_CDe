@@ -65,8 +65,7 @@ MODULE asminc
     REAL(KIND = wp) :: zdate_bkg
     REAL(KIND = wp) :: zdate_inc
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zhdiv
-    NAMELIST /nam_asminc/ ln_bkgwri, ln_trainc, ln_dyninc, ln_sshinc, ln_asmdin, ln_asmiau, nitbkg, nitdin, nitiaustr, nitiaufin, &
-&niaufn, ln_salfix, salfixmin, nn_divdmp
+    NAMELIST /nam_asminc/ ln_bkgwri, ln_trainc, ln_dyninc, ln_sshinc, ln_asmdin, ln_asmiau, nitbkg, nitdin, nitiaustr, nitiaufin, niaufn, ln_salfix, salfixmin, nn_divdmp
     ln_seaiceinc = .FALSE.
     ln_temnofreeze = .FALSE.
     REWIND(UNIT = numnam_ref)
@@ -77,24 +76,24 @@ MODULE asminc
 902 IF (ios > 0) CALL ctl_nam(ios, 'nam_asminc in configuration namelist', lwp)
     IF (lwm) WRITE(numond, nam_asminc)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'asm_inc_init : Assimilation increment initialization :'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namasm : set assimilation increment parameters'
-      WRITE(numout, FMT = *) '      Logical switch for writing out background state          ln_bkgwri = ', ln_bkgwri
-      WRITE(numout, FMT = *) '      Logical switch for applying tracer increments            ln_trainc = ', ln_trainc
-      WRITE(numout, FMT = *) '      Logical switch for applying velocity increments          ln_dyninc = ', ln_dyninc
-      WRITE(numout, FMT = *) '      Logical switch for applying SSH increments               ln_sshinc = ', ln_sshinc
-      WRITE(numout, FMT = *) '      Logical switch for Direct Initialization (DI)            ln_asmdin = ', ln_asmdin
-      WRITE(numout, FMT = *) '      Logical switch for applying sea ice increments        ln_seaiceinc = ', ln_seaiceinc
-      WRITE(numout, FMT = *) '      Logical switch for Incremental Analysis Updating (IAU)   ln_asmiau = ', ln_asmiau
-      WRITE(numout, FMT = *) '      Timestep of background in [0,nitend-nit000-1]            nitbkg    = ', nitbkg
-      WRITE(numout, FMT = *) '      Timestep of background for DI in [0,nitend-nit000-1]     nitdin    = ', nitdin
-      WRITE(numout, FMT = *) '      Timestep of start of IAU interval in [0,nitend-nit000-1] nitiaustr = ', nitiaustr
-      WRITE(numout, FMT = *) '      Timestep of end of IAU interval in [0,nitend-nit000-1]   nitiaufin = ', nitiaufin
-      WRITE(numout, FMT = *) '      Type of IAU weighting function                           niaufn    = ', niaufn
-      WRITE(numout, FMT = *) '      Logical switch for ensuring that the sa > salfixmin      ln_salfix = ', ln_salfix
-      WRITE(numout, FMT = *) '      Minimum salinity after applying the increments           salfixmin = ', salfixmin
+      WRITE(numout, *)
+      WRITE(numout, *) 'asm_inc_init : Assimilation increment initialization :'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist namasm : set assimilation increment parameters'
+      WRITE(numout, *) '      Logical switch for writing out background state          ln_bkgwri = ', ln_bkgwri
+      WRITE(numout, *) '      Logical switch for applying tracer increments            ln_trainc = ', ln_trainc
+      WRITE(numout, *) '      Logical switch for applying velocity increments          ln_dyninc = ', ln_dyninc
+      WRITE(numout, *) '      Logical switch for applying SSH increments               ln_sshinc = ', ln_sshinc
+      WRITE(numout, *) '      Logical switch for Direct Initialization (DI)            ln_asmdin = ', ln_asmdin
+      WRITE(numout, *) '      Logical switch for applying sea ice increments        ln_seaiceinc = ', ln_seaiceinc
+      WRITE(numout, *) '      Logical switch for Incremental Analysis Updating (IAU)   ln_asmiau = ', ln_asmiau
+      WRITE(numout, *) '      Timestep of background in [0,nitend-nit000-1]            nitbkg    = ', nitbkg
+      WRITE(numout, *) '      Timestep of background for DI in [0,nitend-nit000-1]     nitdin    = ', nitdin
+      WRITE(numout, *) '      Timestep of start of IAU interval in [0,nitend-nit000-1] nitiaustr = ', nitiaustr
+      WRITE(numout, *) '      Timestep of end of IAU interval in [0,nitend-nit000-1]   nitiaufin = ', nitiaufin
+      WRITE(numout, *) '      Type of IAU weighting function                           niaufn    = ', niaufn
+      WRITE(numout, *) '      Logical switch for ensuring that the sa > salfixmin      ln_salfix = ', ln_salfix
+      WRITE(numout, *) '      Minimum salinity after applying the increments           salfixmin = ', salfixmin
     END IF
     nitbkg_r = nitbkg + nit000 - 1
     nitdin_r = nitdin + nit000 - 1
@@ -108,41 +107,34 @@ MODULE asminc
     CALL calc_date(nitiaustr_r, ditiaustr_date)
     CALL calc_date(nitiaufin_r, ditiaufin_date)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '   Time steps referenced to current cycle:'
-      WRITE(numout, FMT = *) '       iitrst      = ', nit000 - 1
-      WRITE(numout, FMT = *) '       nit000      = ', nit000
-      WRITE(numout, FMT = *) '       nitend      = ', nitend
-      WRITE(numout, FMT = *) '       nitbkg_r    = ', nitbkg_r
-      WRITE(numout, FMT = *) '       nitdin_r    = ', nitdin_r
-      WRITE(numout, FMT = *) '       nitiaustr_r = ', nitiaustr_r
-      WRITE(numout, FMT = *) '       nitiaufin_r = ', nitiaufin_r
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '   Dates referenced to current cycle:'
-      WRITE(numout, FMT = *) '       ndastp         = ', ndastp
-      WRITE(numout, FMT = *) '       ndate0         = ', ndate0
-      WRITE(numout, FMT = *) '       nn_time0       = ', nn_time0
-      WRITE(numout, FMT = *) '       ditend_date    = ', ditend_date
-      WRITE(numout, FMT = *) '       ditbkg_date    = ', ditbkg_date
-      WRITE(numout, FMT = *) '       ditdin_date    = ', ditdin_date
-      WRITE(numout, FMT = *) '       ditiaustr_date = ', ditiaustr_date
-      WRITE(numout, FMT = *) '       ditiaufin_date = ', ditiaufin_date
+      WRITE(numout, *)
+      WRITE(numout, *) '   Time steps referenced to current cycle:'
+      WRITE(numout, *) '       iitrst      = ', nit000 - 1
+      WRITE(numout, *) '       nit000      = ', nit000
+      WRITE(numout, *) '       nitend      = ', nitend
+      WRITE(numout, *) '       nitbkg_r    = ', nitbkg_r
+      WRITE(numout, *) '       nitdin_r    = ', nitdin_r
+      WRITE(numout, *) '       nitiaustr_r = ', nitiaustr_r
+      WRITE(numout, *) '       nitiaufin_r = ', nitiaufin_r
+      WRITE(numout, *)
+      WRITE(numout, *) '   Dates referenced to current cycle:'
+      WRITE(numout, *) '       ndastp         = ', ndastp
+      WRITE(numout, *) '       ndate0         = ', ndate0
+      WRITE(numout, *) '       nn_time0       = ', nn_time0
+      WRITE(numout, *) '       ditend_date    = ', ditend_date
+      WRITE(numout, *) '       ditbkg_date    = ', ditbkg_date
+      WRITE(numout, *) '       ditdin_date    = ', ditdin_date
+      WRITE(numout, *) '       ditiaustr_date = ', ditiaustr_date
+      WRITE(numout, *) '       ditiaufin_date = ', ditiaufin_date
     END IF
-    IF ((ln_asmdin) .AND. (ln_asmiau)) CALL ctl_stop(' ln_asmdin and ln_asmiau :', ' Choose Direct Initialization OR Incremental &
-&Analysis Updating')
-    IF (((.NOT. ln_asmdin) .AND. (.NOT. ln_asmiau)) .AND. ((ln_trainc) .OR. (ln_dyninc) .OR. (ln_sshinc) .OR. (ln_seaiceinc))) &
-&CALL ctl_stop(' One or more of ln_trainc, ln_dyninc, ln_sshinc and ln_seaiceinc is set to .true.', ' but ln_asmdin and ln_asmiau &
-&are both set to .false. :', ' Inconsistent options')
+    IF ((ln_asmdin) .AND. (ln_asmiau)) CALL ctl_stop(' ln_asmdin and ln_asmiau :', ' Choose Direct Initialization OR Incremental Analysis Updating')
+    IF (((.NOT. ln_asmdin) .AND. (.NOT. ln_asmiau)) .AND. ((ln_trainc) .OR. (ln_dyninc) .OR. (ln_sshinc) .OR. (ln_seaiceinc))) CALL ctl_stop(' One or more of ln_trainc, ln_dyninc, ln_sshinc and ln_seaiceinc is set to .true.', ' but ln_asmdin and ln_asmiau are both set to .false. :', ' Inconsistent options')
     IF ((niaufn /= 0) .AND. (niaufn /= 1)) CALL ctl_stop(' niaufn /= 0 or niaufn /=1 :', ' Type IAU weighting function is invalid')
-    IF ((.NOT. ln_trainc) .AND. (.NOT. ln_dyninc) .AND. (.NOT. ln_sshinc) .AND. (.NOT. ln_seaiceinc)) CALL ctl_warn(' ln_trainc, &
-&ln_dyninc, ln_sshinc and ln_seaiceinc are set to .false. :', ' The assimilation increments are not applied')
+    IF ((.NOT. ln_trainc) .AND. (.NOT. ln_dyninc) .AND. (.NOT. ln_sshinc) .AND. (.NOT. ln_seaiceinc)) CALL ctl_warn(' ln_trainc, ln_dyninc, ln_sshinc and ln_seaiceinc are set to .false. :', ' The assimilation increments are not applied')
     IF ((ln_asmiau) .AND. (nitiaustr == nitiaufin)) CALL ctl_stop(' nitiaustr = nitiaufin :', ' IAU interval is of zero length')
-    IF ((ln_asmiau) .AND. ((nitiaustr_r < nit000) .OR. (nitiaufin_r > nitend))) CALL ctl_stop(' nitiaustr or nitiaufin :', ' IAU &
-&starting or final time step is outside the cycle interval', ' Valid range nit000 to nitend')
-    IF ((nitbkg_r < nit000 - 1) .OR. (nitbkg_r > nitend)) CALL ctl_stop(' nitbkg :', ' Background time step is outside the cycle &
-&interval')
-    IF ((nitdin_r < nit000 - 1) .OR. (nitdin_r > nitend)) CALL ctl_stop(' nitdin :', ' Background time step for Direct &
-&Initialization is outside', ' the cycle interval')
+    IF ((ln_asmiau) .AND. ((nitiaustr_r < nit000) .OR. (nitiaufin_r > nitend))) CALL ctl_stop(' nitiaustr or nitiaufin :', ' IAU starting or final time step is outside the cycle interval', ' Valid range nit000 to nitend')
+    IF ((nitbkg_r < nit000 - 1) .OR. (nitbkg_r > nitend)) CALL ctl_stop(' nitbkg :', ' Background time step is outside the cycle interval')
+    IF ((nitdin_r < nit000 - 1) .OR. (nitdin_r > nitend)) CALL ctl_stop(' nitdin :', ' Background time step for Direct Initialization is outside', ' the cycle interval')
     IF (nstop > 0) RETURN
     IF (ln_asmiau) THEN
       ALLOCATE(wgtiau(icycper))
@@ -175,19 +167,19 @@ MODULE asminc
         END DO
       END IF
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) 'asm_inc_init : IAU weights'
-        WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-        WRITE(numout, FMT = *) '             time step         IAU  weight'
-        WRITE(numout, FMT = *) '             =========     ====================='
+        WRITE(numout, *)
+        WRITE(numout, *) 'asm_inc_init : IAU weights'
+        WRITE(numout, *) '~~~~~~~~~~~~'
+        WRITE(numout, *) '             time step         IAU  weight'
+        WRITE(numout, *) '             =========     ====================='
         ztotwgt = 0.0
         DO jt = 1, icycper
           ztotwgt = ztotwgt + wgtiau(jt)
-          WRITE(numout, FMT = *) '         ', jt, '       ', wgtiau(jt)
+          WRITE(numout, *) '         ', jt, '       ', wgtiau(jt)
         END DO
-        WRITE(numout, FMT = *) '         ==================================='
-        WRITE(numout, FMT = *) '         Time-integrated weight = ', ztotwgt
-        WRITE(numout, FMT = *) '         ==================================='
+        WRITE(numout, *) '         ==================================='
+        WRITE(numout, *) '         Time-integrated weight = ', ztotwgt
+        WRITE(numout, *) '         ==================================='
       END IF
     END IF
     ALLOCATE(t_bkginc(jpi, jpj, jpk))
@@ -210,14 +202,12 @@ MODULE asminc
       z_inc_dateb = zdate_inc
       z_inc_datef = zdate_inc
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) 'asm_inc_init : Assimilation increments valid between dates ', z_inc_dateb, ' and ', z_inc_datef
-        WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+        WRITE(numout, *)
+        WRITE(numout, *) 'asm_inc_init : Assimilation increments valid between dates ', z_inc_dateb, ' and ', z_inc_datef
+        WRITE(numout, *) '~~~~~~~~~~~~'
       END IF
-      IF ((z_inc_dateb < ndastp + nn_time0 * 0.0001_wp) .OR. (z_inc_datef > ditend_date)) CALL ctl_warn(' Validity time of &
-&assimilation increments is ', ' outside the assimilation interval')
-      IF ((ln_asmdin) .AND. (zdate_inc /= ditdin_date)) CALL ctl_warn(' Validity time of assimilation increments does ', ' not &
-&agree with Direct Initialization time')
+      IF ((z_inc_dateb < ndastp + nn_time0 * 0.0001_wp) .OR. (z_inc_datef > ditend_date)) CALL ctl_warn(' Validity time of assimilation increments is ', ' outside the assimilation interval')
+      IF ((ln_asmdin) .AND. (zdate_inc /= ditdin_date)) CALL ctl_warn(' Validity time of assimilation increments does ', ' not agree with Direct Initialization time')
       IF (ln_trainc) THEN
         CALL iom_get(inum, jpdom_autoglo, 'bckint', t_bkginc, 1)
         CALL iom_get(inum, jpdom_autoglo, 'bckins', s_bkginc, 1)
@@ -253,18 +243,14 @@ MODULE asminc
           zhdiv(:, :) = 0._wp
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
-              zhdiv(ji, jj) = (e2u(ji, jj) * e3u_n(ji, jj, jk) * u_bkginc(ji, jj, jk) - e2u(ji - 1, jj) * e3u_n(ji - 1, jj, jk) * &
-&u_bkginc(ji - 1, jj, jk) + e1v(ji, jj) * e3v_n(ji, jj, jk) * v_bkginc(ji, jj, jk) - e1v(ji, jj - 1) * e3v_n(ji, jj - 1, jk) * &
-&v_bkginc(ji, jj - 1, jk)) / e3t_n(ji, jj, jk)
+              zhdiv(ji, jj) = (e2u(ji, jj) * e3u_n(ji, jj, jk) * u_bkginc(ji, jj, jk) - e2u(ji - 1, jj) * e3u_n(ji - 1, jj, jk) * u_bkginc(ji - 1, jj, jk) + e1v(ji, jj) * e3v_n(ji, jj, jk) * v_bkginc(ji, jj, jk) - e1v(ji, jj - 1) * e3v_n(ji, jj - 1, jk) * v_bkginc(ji, jj - 1, jk)) / e3t_n(ji, jj, jk)
             END DO
           END DO
           CALL lbc_lnk('asminc', zhdiv, 'T', 1.)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
-              u_bkginc(ji, jj, jk) = u_bkginc(ji, jj, jk) + 0.2_wp * (zhdiv(ji + 1, jj) - zhdiv(ji, jj)) * r1_e1u(ji, jj) * &
-&umask(ji, jj, jk)
-              v_bkginc(ji, jj, jk) = v_bkginc(ji, jj, jk) + 0.2_wp * (zhdiv(ji, jj + 1) - zhdiv(ji, jj)) * r1_e2v(ji, jj) * &
-&vmask(ji, jj, jk)
+              u_bkginc(ji, jj, jk) = u_bkginc(ji, jj, jk) + 0.2_wp * (zhdiv(ji + 1, jj) - zhdiv(ji, jj)) * r1_e1u(ji, jj) * umask(ji, jj, jk)
+              v_bkginc(ji, jj, jk) = v_bkginc(ji, jj, jk) + 0.2_wp * (zhdiv(ji, jj + 1) - zhdiv(ji, jj)) * r1_e2v(ji, jj) * vmask(ji, jj, jk)
             END DO
           END DO
         END DO
@@ -285,12 +271,11 @@ MODULE asminc
       CALL iom_open(c_asmdin, inum)
       CALL iom_get(inum, 'rdastp', zdate_bkg)
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '   ==>>>  Assimilation background state valid at : ', zdate_bkg
-        WRITE(numout, FMT = *)
+        WRITE(numout, *)
+        WRITE(numout, *) '   ==>>>  Assimilation background state valid at : ', zdate_bkg
+        WRITE(numout, *)
       END IF
-      IF (zdate_bkg /= ditdin_date) CALL ctl_warn(' Validity time of assimilation background state does', ' not agree with Direct &
-&Initialization time')
+      IF (zdate_bkg /= ditdin_date) CALL ctl_warn(' Validity time of assimilation background state does', ' not agree with Direct Initialization time')
       IF (ln_trainc) THEN
         CALL iom_get(inum, jpdom_autoglo, 'tn', t_bkg)
         CALL iom_get(inum, jpdom_autoglo, 'sn', s_bkg)
@@ -309,7 +294,7 @@ MODULE asminc
       END IF
       CALL iom_close(inum)
     END IF
-    IF (lwp) WRITE(numout, FMT = *) '   ==>>>   Euler time step switch is ', neuler
+    IF (lwp) WRITE(numout, *) '   ==>>>   Euler time step switch is ', neuler
     IF (lk_asminc) THEN
       IF (ln_bkgwri) CALL asm_bkg_wri(nit000 - 1)
       IF (ln_asmdin) THEN
@@ -331,6 +316,7 @@ MODULE asminc
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
     CALL profile_psy_data0 % PreStart('tra_asm_inc', 'r0', 0, 0)
     DO jk = 1, jpkm1
       CALL eos_fzp(tsn(:, :, jk, jp_sal), fzptnz(:, :, jk), gdept_n(:, :, jk))
@@ -342,15 +328,14 @@ MODULE asminc
         it = kt - nit000 + 1
         zincwgt = wgtiau(it) / rdt
         IF (lwp) THEN
-          WRITE(numout, FMT = *)
-          WRITE(numout, FMT = *) 'tra_asm_inc : Tracer IAU at time step = ', kt, ' with IAU weight = ', wgtiau(it)
-          WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+          WRITE(numout, *)
+          WRITE(numout, *) 'tra_asm_inc : Tracer IAU at time step = ', kt, ' with IAU weight = ', wgtiau(it)
+          WRITE(numout, *) '~~~~~~~~~~~~'
         END IF
         CALL profile_psy_data1 % PostEnd
         DO jk = 1, jpkm1
           IF (ln_temnofreeze) THEN
-            WHERE (t_bkginc(:, :, jk) > 0.0_wp .OR. tsn(:, :, jk, jp_tem) + tsa(:, :, jk, jp_tem) + t_bkginc(:, :, jk) * &
-&wgtiau(it) > fzptnz(:, :, jk))
+            WHERE (t_bkginc(:, :, jk) > 0.0_wp .OR. tsn(:, :, jk, jp_tem) + tsa(:, :, jk, jp_tem) + t_bkginc(:, :, jk) * wgtiau(it) > fzptnz(:, :, jk))
               tsa(:, :, jk, jp_tem) = tsa(:, :, jk, jp_tem) + t_bkginc(:, :, jk) * zincwgt
             END WHERE
           ELSE
@@ -359,8 +344,7 @@ MODULE asminc
             !$ACC END KERNELS
           END IF
           IF (ln_salfix) THEN
-            WHERE (s_bkginc(:, :, jk) > 0.0_wp .OR. tsn(:, :, jk, jp_sal) + tsa(:, :, jk, jp_sal) + s_bkginc(:, :, jk) * &
-&wgtiau(it) > salfixmin)
+            WHERE (s_bkginc(:, :, jk) > 0.0_wp .OR. tsn(:, :, jk, jp_sal) + tsa(:, :, jk, jp_sal) + s_bkginc(:, :, jk) * wgtiau(it) > salfixmin)
               tsa(:, :, jk, jp_sal) = tsa(:, :, jk, jp_sal) + s_bkginc(:, :, jk) * zincwgt
             END WHERE
           ELSE
@@ -409,8 +393,7 @@ MODULE asminc
         CALL profile_psy_data4 % PreStart('tra_asm_inc', 'r4', 0, 0)
         CALL eos(tsb, rhd, rhop, gdept_0(:, :, :))
         IF (ln_zps .AND. .NOT. lk_c1d .AND. .NOT. ln_isfcav) CALL zps_hde(kt, jpts, tsb, gtsu, gtsv, rhd, gru, grv)
-        IF (ln_zps .AND. .NOT. lk_c1d .AND. ln_isfcav) CALL zps_hde_isf(nit000, jpts, tsb, gtsu, gtsv, gtui, gtvi, rhd, gru, grv, &
-&grui, grvi)
+        IF (ln_zps .AND. .NOT. lk_c1d .AND. ln_isfcav) CALL zps_hde_isf(nit000, jpts, tsb, gtsu, gtsv, gtui, gtvi, rhd, gru, grv, grui, grvi)
         DEALLOCATE(t_bkginc)
         DEALLOCATE(s_bkginc)
         DEALLOCATE(t_bkg)
@@ -418,7 +401,9 @@ MODULE asminc
         CALL profile_psy_data4 % PostEnd
       END IF
     END IF
+    CALL profile_psy_data5 % PreStart('tra_asm_inc', 'r5', 0, 0)
     IF (ln_seaiceinc) CALL seaice_asm_inc(kt)
+    CALL profile_psy_data5 % PostEnd
   END SUBROUTINE tra_asm_inc
   SUBROUTINE dyn_asm_inc(kt)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -435,17 +420,17 @@ MODULE asminc
         it = kt - nit000 + 1
         zincwgt = wgtiau(it) / rdt
         IF (lwp) THEN
-          WRITE(numout, FMT = *)
-          WRITE(numout, FMT = *) 'dyn_asm_inc : Dynamics IAU at time step = ', kt, ' with IAU weight = ', wgtiau(it)
-          WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+          WRITE(numout, *)
+          WRITE(numout, *) 'dyn_asm_inc : Dynamics IAU at time step = ', kt, ' with IAU weight = ', wgtiau(it)
+          WRITE(numout, *) '~~~~~~~~~~~~'
         END IF
         CALL profile_psy_data0 % PostEnd
+        !$ACC KERNELS
         DO jk = 1, jpkm1
-          !$ACC KERNELS
           ua(:, :, jk) = ua(:, :, jk) + u_bkginc(:, :, jk) * zincwgt
           va(:, :, jk) = va(:, :, jk) + v_bkginc(:, :, jk) * zincwgt
-          !$ACC END KERNELS
         END DO
+        !$ACC END KERNELS
         CALL profile_psy_data1 % PreStart('dyn_asm_inc', 'r1', 0, 0)
         IF (kt == nitiaufin_r) THEN
           DEALLOCATE(u_bkginc)
@@ -485,9 +470,9 @@ MODULE asminc
         it = kt - nit000 + 1
         zincwgt = wgtiau(it) / rdt
         IF (lwp) THEN
-          WRITE(numout, FMT = *)
-          WRITE(numout, FMT = *) 'ssh_asm_inc : SSH IAU at time step = ', kt, ' with IAU weight = ', wgtiau(it)
-          WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+          WRITE(numout, *)
+          WRITE(numout, *) 'ssh_asm_inc : SSH IAU at time step = ', kt, ' with IAU weight = ', wgtiau(it)
+          WRITE(numout, *) '~~~~~~~~~~~~'
         END IF
       ELSE IF (kt == nitiaufin_r + 1) THEN
         IF (ALLOCATED(ssh_bkginc)) DEALLOCATE(ssh_bkginc)
@@ -527,9 +512,9 @@ MODULE asminc
         it = kt - nit000 + 1
         zincwgt = wgtiau(it)
         IF (lwp) THEN
-          WRITE(numout, FMT = *)
-          WRITE(numout, FMT = *) 'seaice_asm_inc : sea ice conc IAU at time step = ', kt, ' with IAU weight = ', wgtiau(it)
-          WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+          WRITE(numout, *)
+          WRITE(numout, *) 'seaice_asm_inc : sea ice conc IAU at time step = ', kt, ' with IAU weight = ', wgtiau(it)
+          WRITE(numout, *) '~~~~~~~~~~~~'
         END IF
         IF (kt == nitiaufin_r) THEN
           DEALLOCATE(seaice_bkginc)

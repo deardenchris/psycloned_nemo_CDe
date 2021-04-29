@@ -99,7 +99,7 @@ MODULE obs_fbm
     fbdata % cdjuldref = REPEAT('X', ilenjuld)
     ALLOCATE(fbdata % cname(fbdata % nvar), fbdata % coblong(fbdata % nvar), fbdata % cobunit(fbdata % nvar))
     DO ji = 1, fbdata % nvar
-      WRITE(fbdata % cname(ji), FMT = '(A,I2.2)') 'V_', ji
+      WRITE(fbdata % cname(ji), '(A,I2.2)') 'V_', ji
       fbdata % coblong(ji) = REPEAT(' ', ilenlong)
       fbdata % cobunit(ji) = REPEAT(' ', ilenunit)
     END DO
@@ -109,10 +109,9 @@ MODULE obs_fbm
       fbdata % lgrid = .TRUE.
     END IF
     IF (fbdata % nadd > 0) THEN
-      ALLOCATE(fbdata % caddname(fbdata % nadd), fbdata % caddlong(fbdata % nadd, fbdata % nvar), fbdata % caddunit(fbdata % nadd, &
-&fbdata % nvar))
+      ALLOCATE(fbdata % caddname(fbdata % nadd), fbdata % caddlong(fbdata % nadd, fbdata % nvar), fbdata % caddunit(fbdata % nadd, fbdata % nvar))
       DO ji = 1, fbdata % nadd
-        WRITE(fbdata % caddname(ji), FMT = '(A,I2.2)') 'A', ji
+        WRITE(fbdata % caddname(ji), '(A,I2.2)') 'A', ji
       END DO
       DO jv = 1, fbdata % nvar
         DO ji = 1, fbdata % nadd
@@ -124,22 +123,19 @@ MODULE obs_fbm
     IF (fbdata % next > 0) THEN
       ALLOCATE(fbdata % cextname(fbdata % next), fbdata % cextlong(fbdata % next), fbdata % cextunit(fbdata % next))
       DO ji = 1, fbdata % next
-        WRITE(fbdata % cextname(ji), FMT = '(A,I2.2)') 'E_', ji
+        WRITE(fbdata % cextname(ji), '(A,I2.2)') 'E_', ji
         fbdata % cextlong(ji) = REPEAT(' ', ilenlong)
         fbdata % cextunit(ji) = REPEAT(' ', ilenunit)
       END DO
     END IF
     IF (fbdata % nobs > 0) THEN
-      ALLOCATE(fbdata % cdwmo(fbdata % nobs), fbdata % cdtyp(fbdata % nobs), fbdata % ioqc(fbdata % nobs), fbdata % ioqcf(fbdata % &
-&nqcf, fbdata % nobs), fbdata % ipqc(fbdata % nobs), fbdata % ipqcf(fbdata % nqcf, fbdata % nobs), fbdata % itqc(fbdata % nobs), &
-&fbdata % itqcf(fbdata % nqcf, fbdata % nobs), fbdata % idqc(fbdata % nlev, fbdata % nobs), fbdata % idqcf(fbdata % nqcf, fbdata % &
-&nlev, fbdata % nobs), fbdata % plam(fbdata % nobs), fbdata % pphi(fbdata % nobs), fbdata % pdep(fbdata % nlev, fbdata % nobs), &
-&fbdata % ptim(fbdata % nobs), fbdata % kindex(fbdata % nobs), fbdata % ivqc(fbdata % nobs, fbdata % nvar), fbdata % ivqcf(fbdata &
-&% nqcf, fbdata % nobs, fbdata % nvar), fbdata % ivlqc(fbdata % nlev, fbdata % nobs, fbdata % nvar), fbdata % ivlqcf(fbdata % &
-&nqcf, fbdata % nlev, fbdata % nobs, fbdata % nvar), fbdata % pob(fbdata % nlev, fbdata % nobs, fbdata % nvar))
+      ALLOCATE(fbdata % cdwmo(fbdata % nobs), fbdata % cdtyp(fbdata % nobs), fbdata % ioqc(fbdata % nobs), fbdata % ioqcf(fbdata % nqcf, fbdata % nobs), fbdata % ipqc(fbdata % nobs), fbdata % ipqcf(fbdata % nqcf, fbdata % nobs), fbdata % itqc(fbdata % nobs), fbdata % itqcf(fbdata % nqcf, fbdata % nobs), fbdata % idqc(fbdata % nlev, fbdata % nobs), fbdata % idqcf(fbdata % nqcf, fbdata % nlev, fbdata % nobs), fbdata % plam(fbdata % nobs), fbdata % pphi(fbdata % nobs), fbdata % pdep(fbdata % nlev, fbdata % nobs), fbdata % ptim(fbdata % nobs), fbdata % kindex(fbdata % nobs), fbdata % ivqc(fbdata % nobs, fbdata % nvar), fbdata % ivqcf(fbdata % nqcf, fbdata % nobs, fbdata % nvar), fbdata % ivlqc(fbdata % nlev, fbdata % nobs, fbdata % nvar), fbdata % ivlqcf(fbdata % nqcf, fbdata % nlev, fbdata % nobs, fbdata % nvar), fbdata % pob(fbdata % nlev, fbdata % nobs, fbdata % nvar))
+      !$ACC KERNELS
       fbdata % kindex(:) = fbimdi
+      !$ACC END KERNELS
       fbdata % cdwmo(:) = REPEAT('X', ilenwmo)
       fbdata % cdtyp(:) = REPEAT('X', ilentyp)
+      !$ACC KERNELS
       fbdata % ioqc(:) = fbimdi
       fbdata % ioqcf(:, :) = fbimdi
       fbdata % ipqc(:) = fbimdi
@@ -157,22 +153,28 @@ MODULE obs_fbm
       fbdata % ivlqc(:, :, :) = fbimdi
       fbdata % ivlqcf(:, :, :, :) = fbimdi
       fbdata % pob(:, :, :) = fbrmdi
+      !$ACC END KERNELS
       IF (lgrid) THEN
-        ALLOCATE(fbdata % iproc(fbdata % nobs, fbdata % nvar), fbdata % iobsi(fbdata % nobs, fbdata % nvar), fbdata % iobsj(fbdata &
-&% nobs, fbdata % nvar), fbdata % iobsk(fbdata % nlev, fbdata % nobs, fbdata % nvar))
+        ALLOCATE(fbdata % iproc(fbdata % nobs, fbdata % nvar), fbdata % iobsi(fbdata % nobs, fbdata % nvar), fbdata % iobsj(fbdata % nobs, fbdata % nvar), fbdata % iobsk(fbdata % nlev, fbdata % nobs, fbdata % nvar))
+        !$ACC KERNELS
         fbdata % iproc(:, :) = fbimdi
         fbdata % iobsi(:, :) = fbimdi
         fbdata % iobsj(:, :) = fbimdi
         fbdata % iobsk(:, :, :) = fbimdi
         fbdata % lgrid = .TRUE.
+        !$ACC END KERNELS
       END IF
       IF (fbdata % nadd > 0) THEN
         ALLOCATE(fbdata % padd(fbdata % nlev, fbdata % nobs, fbdata % nadd, fbdata % nvar))
+        !$ACC KERNELS
         fbdata % padd(:, :, :, :) = fbrmdi
+        !$ACC END KERNELS
       END IF
       IF (fbdata % next > 0) THEN
         ALLOCATE(fbdata % pext(fbdata % nlev, fbdata % nobs, fbdata % next))
+        !$ACC KERNELS
         fbdata % pext(:, :, :) = fbrmdi
+        !$ACC END KERNELS
       END IF
     END IF
   END SUBROUTINE alloc_obfbdata
@@ -189,9 +191,7 @@ MODULE obs_fbm
       DEALLOCATE(fbdata % cextname, fbdata % cextlong, fbdata % cextunit)
     END IF
     IF (fbdata % nobs > 0) THEN
-      DEALLOCATE(fbdata % cdwmo, fbdata % cdtyp, fbdata % ioqc, fbdata % ioqcf, fbdata % ipqc, fbdata % ipqcf, fbdata % itqc, &
-&fbdata % itqcf, fbdata % idqc, fbdata % idqcf, fbdata % plam, fbdata % pphi, fbdata % pdep, fbdata % ptim, fbdata % kindex, &
-&fbdata % ivqc, fbdata % ivqcf, fbdata % ivlqc, fbdata % ivlqcf, fbdata % pob)
+      DEALLOCATE(fbdata % cdwmo, fbdata % cdtyp, fbdata % ioqc, fbdata % ioqcf, fbdata % ipqc, fbdata % ipqcf, fbdata % itqc, fbdata % itqcf, fbdata % idqc, fbdata % idqcf, fbdata % plam, fbdata % pphi, fbdata % pdep, fbdata % ptim, fbdata % kindex, fbdata % ivqc, fbdata % ivqcf, fbdata % ivlqc, fbdata % ivlqcf, fbdata % pob)
       IF (fbdata % lgrid) THEN
         DEALLOCATE(fbdata % iproc, fbdata % iobsi, fbdata % iobsj, fbdata % iobsk)
       END IF
@@ -396,8 +396,7 @@ MODULE obs_fbm
       CALL fatal_error('subsample_obfbdata: ' // 'fbdata2 already allocated', 733)
     END IF
     nobs = COUNT(llvalid)
-    CALL alloc_obfbdata(fbdata2, fbdata1 % nvar, nobs, fbdata1 % nlev, fbdata1 % nadd, fbdata1 % next, fbdata1 % lgrid, &
-&kqcf = fbdata1 % nqcf)
+    CALL alloc_obfbdata(fbdata2, fbdata1 % nvar, nobs, fbdata1 % nlev, fbdata1 % nadd, fbdata1 % next, fbdata1 % lgrid, kqcf = fbdata1 % nqcf)
     fbdata2 % cdjuldref = fbdata1 % cdjuldref
     ij = 0
     DO ji = 1, fbdata1 % nobs
@@ -663,9 +662,6 @@ MODULE obs_fbm
     CHARACTER(LEN = 24), PARAMETER :: cdqcfconv = 'NEMOVAR flag conventions'
     CHARACTER(LEN = ilenlong) :: cdltmp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('write_obfbdata', 'r0', 0, 0)
     CALL chkerr(nf90_create(TRIM(cdfilename), nf90_clobber, idfile), cpname, 1107)
     CALL chkerr(nf90_set_fill(idfile, nf90_nofill, ioldfill), cpname, 1109)
@@ -729,8 +725,7 @@ MODULE obs_fbm
     CALL chkerr(nf90_def_var(idfile, 'DEPTH_QC_FLAGS', nf90_int, incdim3, ididqcf), cpname, 1224)
     CALL putvaratt_obfbdata(idfile, ididqcf, 'Quality flags on depth', conventions = cdqcfconv)
     CALL chkerr(nf90_def_var(idfile, 'JULD', nf90_double, incdim1, idptim), cpname, 1230)
-    CALL putvaratt_obfbdata(idfile, idptim, 'Julian day', cdunits = 'days since JULD_REFERENCE', &
-&conventions = 'relative julian days with ' // 'decimal part (as parts of day)', rfillvalue = fbrmdi)
+    CALL putvaratt_obfbdata(idfile, idptim, 'Julian day', cdunits = 'days since JULD_REFERENCE', conventions = 'relative julian days with ' // 'decimal part (as parts of day)', rfillvalue = fbrmdi)
     incdim1(1) = idjddim
     CALL chkerr(nf90_def_var(idfile, 'JULD_REFERENCE', nf90_char, incdim1, idptimr), cpname, 1240)
     CALL putvaratt_obfbdata(idfile, idptimr, 'Date of reference for julian days ', conventions = 'YYYYMMDDHHMMSS')
@@ -751,74 +746,64 @@ MODULE obs_fbm
     CALL putvaratt_obfbdata(idfile, iditqcf, 'Quality flags on date and time', conventions = cdqcfconv, ifillvalue = 0)
     CALL chkerr(nf90_def_var(idfile, 'ORIGINAL_FILE_INDEX', nf90_int, incdim1, idkindex), cpname, 1291)
     CALL putvaratt_obfbdata(idfile, idkindex, 'Index in original data file', ifillvalue = fbimdi)
-    CALL profile_psy_data0 % PostEnd
     DO jv = 1, fbdata % nvar
-      CALL profile_psy_data1 % PreStart('write_obfbdata', 'r1', 0, 0)
       incdim1(1) = idodim
       incdim2(1) = idldim
       incdim2(2) = idodim
-      WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_OBS'
+      WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_OBS'
       CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_float, incdim2, idpob(jv)), cpname, 1306)
       CALL putvaratt_obfbdata(idfile, idpob(jv), fbdata % coblong(jv), cdunits = fbdata % cobunit(jv), rfillvalue = fbrmdi)
       IF (fbdata % nadd > 0) THEN
         DO je = 1, fbdata % nadd
-          WRITE(cdtmp, FMT = '(3A)') TRIM(fbdata % cname(jv)), '_', TRIM(fbdata % caddname(je))
+          WRITE(cdtmp, '(3A)') TRIM(fbdata % cname(jv)), '_', TRIM(fbdata % caddname(je))
           CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_float, incdim2, idpadd(je, jv)), cpname, 1318)
-          CALL putvaratt_obfbdata(idfile, idpadd(je, jv), fbdata % caddlong(je, jv), cdunits = fbdata % caddunit(je, jv), &
-&rfillvalue = fbrmdi)
+          CALL putvaratt_obfbdata(idfile, idpadd(je, jv), fbdata % caddlong(je, jv), cdunits = fbdata % caddunit(je, jv), rfillvalue = fbrmdi)
         END DO
       END IF
       cdltmp = fbdata % coblong(jv)
-      CALL profile_psy_data1 % PostEnd
-      !$ACC KERNELS
       IF ((cdltmp(1 : 1) >= 'A') .AND. (cdltmp(1 : 1) <= 'Z')) cdltmp(1 : 1) = ACHAR(IACHAR(cdltmp(1 : 1)) + 32)
-      !$ACC END KERNELS
-      CALL profile_psy_data2 % PreStart('write_obfbdata', 'r2', 0, 0)
-      WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_QC'
+      WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_QC'
       CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_int, incdim1, idivqc(jv)), cpname, 1332)
       CALL putvaratt_obfbdata(idfile, idivqc(jv), 'Quality on ' // cdltmp, conventions = cdqcconv, ifillvalue = 0)
       incdim2(1) = idqcdim
       incdim2(2) = idodim
-      WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_QC_FLAGS'
+      WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_QC_FLAGS'
       CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_int, incdim2, idivqcf(jv)), cpname, 1342)
       CALL putvaratt_obfbdata(idfile, idivqcf(jv), 'Quality flags on ' // cdltmp, conventions = cdqcfconv, ifillvalue = 0)
       incdim2(1) = idldim
       incdim2(2) = idodim
-      WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_LEVEL_QC'
+      WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_LEVEL_QC'
       CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_int, incdim2, idivlqc(jv)), cpname, 1352)
       CALL putvaratt_obfbdata(idfile, idivlqc(jv), 'Quality for each level on ' // cdltmp, conventions = cdqcconv, ifillvalue = 0)
       incdim3(1) = idqcdim
       incdim3(2) = idldim
       incdim3(3) = idodim
-      WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_LEVEL_QC_FLAGS'
+      WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_LEVEL_QC_FLAGS'
       CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_int, incdim3, idivlqcf(jv)), cpname, 1363)
-      CALL putvaratt_obfbdata(idfile, idivlqcf(jv), 'Quality flags for each level on ' // cdltmp, conventions = cdqcfconv, &
-&ifillvalue = 0)
+      CALL putvaratt_obfbdata(idfile, idivlqcf(jv), 'Quality flags for each level on ' // cdltmp, conventions = cdqcfconv, ifillvalue = 0)
       IF (fbdata % lgrid) THEN
         incdim2(1) = idldim
         incdim2(2) = idodim
-        WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_IOBSI'
+        WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_IOBSI'
         CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_int, incdim1, idiobsi(jv)), cpname, 1376)
         CALL putvaratt_obfbdata(idfile, idiobsi(jv), 'ORCA grid search I coordinate')
-        WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_IOBSJ'
+        WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_IOBSJ'
         CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_int, incdim1, idiobsj(jv)), cpname, 1382)
         CALL putvaratt_obfbdata(idfile, idiobsj(jv), 'ORCA grid search J coordinate')
-        WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_IOBSK'
+        WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_IOBSK'
         CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_int, incdim2, idiobsk(jv)), cpname, 1388)
         CALL putvaratt_obfbdata(idfile, idiobsk(jv), 'ORCA grid search K coordinate')
         incdim1(1) = idsgdim
-        WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_GRID'
+        WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_GRID'
         CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_char, incdim1, idcgrid(jv)), cpname, 1394)
         CALL putvaratt_obfbdata(idfile, idcgrid(jv), 'ORCA grid search grid (T,U,V)')
       END IF
-      CALL profile_psy_data2 % PostEnd
     END DO
-    CALL profile_psy_data3 % PreStart('write_obfbdata', 'r3', 0, 0)
     IF (fbdata % next > 0) THEN
       DO je = 1, fbdata % next
         incdim2(1) = idldim
         incdim2(2) = idodim
-        WRITE(cdtmp, FMT = '(A)') TRIM(fbdata % cextname(je))
+        WRITE(cdtmp, '(A)') TRIM(fbdata % cextname(je))
         CALL chkerr(nf90_def_var(idfile, cdtmp, nf90_float, incdim2, idpext(je)), cpname, 1408)
         CALL putvaratt_obfbdata(idfile, idpext(je), fbdata % cextlong(je), cdunits = fbdata % cextunit(je), rfillvalue = fbrmdi)
       END DO
@@ -873,7 +858,7 @@ MODULE obs_fbm
       END IF
     END IF
     CALL chkerr(nf90_close(idfile), cpname, 1523)
-    CALL profile_psy_data3 % PostEnd
+    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE write_obfbdata
   SUBROUTINE putvaratt_obfbdata(idfile, idvar, cdlongname, cdunits, conventions, cfillvalue, ifillvalue, rfillvalue)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -977,8 +962,7 @@ MODULE obs_fbm
     ELSE
       CALL alloc_obfbdata(fbdata, nvar, nobs, nlev, nadd, next, lgrid)
     END IF
-    ALLOCATE(idpob(fbdata % nvar), idivqc(fbdata % nvar), idivqcf(fbdata % nvar), idivlqc(fbdata % nvar), idivlqcf(fbdata % nvar), &
-&idiobsi(fbdata % nvar), idiobsj(fbdata % nvar), idiobsk(fbdata % nvar), idcgrid(fbdata % nvar))
+    ALLOCATE(idpob(fbdata % nvar), idivqc(fbdata % nvar), idivqcf(fbdata % nvar), idivlqc(fbdata % nvar), idivlqcf(fbdata % nvar), idiobsi(fbdata % nvar), idiobsj(fbdata % nvar), idiobsk(fbdata % nvar), idcgrid(fbdata % nvar))
     IF (fbdata % nadd > 0) THEN
       ALLOCATE(idpadd(fbdata % nadd, fbdata % nvar))
     END IF
@@ -1029,48 +1013,48 @@ MODULE obs_fbm
       CALL chkerr(nf90_inq_varid(idfile, 'ORIGINAL_FILE_INDEX', idkindex), cpname, 1825)
       CALL chkerr(nf90_get_var(idfile, idkindex, fbdata % kindex), cpname, 1827)
       DO jv = 1, fbdata % nvar
-        WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_OBS'
+        WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_OBS'
         CALL chkerr(nf90_inq_varid(idfile, cdtmp, idpob(jv)), cpname, 1835)
         CALL chkerr(nf90_get_var(idfile, idpob(jv), fbdata % pob(:, :, jv)), cpname, 1838)
         CALL getvaratt_obfbdata(idfile, idpob(jv), fbdata % coblong(jv), fbdata % cobunit(jv))
         IF (fbdata % nadd > 0) THEN
           DO je = 1, fbdata % nadd
-            WRITE(cdtmp, FMT = '(3A)') TRIM(fbdata % cname(jv)), '_', TRIM(fbdata % caddname(je))
+            WRITE(cdtmp, '(3A)') TRIM(fbdata % cname(jv)), '_', TRIM(fbdata % caddname(je))
             CALL chkerr(nf90_inq_varid(idfile, cdtmp, idpadd(je, jv)), cpname, 1848)
             CALL chkerr(nf90_get_var(idfile, idpadd(je, jv), fbdata % padd(:, :, je, jv)), cpname, 1851)
             CALL getvaratt_obfbdata(idfile, idpadd(je, jv), fbdata % caddlong(je, jv), fbdata % caddunit(je, jv))
           END DO
         END IF
-        WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_QC'
+        WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_QC'
         CALL chkerr(nf90_inq_varid(idfile, cdtmp, idivqc(jv)), cpname, 1860)
         CALL chkerr(nf90_get_var(idfile, idivqc(jv), fbdata % ivqc(:, jv)), cpname, 1863)
-        WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_QC_FLAGS'
+        WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_QC_FLAGS'
         CALL chkerr(nf90_inq_varid(idfile, cdtmp, idivqcf(jv)), cpname, 1866)
         CALL chkerr(nf90_get_var(idfile, idivqcf(jv), fbdata % ivqcf(:, :, jv)), cpname, 1869)
-        WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_LEVEL_QC'
+        WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_LEVEL_QC'
         CALL chkerr(nf90_inq_varid(idfile, cdtmp, idivlqc(jv)), cpname, 1872)
         CALL chkerr(nf90_get_var(idfile, idivlqc(jv), fbdata % ivlqc(:, :, jv)), cpname, 1875)
-        WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_LEVEL_QC_FLAGS'
+        WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_LEVEL_QC_FLAGS'
         CALL chkerr(nf90_inq_varid(idfile, cdtmp, idivlqcf(jv)), cpname, 1878)
         CALL chkerr(nf90_get_var(idfile, idivlqcf(jv), fbdata % ivlqcf(:, :, :, jv)), cpname, 1881)
         IF (lgrid) THEN
-          WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_IOBSI'
+          WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_IOBSI'
           CALL chkerr(nf90_inq_varid(idfile, cdtmp, idiobsi(jv)), cpname, 1885)
           CALL chkerr(nf90_get_var(idfile, idiobsi(jv), fbdata % iobsi(:, jv)), cpname, 1888)
-          WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_IOBSJ'
+          WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_IOBSJ'
           CALL chkerr(nf90_inq_varid(idfile, cdtmp, idiobsj(jv)), cpname, 1891)
           CALL chkerr(nf90_get_var(idfile, idiobsj(jv), fbdata % iobsj(:, jv)), cpname, 1894)
-          WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_IOBSK'
+          WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_IOBSK'
           CALL chkerr(nf90_inq_varid(idfile, cdtmp, idiobsk(jv)), cpname, 1897)
           CALL chkerr(nf90_get_var(idfile, idiobsk(jv), fbdata % iobsk(:, :, jv)), cpname, 1900)
-          WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_GRID'
+          WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_GRID'
           CALL chkerr(nf90_inq_varid(idfile, cdtmp, idcgrid(jv)), cpname, 1903)
           CALL chkerr(nf90_get_var(idfile, idcgrid(jv), fbdata % cgrid(jv)), cpname, 1906)
         END IF
       END DO
       IF (fbdata % next > 0) THEN
         DO je = 1, fbdata % next
-          WRITE(cdtmp, FMT = '(A)') TRIM(fbdata % cextname(je))
+          WRITE(cdtmp, '(A)') TRIM(fbdata % cextname(je))
           CALL chkerr(nf90_inq_varid(idfile, cdtmp, idpext(je)), cpname, 1915)
           CALL chkerr(nf90_get_var(idfile, idpext(je), fbdata % pext(:, :, je)), cpname, 1918)
           CALL getvaratt_obfbdata(idfile, idpext(je), fbdata % cextlong(je), fbdata % cextunit(je))
@@ -1078,12 +1062,12 @@ MODULE obs_fbm
       END IF
     ELSE
       DO jv = 1, fbdata % nvar
-        WRITE(cdtmp, FMT = '(2A)') TRIM(fbdata % cname(jv)), '_OBS'
+        WRITE(cdtmp, '(2A)') TRIM(fbdata % cname(jv)), '_OBS'
         CALL chkerr(nf90_inq_varid(idfile, cdtmp, idpob(jv)), cpname, 1931)
         CALL getvaratt_obfbdata(idfile, idpob(jv), fbdata % coblong(jv), fbdata % cobunit(jv))
         IF (fbdata % nadd > 0) THEN
           DO je = 1, fbdata % nadd
-            WRITE(cdtmp, FMT = '(3A)') TRIM(fbdata % cname(jv)), '_', TRIM(fbdata % caddname(je))
+            WRITE(cdtmp, '(3A)') TRIM(fbdata % cname(jv)), '_', TRIM(fbdata % caddname(je))
             CALL chkerr(nf90_inq_varid(idfile, cdtmp, idpadd(je, jv)), cpname, 1941)
             CALL getvaratt_obfbdata(idfile, idpadd(je, jv), fbdata % caddlong(je, jv), fbdata % caddunit(je, jv))
           END DO
@@ -1091,7 +1075,7 @@ MODULE obs_fbm
       END DO
       IF (fbdata % next > 0) THEN
         DO je = 1, fbdata % next
-          WRITE(cdtmp, FMT = '(A)') TRIM(fbdata % cextname(je))
+          WRITE(cdtmp, '(A)') TRIM(fbdata % cextname(je))
           CALL chkerr(nf90_inq_varid(idfile, cdtmp, idpext(je)), cpname, 1954)
           CALL getvaratt_obfbdata(idfile, idpext(je), fbdata % cextlong(je), fbdata % cextunit(je))
         END DO

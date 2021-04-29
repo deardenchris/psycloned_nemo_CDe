@@ -25,7 +25,7 @@ MODULE julian
       CASE (19000101)
         iref = jparef
       CASE DEFAULT
-        WRITE(cerr, FMT = '(A,I8.8)') 'jul2greg: Unknown krefdate:', krefdate
+        WRITE(cerr, '(A,I8.8)') 'jul2greg: Unknown krefdate:', krefdate
         CALL ctl_stop(cerr)
       END SELECT
     ELSE
@@ -76,7 +76,7 @@ MODULE julian
       CASE (19000101)
         iref = jparef
       CASE DEFAULT
-        WRITE(cerr, FMT = '(A,I8.8)') 'greg2jul: Unknown krefdate:', krefdate
+        WRITE(cerr, '(A,I8.8)') 'greg2jul: Unknown krefdate:', krefdate
         CALL ctl_stop(cerr)
       END SELECT
     ELSE

@@ -46,8 +46,7 @@ MODULE ldfdyn
     INTEGER :: ioptio, ierr, inum, ios, inn
     REAL(KIND = wp) :: zah0, zah_max, zUfac
     CHARACTER(LEN = 5) :: cl_Units
-    NAMELIST /namdyn_ldf/ ln_dynldf_OFF, ln_dynldf_lap, ln_dynldf_blp, ln_dynldf_lev, ln_dynldf_hor, ln_dynldf_iso, nn_ahm_ijk_t, &
-&rn_Uv, rn_Lv, rn_ahm_b, rn_csmc, rn_minfac, rn_maxfac
+    NAMELIST /namdyn_ldf/ ln_dynldf_OFF, ln_dynldf_lap, ln_dynldf_blp, ln_dynldf_lev, ln_dynldf_hor, ln_dynldf_iso, nn_ahm_ijk_t, rn_Uv, rn_Lv, rn_ahm_b, rn_csmc, rn_minfac, rn_maxfac
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, namdyn_ldf, IOSTAT = ios, ERR = 901)
 901 IF (ios /= 0) CALL ctl_nam(ios, 'namdyn_ldf in reference namelist', lwp)
@@ -56,28 +55,28 @@ MODULE ldfdyn
 902 IF (ios > 0) CALL ctl_nam(ios, 'namdyn_ldf in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namdyn_ldf)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'ldf_dyn : lateral momentum physics'
-      WRITE(numout, FMT = *) '~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namdyn_ldf : set lateral mixing parameters'
-      WRITE(numout, FMT = *) '      type :'
-      WRITE(numout, FMT = *) '         no explicit diffusion                ln_dynldf_OFF = ', ln_dynldf_OFF
-      WRITE(numout, FMT = *) '         laplacian operator                   ln_dynldf_lap = ', ln_dynldf_lap
-      WRITE(numout, FMT = *) '         bilaplacian operator                 ln_dynldf_blp = ', ln_dynldf_blp
-      WRITE(numout, FMT = *) '      direction of action :'
-      WRITE(numout, FMT = *) '         iso-level                            ln_dynldf_lev = ', ln_dynldf_lev
-      WRITE(numout, FMT = *) '         horizontal (geopotential)            ln_dynldf_hor = ', ln_dynldf_hor
-      WRITE(numout, FMT = *) '         iso-neutral                          ln_dynldf_iso = ', ln_dynldf_iso
-      WRITE(numout, FMT = *) '      coefficients :'
-      WRITE(numout, FMT = *) '         type of time-space variation         nn_ahm_ijk_t  = ', nn_ahm_ijk_t
-      WRITE(numout, FMT = *) '         lateral viscous velocity  (if cst)      rn_Uv      = ', rn_Uv, ' m/s'
-      WRITE(numout, FMT = *) '         lateral viscous length    (if cst)      rn_Lv      = ', rn_Lv, ' m'
-      WRITE(numout, FMT = *) '         background viscosity (iso-lap case)     rn_ahm_b   = ', rn_ahm_b, ' m2/s'
-      WRITE(numout, FMT = *) '      Smagorinsky settings (nn_ahm_ijk_t  = 32) :'
-      WRITE(numout, FMT = *) '         Smagorinsky coefficient              rn_csmc       = ', rn_csmc
-      WRITE(numout, FMT = *) '         factor multiplier for eddy visc.'
-      WRITE(numout, FMT = *) '            lower limit (default 1.0)         rn_minfac    = ', rn_minfac
-      WRITE(numout, FMT = *) '            upper limit (default 1.0)         rn_maxfac    = ', rn_maxfac
+      WRITE(numout, *)
+      WRITE(numout, *) 'ldf_dyn : lateral momentum physics'
+      WRITE(numout, *) '~~~~~~~'
+      WRITE(numout, *) '   Namelist namdyn_ldf : set lateral mixing parameters'
+      WRITE(numout, *) '      type :'
+      WRITE(numout, *) '         no explicit diffusion                ln_dynldf_OFF = ', ln_dynldf_OFF
+      WRITE(numout, *) '         laplacian operator                   ln_dynldf_lap = ', ln_dynldf_lap
+      WRITE(numout, *) '         bilaplacian operator                 ln_dynldf_blp = ', ln_dynldf_blp
+      WRITE(numout, *) '      direction of action :'
+      WRITE(numout, *) '         iso-level                            ln_dynldf_lev = ', ln_dynldf_lev
+      WRITE(numout, *) '         horizontal (geopotential)            ln_dynldf_hor = ', ln_dynldf_hor
+      WRITE(numout, *) '         iso-neutral                          ln_dynldf_iso = ', ln_dynldf_iso
+      WRITE(numout, *) '      coefficients :'
+      WRITE(numout, *) '         type of time-space variation         nn_ahm_ijk_t  = ', nn_ahm_ijk_t
+      WRITE(numout, *) '         lateral viscous velocity  (if cst)      rn_Uv      = ', rn_Uv, ' m/s'
+      WRITE(numout, *) '         lateral viscous length    (if cst)      rn_Lv      = ', rn_Lv, ' m'
+      WRITE(numout, *) '         background viscosity (iso-lap case)     rn_ahm_b   = ', rn_ahm_b, ' m2/s'
+      WRITE(numout, *) '      Smagorinsky settings (nn_ahm_ijk_t  = 32) :'
+      WRITE(numout, *) '         Smagorinsky coefficient              rn_csmc       = ', rn_csmc
+      WRITE(numout, *) '         factor multiplier for eddy visc.'
+      WRITE(numout, *) '            lower limit (default 1.0)         rn_minfac    = ', rn_minfac
+      WRITE(numout, *) '            upper limit (default 1.0)         rn_maxfac    = ', rn_maxfac
     END IF
     nldf_dyn = np_ERROR
     ioptio = 0
@@ -137,22 +136,22 @@ MODULE ldfdyn
       IF (nldf_dyn == np_lap_i) l_ldfslp = .TRUE.
     END IF
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
       SELECT CASE (nldf_dyn)
       CASE (np_no_ldf)
-        WRITE(numout, FMT = *) '   ==>>>   NO lateral viscosity'
+        WRITE(numout, *) '   ==>>>   NO lateral viscosity'
       CASE (np_lap)
-        WRITE(numout, FMT = *) '   ==>>>   iso-level laplacian operator'
+        WRITE(numout, *) '   ==>>>   iso-level laplacian operator'
       CASE (np_lap_i)
-        WRITE(numout, FMT = *) '   ==>>>   rotated laplacian operator with iso-level background'
+        WRITE(numout, *) '   ==>>>   rotated laplacian operator with iso-level background'
       CASE (np_blp)
-        WRITE(numout, FMT = *) '   ==>>>   iso-level bi-laplacian operator'
+        WRITE(numout, *) '   ==>>>   iso-level bi-laplacian operator'
       END SELECT
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
     END IF
     l_ldfdyn_time = .FALSE.
     IF (ln_dynldf_OFF) THEN
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   No viscous operator selected. ahmt and ahmf are not allocated'
+      IF (lwp) WRITE(numout, *) '   ==>>>   No viscous operator selected. ahmt and ahmf are not allocated'
       RETURN
     ELSE
       ALLOCATE(ahmt(jpi, jpj, jpk), ahmf(jpi, jpj, jpk), STAT = ierr)
@@ -174,62 +173,60 @@ MODULE ldfdyn
       zah_max = zUfac * (ra * rad) ** inn
       SELECT CASE (nn_ahm_ijk_t)
       CASE (0)
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy viscosity. = constant = ', zah0, cl_Units
+        IF (lwp) WRITE(numout, *) '   ==>>>   eddy viscosity. = constant = ', zah0, cl_Units
         !$ACC KERNELS
         ahmt(:, :, 1 : jpkm1) = zah0
         ahmf(:, :, 1 : jpkm1) = zah0
         !$ACC END KERNELS
       CASE (10)
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy viscosity = F( depth )'
-        IF (lwp) WRITE(numout, FMT = *) '           surface viscous coef. = constant = ', zah0, cl_Units
+        IF (lwp) WRITE(numout, *) '   ==>>>   eddy viscosity = F( depth )'
+        IF (lwp) WRITE(numout, *) '           surface viscous coef. = constant = ', zah0, cl_Units
         !$ACC KERNELS
         ahmt(:, :, 1) = zah0
         ahmf(:, :, 1) = zah0
         !$ACC END KERNELS
         CALL ldf_c1d('DYN', ahmt(:, :, 1), ahmf(:, :, 1), ahmt, ahmf)
       CASE (- 20)
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy viscosity = F(i,j) read in eddy_viscosity.nc file'
+        IF (lwp) WRITE(numout, *) '   ==>>>   eddy viscosity = F(i,j) read in eddy_viscosity.nc file'
         CALL iom_open('eddy_viscosity_2D.nc', inum)
         CALL iom_get(inum, jpdom_data, 'ahmt_2d', ahmt(:, :, 1))
         CALL iom_get(inum, jpdom_data, 'ahmf_2d', ahmf(:, :, 1))
         CALL iom_close(inum)
+        !$ACC KERNELS
         DO jk = 2, jpkm1
-          !$ACC KERNELS
           ahmt(:, :, jk) = ahmt(:, :, 1)
           ahmf(:, :, jk) = ahmf(:, :, 1)
-          !$ACC END KERNELS
         END DO
+        !$ACC END KERNELS
       CASE (20)
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy viscosity = F( e1, e2 ) or F( e1^3, e2^3 ) (lap. or blp. case)'
-        IF (lwp) WRITE(numout, FMT = *) '           using a fixed viscous velocity = ', rn_Uv, ' m/s   and   Lv = Max(e1,e2)'
-        IF (lwp) WRITE(numout, FMT = *) '           maximum reachable coefficient (at the Equator) = ', zah_max, cl_Units, '  for &
-&e1=1°)'
+        IF (lwp) WRITE(numout, *) '   ==>>>   eddy viscosity = F( e1, e2 ) or F( e1^3, e2^3 ) (lap. or blp. case)'
+        IF (lwp) WRITE(numout, *) '           using a fixed viscous velocity = ', rn_Uv, ' m/s   and   Lv = Max(e1,e2)'
+        IF (lwp) WRITE(numout, *) '           maximum reachable coefficient (at the Equator) = ', zah_max, cl_Units, '  for e1=1°)'
         CALL ldf_c2d('DYN', zUfac, inn, ahmt, ahmf)
       CASE (- 30)
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy viscosity = F(i,j,k) read in eddy_viscosity_3D.nc file'
+        IF (lwp) WRITE(numout, *) '   ==>>>   eddy viscosity = F(i,j,k) read in eddy_viscosity_3D.nc file'
         CALL iom_open('eddy_viscosity_3D.nc', inum)
         CALL iom_get(inum, jpdom_data, 'ahmt_3d', ahmt)
         CALL iom_get(inum, jpdom_data, 'ahmf_3d', ahmf)
         CALL iom_close(inum)
       CASE (30)
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy viscosity = F( latitude, longitude, depth )'
-        IF (lwp) WRITE(numout, FMT = *) '           using a fixed viscous velocity = ', rn_Uv, ' m/s   and   Ld = Max(e1,e2)'
-        IF (lwp) WRITE(numout, FMT = *) '           maximum reachable coefficient (at the Equator) = ', zah_max, cl_Units, '  for &
-&e1=1°)'
+        IF (lwp) WRITE(numout, *) '   ==>>>   eddy viscosity = F( latitude, longitude, depth )'
+        IF (lwp) WRITE(numout, *) '           using a fixed viscous velocity = ', rn_Uv, ' m/s   and   Ld = Max(e1,e2)'
+        IF (lwp) WRITE(numout, *) '           maximum reachable coefficient (at the Equator) = ', zah_max, cl_Units, '  for e1=1°)'
         CALL ldf_c2d('DYN', zUfac, inn, ahmt, ahmf)
         CALL ldf_c1d('DYN', ahmt(:, :, 1), ahmf(:, :, 1), ahmt, ahmf)
       CASE (31)
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy viscosity = F( latitude, longitude, depth , time )'
-        IF (lwp) WRITE(numout, FMT = *) '           proportional to the local velocity : 1/2 |u|e (lap) or 1/12 |u|e^3 (blp)'
+        IF (lwp) WRITE(numout, *) '   ==>>>   eddy viscosity = F( latitude, longitude, depth , time )'
+        IF (lwp) WRITE(numout, *) '           proportional to the local velocity : 1/2 |u|e (lap) or 1/12 |u|e^3 (blp)'
         l_ldfdyn_time = .TRUE.
       CASE (32)
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   eddy viscosity = F( latitude, longitude, depth , time )'
-        IF (lwp) WRITE(numout, FMT = *) '           proportional to the local deformation rate and gridscale (Smagorinsky)'
+        IF (lwp) WRITE(numout, *) '   ==>>>   eddy viscosity = F( latitude, longitude, depth , time )'
+        IF (lwp) WRITE(numout, *) '           proportional to the local deformation rate and gridscale (Smagorinsky)'
         l_ldfdyn_time = .TRUE.
         ALLOCATE(dtensq(jpi, jpj, jpk), dshesq(jpi, jpj, jpk), esqt(jpi, jpj), esqf(jpi, jpj), STAT = ierr)
         IF (ierr /= 0) CALL ctl_stop('STOP', 'ldf_dyn_init: failed to allocate Smagorinsky arrays')
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             esqt(ji, jj) = (e1e2t(ji, jj) / (e1t(ji, jj) + e2t(ji, jj))) ** 2
@@ -263,13 +260,19 @@ MODULE ldfdyn
     REAL(KIND = wp) :: zcmsmag, zstabf_lo, zstabf_up, zdelta, zdb
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
+    CALL profile_psy_data0 % PreStart('ldf_dyn', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('ldf_dyn')
+    CALL profile_psy_data0 % PostEnd
     SELECT CASE (nn_ahm_ijk_t)
     CASE (31)
       IF (ln_dynldf_lap) THEN
         DO jk = 1, jpkm1
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               zu2pv2_ij = ub(ji, jj, jk) * ub(ji, jj, jk) + vb(ji, jj, jk) * vb(ji, jj, jk)
@@ -278,7 +281,7 @@ MODULE ldfdyn
               ahmt(ji, jj, jk) = SQRT((zu2pv2_ij + zu2pv2_ij_m1) * r1_288) * zemax * tmask(ji, jj, jk)
             END DO
           END DO
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
               zu2pv2_ij_p1 = ub(ji, jj + 1, jk) * ub(ji, jj + 1, jk) + vb(ji + 1, jj, jk) * vb(ji + 1, jj, jk)
@@ -292,7 +295,7 @@ MODULE ldfdyn
       ELSE IF (ln_dynldf_blp) THEN
         DO jk = 1, jpkm1
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               zu2pv2_ij = ub(ji, jj, jk) * ub(ji, jj, jk) + vb(ji, jj, jk) * vb(ji, jj, jk)
@@ -301,7 +304,7 @@ MODULE ldfdyn
               ahmt(ji, jj, jk) = SQRT(SQRT((zu2pv2_ij + zu2pv2_ij_m1) * r1_288) * zemax) * zemax * tmask(ji, jj, jk)
             END DO
           END DO
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
               zu2pv2_ij_p1 = ub(ji, jj + 1, jk) * ub(ji, jj + 1, jk) + vb(ji + 1, jj, jk) * vb(ji + 1, jj, jk)
@@ -313,58 +316,58 @@ MODULE ldfdyn
           !$ACC END KERNELS
         END DO
       END IF
+      CALL profile_psy_data1 % PreStart('ldf_dyn', 'r1', 0, 0)
       CALL lbc_lnk_multi('ldfdyn', ahmt, 'T', 1., ahmf, 'F', 1.)
+      CALL profile_psy_data1 % PostEnd
     CASE (32)
       IF (ln_dynldf_lap .OR. ln_dynldf_blp) THEN
-        CALL profile_psy_data0 % PreStart('ldf_dyn', 'r0', 0, 0)
+        CALL profile_psy_data2 % PreStart('ldf_dyn', 'r2', 0, 0)
         zcmsmag = (rn_csmc / rpi) ** 2
         zstabf_lo = rn_minfac * rn_minfac / (2._wp * 4._wp * zcmsmag)
         zstabf_up = rn_maxfac / (4._wp * zcmsmag * 2._wp * rdt)
         IF (ln_dynldf_blp) zstabf_lo = (16._wp / 9._wp) * zstabf_lo
-        CALL profile_psy_data0 % PostEnd
+        CALL profile_psy_data2 % PostEnd
         DO jk = 1, jpkm1
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
-              zdb = (ub(ji, jj, jk) * r1_e2u(ji, jj) - ub(ji - 1, jj, jk) * r1_e2u(ji - 1, jj)) * r1_e1t(ji, jj) * e2t(ji, jj) - &
-&(vb(ji, jj, jk) * r1_e1v(ji, jj) - vb(ji, jj - 1, jk) * r1_e1v(ji, jj - 1)) * r1_e2t(ji, jj) * e1t(ji, jj)
+              zdb = (ub(ji, jj, jk) * r1_e2u(ji, jj) - ub(ji - 1, jj, jk) * r1_e2u(ji - 1, jj)) * r1_e1t(ji, jj) * e2t(ji, jj) - (vb(ji, jj, jk) * r1_e1v(ji, jj) - vb(ji, jj - 1, jk) * r1_e1v(ji, jj - 1)) * r1_e2t(ji, jj) * e1t(ji, jj)
               dtensq(ji, jj, jk) = zdb * zdb * tmask(ji, jj, jk)
             END DO
           END DO
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
-              zdb = (ub(ji, jj + 1, jk) * r1_e1u(ji, jj + 1) - ub(ji, jj, jk) * r1_e1u(ji, jj)) * r1_e2f(ji, jj) * e1f(ji, jj) + &
-&(vb(ji + 1, jj, jk) * r1_e2v(ji + 1, jj) - vb(ji, jj, jk) * r1_e2v(ji, jj)) * r1_e1f(ji, jj) * e2f(ji, jj)
+              zdb = (ub(ji, jj + 1, jk) * r1_e1u(ji, jj + 1) - ub(ji, jj, jk) * r1_e1u(ji, jj)) * r1_e2f(ji, jj) * e1f(ji, jj) + (vb(ji + 1, jj, jk) * r1_e2v(ji + 1, jj) - vb(ji, jj, jk) * r1_e2v(ji, jj)) * r1_e1f(ji, jj) * e2f(ji, jj)
               dshesq(ji, jj, jk) = zdb * zdb * fmask(ji, jj, jk)
             END DO
           END DO
           !$ACC END KERNELS
         END DO
+        CALL profile_psy_data3 % PreStart('ldf_dyn', 'r3', 0, 0)
         CALL lbc_lnk_multi('ldfdyn', dtensq, 'T', 1.)
+        CALL profile_psy_data3 % PostEnd
         DO jk = 1, jpkm1
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               zu2pv2_ij = ub(ji, jj, jk) * ub(ji, jj, jk) + vb(ji, jj, jk) * vb(ji, jj, jk)
               zu2pv2_ij_m1 = ub(ji - 1, jj, jk) * ub(ji - 1, jj, jk) + vb(ji, jj - 1, jk) * vb(ji, jj - 1, jk)
               zdelta = zcmsmag * esqt(ji, jj)
-              ahmt(ji, jj, jk) = zdelta * SQRT(dtensq(ji, jj, jk) + r1_4 * (dshesq(ji, jj, jk) + dshesq(ji, jj - 1, jk) + &
-&dshesq(ji - 1, jj, jk) + dshesq(ji - 1, jj - 1, jk)))
+              ahmt(ji, jj, jk) = zdelta * SQRT(dtensq(ji, jj, jk) + r1_4 * (dshesq(ji, jj, jk) + dshesq(ji, jj - 1, jk) + dshesq(ji - 1, jj, jk) + dshesq(ji - 1, jj - 1, jk)))
               ahmt(ji, jj, jk) = MAX(ahmt(ji, jj, jk), SQRT((zu2pv2_ij + zu2pv2_ij_m1) * zdelta * zstabf_lo))
               ahmt(ji, jj, jk) = MIN(ahmt(ji, jj, jk), zdelta * zstabf_up)
             END DO
           END DO
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
               zu2pv2_ij_p1 = ub(ji, jj + 1, jk) * ub(ji, jj + 1, jk) + vb(ji + 1, jj, jk) * vb(ji + 1, jj, jk)
               zu2pv2_ij = ub(ji, jj, jk) * ub(ji, jj, jk) + vb(ji, jj, jk) * vb(ji, jj, jk)
               zdelta = zcmsmag * esqf(ji, jj)
-              ahmf(ji, jj, jk) = zdelta * SQRT(dshesq(ji, jj, jk) + r1_4 * (dtensq(ji, jj, jk) + dtensq(ji, jj + 1, jk) + &
-&dtensq(ji + 1, jj, jk) + dtensq(ji + 1, jj + 1, jk)))
+              ahmf(ji, jj, jk) = zdelta * SQRT(dshesq(ji, jj, jk) + r1_4 * (dtensq(ji, jj, jk) + dtensq(ji, jj + 1, jk) + dtensq(ji + 1, jj, jk) + dtensq(ji + 1, jj + 1, jk)))
               ahmf(ji, jj, jk) = MAX(ahmf(ji, jj, jk), SQRT((zu2pv2_ij + zu2pv2_ij_p1) * zdelta * zstabf_lo))
               ahmf(ji, jj, jk) = MIN(ahmf(ji, jj, jk), zdelta * zstabf_up)
             END DO
@@ -375,13 +378,13 @@ MODULE ldfdyn
       IF (ln_dynldf_blp) THEN
         DO jk = 1, jpkm1
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               ahmt(ji, jj, jk) = SQRT(r1_8 * esqt(ji, jj) * ahmt(ji, jj, jk))
             END DO
           END DO
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
               ahmf(ji, jj, jk) = SQRT(r1_8 * esqf(ji, jj) * ahmf(ji, jj, jk))
@@ -390,14 +393,16 @@ MODULE ldfdyn
           !$ACC END KERNELS
         END DO
       END IF
+      CALL profile_psy_data4 % PreStart('ldf_dyn', 'r4', 0, 0)
       CALL lbc_lnk_multi('ldfdyn', ahmt, 'T', 1., ahmf, 'F', 1.)
+      CALL profile_psy_data4 % PostEnd
     END SELECT
-    CALL profile_psy_data1 % PreStart('ldf_dyn', 'r1', 0, 0)
+    CALL profile_psy_data5 % PreStart('ldf_dyn', 'r5', 0, 0)
     CALL iom_put("ahmt_2d", ahmt(:, :, 1))
     CALL iom_put("ahmf_2d", ahmf(:, :, 1))
     CALL iom_put("ahmt_3d", ahmt(:, :, :))
     CALL iom_put("ahmf_3d", ahmf(:, :, :))
     IF (ln_timing) CALL timing_stop('ldf_dyn')
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data5 % PostEnd
   END SUBROUTINE ldf_dyn
 END MODULE ldfdyn

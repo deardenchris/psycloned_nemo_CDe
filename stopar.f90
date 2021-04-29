@@ -137,10 +137,7 @@ MODULE stopar
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE sto_par
   SUBROUTINE sto_par_init
-    NAMELIST /namsto/ ln_sto_ldf, rn_ldf_std, rn_ldf_tcor, ln_sto_hpg, rn_hpg_std, rn_hpg_tcor, ln_sto_pstar, rn_pstar_std, &
-&rn_pstar_tcor, nn_pstar_flt, nn_pstar_ord, ln_sto_trd, rn_trd_std, rn_trd_tcor, ln_sto_eos, nn_sto_eos, rn_eos_stdxy, &
-&rn_eos_stdz, rn_eos_tcor, nn_eos_ord, nn_eos_flt, rn_eos_lim, ln_sto_trc, nn_sto_trc, rn_trc_stdxy, rn_trc_stdz, rn_trc_tcor, &
-&nn_trc_ord, nn_trc_flt, rn_trc_lim, ln_rststo, ln_rstseed, cn_storst_in, cn_storst_out
+    NAMELIST /namsto/ ln_sto_ldf, rn_ldf_std, rn_ldf_tcor, ln_sto_hpg, rn_hpg_std, rn_hpg_tcor, ln_sto_pstar, rn_pstar_std, rn_pstar_tcor, nn_pstar_flt, nn_pstar_ord, ln_sto_trd, rn_trd_std, rn_trd_tcor, ln_sto_eos, nn_sto_eos, rn_eos_stdxy, rn_eos_stdz, rn_eos_tcor, nn_eos_ord, nn_eos_flt, rn_eos_lim, ln_sto_trc, nn_sto_trc, rn_trc_stdxy, rn_trc_stdz, rn_trc_tcor, nn_trc_ord, nn_trc_flt, rn_trc_lim, ln_rststo, ln_rstseed, cn_storst_in, cn_storst_out
     INTEGER :: jsto, jmem, jarea, jdof, jord, jordm1, jk, jflt
     INTEGER(KIND = 8) :: zseed1, zseed2, zseed3, zseed4
     REAL(KIND = wp) :: rinflate
@@ -154,46 +151,46 @@ MODULE stopar
     IF (lwm) WRITE(numond, namsto)
     IF (.NOT. ln_rststo) THEN
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) 'sto_par_init : NO use of stochastic parameterization'
-        WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+        WRITE(numout, *)
+        WRITE(numout, *) 'sto_par_init : NO use of stochastic parameterization'
+        WRITE(numout, *) '~~~~~~~~~~~~'
       END IF
       RETURN
     END IF
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'sto_par_init : stochastic parameterization'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namsto : stochastic parameterization'
-      WRITE(numout, FMT = *) '      restart stochastic parameters           ln_rststo     = ', ln_rststo
-      WRITE(numout, FMT = *) '      read seed of RNG from restart file      ln_rstseed    = ', ln_rstseed
-      WRITE(numout, FMT = *) '      suffix of sto restart name (input)      cn_storst_in  = ', cn_storst_in
-      WRITE(numout, FMT = *) '      suffix of sto restart name (output)     cn_storst_out = ', cn_storst_out
-      WRITE(numout, FMT = *) '      stochastic equation of state            ln_sto_eos    = ', ln_sto_eos
-      WRITE(numout, FMT = *) '      number of degrees of freedom            nn_sto_eos    = ', nn_sto_eos
-      WRITE(numout, FMT = *) '      random walk horz. std (in grid points)  rn_eos_stdxy  = ', rn_eos_stdxy
-      WRITE(numout, FMT = *) '      random walk vert. std (in grid points)  rn_eos_stdz   = ', rn_eos_stdz
-      WRITE(numout, FMT = *) '      random walk tcor (in timesteps)         rn_eos_tcor   = ', rn_eos_tcor
-      WRITE(numout, FMT = *) '      order of autoregressive  processes      nn_eos_ord    = ', nn_eos_ord
-      WRITE(numout, FMT = *) '      passes of Laplacian filter              nn_eos_flt    = ', nn_eos_flt
-      WRITE(numout, FMT = *) '      limitation factor                       rn_eos_lim    = ', rn_eos_lim
+      WRITE(numout, *)
+      WRITE(numout, *) 'sto_par_init : stochastic parameterization'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist namsto : stochastic parameterization'
+      WRITE(numout, *) '      restart stochastic parameters           ln_rststo     = ', ln_rststo
+      WRITE(numout, *) '      read seed of RNG from restart file      ln_rstseed    = ', ln_rstseed
+      WRITE(numout, *) '      suffix of sto restart name (input)      cn_storst_in  = ', cn_storst_in
+      WRITE(numout, *) '      suffix of sto restart name (output)     cn_storst_out = ', cn_storst_out
+      WRITE(numout, *) '      stochastic equation of state            ln_sto_eos    = ', ln_sto_eos
+      WRITE(numout, *) '      number of degrees of freedom            nn_sto_eos    = ', nn_sto_eos
+      WRITE(numout, *) '      random walk horz. std (in grid points)  rn_eos_stdxy  = ', rn_eos_stdxy
+      WRITE(numout, *) '      random walk vert. std (in grid points)  rn_eos_stdz   = ', rn_eos_stdz
+      WRITE(numout, *) '      random walk tcor (in timesteps)         rn_eos_tcor   = ', rn_eos_tcor
+      WRITE(numout, *) '      order of autoregressive  processes      nn_eos_ord    = ', nn_eos_ord
+      WRITE(numout, *) '      passes of Laplacian filter              nn_eos_flt    = ', nn_eos_flt
+      WRITE(numout, *) '      limitation factor                       rn_eos_lim    = ', rn_eos_lim
     END IF
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) '   stochastic parameterization :'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) '   stochastic parameterization :'
     jpsto2d = 0
     IF (ln_sto_ldf) THEN
-      IF (lwp) WRITE(numout, FMT = *) '       - stochastic lateral diffusion'
+      IF (lwp) WRITE(numout, *) '       - stochastic lateral diffusion'
       jpsto2d = jpsto2d + 1
       jsto_ldf = jpsto2d
     END IF
     IF (ln_sto_pstar) THEN
-      IF (lwp) WRITE(numout, FMT = *) '       - stochastic ice strength'
+      IF (lwp) WRITE(numout, *) '       - stochastic ice strength'
       jpsto2d = jpsto2d + 1 * nn_pstar_ord
       jsto_pstar = jpsto2d
     END IF
     IF (ln_sto_eos) THEN
       IF (lk_agrif) CALL ctl_stop('EOS stochastic parametrization is not compatible with AGRIF')
-      IF (lwp) WRITE(numout, FMT = *) '       - stochastic equation of state'
+      IF (lwp) WRITE(numout, *) '       - stochastic equation of state'
       ALLOCATE(jsto_eosi(nn_sto_eos))
       ALLOCATE(jsto_eosj(nn_sto_eos))
       ALLOCATE(jsto_eosk(nn_sto_eos))
@@ -207,7 +204,7 @@ MODULE stopar
       nn_sto_eos = 0
     END IF
     IF (ln_sto_trc) THEN
-      IF (lwp) WRITE(numout, FMT = *) '       - stochastic tracers dynamics'
+      IF (lwp) WRITE(numout, *) '       - stochastic tracers dynamics'
       ALLOCATE(jsto_trci(nn_sto_trc))
       ALLOCATE(jsto_trcj(nn_sto_trc))
       ALLOCATE(jsto_trck(nn_sto_trc))
@@ -222,13 +219,13 @@ MODULE stopar
     END IF
     jpsto3d = 0
     IF (ln_sto_hpg) THEN
-      IF (lwp) WRITE(numout, FMT = *) '       - stochastic horizontal pressure gradient'
+      IF (lwp) WRITE(numout, *) '       - stochastic horizontal pressure gradient'
       jpsto3d = jpsto3d + 2
       jsto_hpgi = jpsto3d - 1
       jsto_hpgj = jpsto3d
     END IF
     IF (ln_sto_trd) THEN
-      IF (lwp) WRITE(numout, FMT = *) '       - stochastic trend'
+      IF (lwp) WRITE(numout, *) '       - stochastic trend'
       jpsto3d = jpsto3d + 1
       jsto_trd = jpsto3d
     END IF
@@ -471,23 +468,23 @@ MODULE stopar
     CHARACTER(LEN = 10) :: clseed = 'seed0_0000'
     IF (jpsto2d > 0 .OR. jpsto3d > 0) THEN
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) 'sto_rst_read : read stochastic parameters from restart file'
-        WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+        WRITE(numout, *)
+        WRITE(numout, *) 'sto_rst_read : read stochastic parameters from restart file'
+        WRITE(numout, *) '~~~~~~~~~~~~'
       END IF
       CALL iom_open(cn_storst_in, numstor)
       DO jsto = 1, jpsto2d
-        WRITE(clsto2d(7 : 9), FMT = '(i3.3)') jsto
+        WRITE(clsto2d(7 : 9), '(i3.3)') jsto
         CALL iom_get(numstor, jpdom_autoglo, clsto2d, sto2d(:, :, jsto))
       END DO
       DO jsto = 1, jpsto3d
-        WRITE(clsto3d(7 : 9), FMT = '(i3.3)') jsto
+        WRITE(clsto3d(7 : 9), '(i3.3)') jsto
         CALL iom_get(numstor, jpdom_autoglo, clsto3d, sto3d(:, :, :, jsto))
       END DO
       IF (ln_rstseed) THEN
         DO jseed = 1, 4
-          WRITE(clseed(5 : 5), FMT = '(i1.1)') jseed
-          WRITE(clseed(7 : 10), FMT = '(i4.4)') narea
+          WRITE(clseed(5 : 5), '(i1.1)') jseed
+          WRITE(clseed(7 : 10), '(i4.4)') narea
           CALL iom_get(numstor, clseed, zrseed(jseed))
         END DO
         ziseed = TRANSFER(zrseed, ziseed)
@@ -509,9 +506,9 @@ MODULE stopar
     IF (jpsto2d > 0 .OR. jpsto3d > 0) THEN
       IF (kt == nitrst .OR. kt == nitend) THEN
         IF (lwp) THEN
-          WRITE(numout, FMT = *)
-          WRITE(numout, FMT = *) 'sto_rst_write : write stochastic parameters in restart file'
-          WRITE(numout, FMT = *) '~~~~~~~~~~~~~'
+          WRITE(numout, *)
+          WRITE(numout, *) 'sto_rst_write : write stochastic parameters in restart file'
+          WRITE(numout, *) '~~~~~~~~~~~~~'
         END IF
       END IF
       IF (kt > nit000) THEN
@@ -519,16 +516,16 @@ MODULE stopar
           CALL kiss_state(ziseed(1), ziseed(2), ziseed(3), ziseed(4))
           zrseed = TRANSFER(ziseed, zrseed)
           DO jseed = 1, 4
-            WRITE(clseed(5 : 5), FMT = '(i1.1)') jseed
-            WRITE(clseed(7 : 10), FMT = '(i4.4)') narea
+            WRITE(clseed(5 : 5), '(i1.1)') jseed
+            WRITE(clseed(7 : 10), '(i4.4)') narea
             CALL iom_rstput(kt, nitrst, numstow, clseed, zrseed(jseed))
           END DO
           DO jsto = 1, jpsto2d
-            WRITE(clsto2d(7 : 9), FMT = '(i3.3)') jsto
+            WRITE(clsto2d(7 : 9), '(i3.3)') jsto
             CALL iom_rstput(kt, nitrst, numstow, clsto2d, sto2d(:, :, jsto))
           END DO
           DO jsto = 1, jpsto3d
-            WRITE(clsto3d(7 : 9), FMT = '(i3.3)') jsto
+            WRITE(clsto3d(7 : 9), '(i3.3)') jsto
             CALL iom_rstput(kt, nitrst, numstow, clsto3d, sto3d(:, :, :, jsto))
           END DO
           CALL iom_close(numstow)
@@ -537,17 +534,17 @@ MODULE stopar
       IF (kt < nitend) THEN
         IF (kt == nitrst - 1 .OR. nstock == 1 .OR. kt == nitend - 1) THEN
           IF (nitrst > 999999999) THEN
-            WRITE(clkt, FMT = *) nitrst
+            WRITE(clkt, *) nitrst
           ELSE
-            WRITE(clkt, FMT = '(i8.8)') nitrst
+            WRITE(clkt, '(i8.8)') nitrst
           END IF
           clname = TRIM(cexper) // "_" // TRIM(ADJUSTL(clkt)) // "_" // TRIM(cn_storst_out)
           IF (lwp) THEN
-            WRITE(numout, FMT = *) '             open stochastic parameters restart file: ' // clname
+            WRITE(numout, *) '             open stochastic parameters restart file: ' // clname
             IF (kt == nitrst - 1) THEN
-              WRITE(numout, FMT = *) '             kt = nitrst - 1 = ', kt
+              WRITE(numout, *) '             kt = nitrst - 1 = ', kt
             ELSE
-              WRITE(numout, FMT = *) '             kt = ', kt
+              WRITE(numout, *) '             kt = ', kt
             END IF
           END IF
           CALL iom_open(clname, numstow, ldwrt = .TRUE.)
@@ -578,8 +575,7 @@ MODULE stopar
     CALL profile_psy_data0 % PreStart('sto_par_flt', 'r0', 0, 0)
     DO jj = 2, jpj - 1
       DO ji = 2, jpi - 1
-        psto(ji, jj) = 0.5_wp * psto(ji, jj) + 0.125_wp * (psto(ji - 1, jj) + psto(ji + 1, jj) + psto(ji, jj - 1) + psto(ji, jj + &
-&1))
+        psto(ji, jj) = 0.5_wp * psto(ji, jj) + 0.125_wp * (psto(ji - 1, jj) + psto(ji + 1, jj) + psto(ji, jj - 1) + psto(ji, jj + 1))
       END DO
     END DO
     CALL profile_psy_data0 % PostEnd

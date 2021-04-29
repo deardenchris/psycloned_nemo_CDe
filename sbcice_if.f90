@@ -54,9 +54,12 @@ MODULE sbcice_if
       CALL profile_psy_data1 % PostEnd
       !$ACC KERNELS
       fr_i(:, :) = fr_i(:, :) * tmask(:, :, 1)
-      IF (ln_cpl) a_i(:, :, 1) = fr_i(:, :)
       !$ACC END KERNELS
       CALL profile_psy_data2 % PreStart('sbc_ice_if', 'r2', 0, 0)
+      IF (ln_cpl) a_i(:, :, 1) = fr_i(:, :)
+      CALL profile_psy_data2 % PostEnd
+      !$ACC KERNELS
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           zt_fzp = fr_i(ji, jj)
@@ -75,7 +78,7 @@ MODULE sbcice_if
           qns(ji, jj) = ((1. - zfr_obs) * qns(ji, jj) + zfr_obs * fr_i(ji, jj) * zqi) * tmask(ji, jj, 1) + zqrp
         END DO
       END DO
-      CALL profile_psy_data2 % PostEnd
+      !$ACC END KERNELS
     END IF
   END SUBROUTINE sbc_ice_if
 END MODULE sbcice_if

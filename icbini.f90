@@ -122,33 +122,33 @@ MODULE icbini
       END DO
     END IF
     IF (nn_verbose_level > 0) THEN
-      WRITE(numicb, FMT = *) 'processor ', narea
-      WRITE(numicb, FMT = *) 'jpi, jpj   ', jpi, jpj
-      WRITE(numicb, FMT = *) 'nldi, nlei ', nldi, nlei
-      WRITE(numicb, FMT = *) 'nldj, nlej ', nldj, nlej
-      WRITE(numicb, FMT = *) 'berg i interior ', nicbdi, nicbei
-      WRITE(numicb, FMT = *) 'berg j interior ', nicbdj, nicbej
-      WRITE(numicb, FMT = *) 'berg left       ', ricb_left
-      WRITE(numicb, FMT = *) 'berg right      ', ricb_right
+      WRITE(numicb, *) 'processor ', narea
+      WRITE(numicb, *) 'jpi, jpj   ', jpi, jpj
+      WRITE(numicb, *) 'nldi, nlei ', nldi, nlei
+      WRITE(numicb, *) 'nldj, nlej ', nldj, nlej
+      WRITE(numicb, *) 'berg i interior ', nicbdi, nicbei
+      WRITE(numicb, *) 'berg j interior ', nicbdj, nicbej
+      WRITE(numicb, *) 'berg left       ', ricb_left
+      WRITE(numicb, *) 'berg right      ', ricb_right
       jj = nlcj / 2
-      WRITE(numicb, FMT = *) "central j line:"
-      WRITE(numicb, FMT = *) "i processor"
-      WRITE(numicb, FMT = *) (INT(src_calving_hflx(ji, jj)), ji = 1, jpi)
-      WRITE(numicb, FMT = *) "i point"
-      WRITE(numicb, FMT = *) (INT(src_calving(ji, jj)), ji = 1, jpi)
+      WRITE(numicb, *) "central j line:"
+      WRITE(numicb, *) "i processor"
+      WRITE(numicb, *) (INT(src_calving_hflx(ji, jj)), ji = 1, jpi)
+      WRITE(numicb, *) "i point"
+      WRITE(numicb, *) (INT(src_calving(ji, jj)), ji = 1, jpi)
       ji = nlci / 2
-      WRITE(numicb, FMT = *) "central i line:"
-      WRITE(numicb, FMT = *) "j processor"
-      WRITE(numicb, FMT = *) (INT(src_calving_hflx(ji, jj)), jj = 1, jpj)
-      WRITE(numicb, FMT = *) "j point"
-      WRITE(numicb, FMT = *) (INT(src_calving(ji, jj)), jj = 1, jpj)
+      WRITE(numicb, *) "central i line:"
+      WRITE(numicb, *) "j processor"
+      WRITE(numicb, *) (INT(src_calving_hflx(ji, jj)), jj = 1, jpj)
+      WRITE(numicb, *) "j point"
+      WRITE(numicb, *) (INT(src_calving(ji, jj)), jj = 1, jpj)
       IF (npolj > 0) THEN
-        WRITE(numicb, FMT = *) 'north fold destination points '
-        WRITE(numicb, FMT = *) nicbfldpts
-        WRITE(numicb, FMT = *) 'north fold destination procs  '
-        WRITE(numicb, FMT = *) nicbflddest
-        WRITE(numicb, FMT = *) 'north fold destination proclist  '
-        WRITE(numicb, FMT = *) nicbfldproc
+        WRITE(numicb, *) 'north fold destination points '
+        WRITE(numicb, *) nicbfldpts
+        WRITE(numicb, *) 'north fold destination procs  '
+        WRITE(numicb, *) nicbflddest
+        WRITE(numicb, *) 'north fold destination proclist  '
+        WRITE(numicb, *) nicbfldproc
       END IF
       CALL flush(numicb)
     END IF
@@ -176,8 +176,8 @@ MODULE icbini
       END IF
       CALL iom_close(inum)
       IF (nn_verbose_level > 0) THEN
-        WRITE(numicb, FMT = *)
-        WRITE(numicb, FMT = *) '          calving read in a file'
+        WRITE(numicb, *)
+        WRITE(numicb, *) '          calving read in a file'
       END IF
       ALLOCATE(sf_icb(1), STAT = istat1)
       ALLOCATE(sf_icb(1) % fnow(jpi, jpj, 1), STAT = istat2)
@@ -220,8 +220,7 @@ MODULE icbini
     isec = nsec_day - ihr * 3600 - imin * 60
     DO jj = nicbdj, nicbej
       DO ji = nicbdi, nicbei
-        IF (tmask(ji, jj, 1) > 0._wp .AND. rn_test_box(1) < glamt(ji, jj) .AND. glamt(ji, jj) < rn_test_box(2) .AND. &
-&rn_test_box(3) < gphit(ji, jj) .AND. gphit(ji, jj) < rn_test_box(4)) THEN
+        IF (tmask(ji, jj, 1) > 0._wp .AND. rn_test_box(1) < glamt(ji, jj) .AND. glamt(ji, jj) < rn_test_box(2) .AND. rn_test_box(3) < gphit(ji, jj) .AND. gphit(ji, jj) < rn_test_box(4)) THEN
           localberg % mass_scaling = rn_mass_scaling(iberg)
           localpt % xi = REAL(mig(ji), wp)
           localpt % yj = REAL(mjg(jj), wp)
@@ -246,7 +245,7 @@ MODULE icbini
     ibergs = icb_utl_count()
     CALL mpp_sum('icbini', ibergs)
     IF (nn_verbose_level > 0) THEN
-      WRITE(numicb, FMT = '(a,i6,a)') 'diamonds, icb_ini_gen: ', ibergs, ' were generated'
+      WRITE(numicb, '(a,i6,a)') 'diamonds, icb_ini_gen: ', ibergs, ' were generated'
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_ini_gen
@@ -255,17 +254,14 @@ MODULE icbini
     INTEGER :: jn
     INTEGER :: ios
     REAL(KIND = wp) :: zfact
-    NAMELIST /namberg/ ln_icebergs, ln_bergdia, nn_sample_rate, rn_initial_mass, rn_distribution, rn_mass_scaling, &
-&rn_initial_thickness, nn_verbose_write, rn_rho_bergs, rn_LoW_ratio, nn_verbose_level, ln_operator_splitting, &
-&rn_bits_erosion_fraction, rn_sicn_shift, ln_passive_mode, ln_time_average_weight, nn_test_icebergs, rn_test_box, ln_use_calving, &
-&rn_speed_limit, cn_dir, sn_icb
+    NAMELIST /namberg/ ln_icebergs, ln_bergdia, nn_sample_rate, rn_initial_mass, rn_distribution, rn_mass_scaling, rn_initial_thickness, nn_verbose_write, rn_rho_bergs, rn_LoW_ratio, nn_verbose_level, ln_operator_splitting, rn_bits_erosion_fraction, rn_sicn_shift, ln_passive_mode, ln_time_average_weight, nn_test_icebergs, rn_test_box, ln_use_calving, rn_speed_limit, cn_dir, sn_icb
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('icb_nam', 'r0', 0, 0)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'icb_nam : iceberg initialization through namberg namelist read'
-      WRITE(numout, FMT = *) '~~~~~~~~ '
+      WRITE(numout, *)
+      WRITE(numout, *) 'icb_nam : iceberg initialization through namberg namelist read'
+      WRITE(numout, *) '~~~~~~~~ '
     END IF
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, namberg, IOSTAT = ios, ERR = 901)
@@ -274,78 +270,72 @@ MODULE icbini
     READ(numnam_cfg, namberg, IOSTAT = ios, ERR = 902)
 902 IF (ios > 0) CALL ctl_nam(ios, 'namberg in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namberg)
-    IF (lwp) WRITE(numout, FMT = *)
+    IF (lwp) WRITE(numout, *)
     CALL profile_psy_data0 % PostEnd
     IF (ln_icebergs) THEN
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   icebergs are used'
+      IF (lwp) WRITE(numout, *) '   ==>>>   icebergs are used'
     ELSE
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   No icebergs used'
+      IF (lwp) WRITE(numout, *) '   ==>>>   No icebergs used'
       RETURN
     END IF
     CALL profile_psy_data1 % PreStart('icb_nam', 'r1', 0, 0)
     IF (nn_test_icebergs > nclasses) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   Resetting of nn_test_icebergs to ', nclasses
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   Resetting of nn_test_icebergs to ', nclasses
       nn_test_icebergs = nclasses
     END IF
     IF (nn_test_icebergs < 0 .AND. .NOT. ln_use_calving) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   Resetting ln_use_calving to .true. since we are not using test icebergs'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   Resetting ln_use_calving to .true. since we are not using test icebergs'
       ln_use_calving = .TRUE.
     END IF
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'icb_nam : iceberg initialization through namberg namelist read'
-      WRITE(numout, FMT = *) '~~~~~~~~ '
-      WRITE(numout, FMT = *) '   Calculate budgets                                            ln_bergdia       = ', ln_bergdia
-      WRITE(numout, FMT = *) '   Period between sampling of position for trajectory storage   nn_sample_rate = ', nn_sample_rate
-      WRITE(numout, FMT = *) '   Mass thresholds between iceberg classes (kg)                 rn_initial_mass     ='
+      WRITE(numout, *)
+      WRITE(numout, *) 'icb_nam : iceberg initialization through namberg namelist read'
+      WRITE(numout, *) '~~~~~~~~ '
+      WRITE(numout, *) '   Calculate budgets                                            ln_bergdia       = ', ln_bergdia
+      WRITE(numout, *) '   Period between sampling of position for trajectory storage   nn_sample_rate = ', nn_sample_rate
+      WRITE(numout, *) '   Mass thresholds between iceberg classes (kg)                 rn_initial_mass     ='
       DO jn = 1, nclasses
-        WRITE(numout, FMT = '(a,f15.2)') '                                                                ', rn_initial_mass(jn)
+        WRITE(numout, '(a,f15.2)') '                                                                ', rn_initial_mass(jn)
       END DO
-      WRITE(numout, FMT = *) '   Fraction of calving to apply to this class (non-dim)         rn_distribution     ='
+      WRITE(numout, *) '   Fraction of calving to apply to this class (non-dim)         rn_distribution     ='
       DO jn = 1, nclasses
-        WRITE(numout, FMT = '(a,f10.4)') '                                                                ', rn_distribution(jn)
+        WRITE(numout, '(a,f10.4)') '                                                                ', rn_distribution(jn)
       END DO
-      WRITE(numout, FMT = *) '   Ratio between effective and real iceberg mass (non-dim)      rn_mass_scaling     = '
+      WRITE(numout, *) '   Ratio between effective and real iceberg mass (non-dim)      rn_mass_scaling     = '
       DO jn = 1, nclasses
-        WRITE(numout, FMT = '(a,f10.2)') '                                                                ', rn_mass_scaling(jn)
+        WRITE(numout, '(a,f10.2)') '                                                                ', rn_mass_scaling(jn)
       END DO
-      WRITE(numout, FMT = *) '   Total thickness of newly calved bergs (m)                    rn_initial_thickness = '
+      WRITE(numout, *) '   Total thickness of newly calved bergs (m)                    rn_initial_thickness = '
       DO jn = 1, nclasses
-        WRITE(numout, FMT = '(a,f10.2)') '                                                                ', &
-&rn_initial_thickness(jn)
+        WRITE(numout, '(a,f10.2)') '                                                                ', rn_initial_thickness(jn)
       END DO
-      WRITE(numout, FMT = *) '   Timesteps between verbose messages                           nn_verbose_write    = ', &
-&nn_verbose_write
-      WRITE(numout, FMT = *) '   Density of icebergs                           rn_rho_bergs  = ', rn_rho_bergs
-      WRITE(numout, FMT = *) '   Initial ratio L/W for newly calved icebergs   rn_LoW_ratio  = ', rn_LoW_ratio
-      WRITE(numout, FMT = *) '   Turn on more verbose output                          level  = ', nn_verbose_level
-      WRITE(numout, FMT = *) '   Use first order operator splitting for thermodynamics    ', 'use_operator_splitting = ', &
-&ln_operator_splitting
-      WRITE(numout, FMT = *) '   Fraction of erosion melt flux to divert to bergy bits    ', 'bits_erosion_fraction = ', &
-&rn_bits_erosion_fraction
-      WRITE(numout, FMT = *) '   Shift of sea-ice concentration in erosion flux modulation ', '(0<sicn_shift<1)    rn_sicn_shift  &
-&= ', rn_sicn_shift
-      WRITE(numout, FMT = *) '   Do not add freshwater flux from icebergs to ocean                ', '                  &
-&passive_mode            = ', ln_passive_mode
-      WRITE(numout, FMT = *) '   Time average the weight on the ocean   time_average_weight       = ', ln_time_average_weight
-      WRITE(numout, FMT = *) '   Create icebergs in absence of a restart file   nn_test_icebergs  = ', nn_test_icebergs
-      WRITE(numout, FMT = *) '                   in lon/lat box                                   = ', rn_test_box
-      WRITE(numout, FMT = *) '   Use calving data even if nn_test_icebergs > 0    ln_use_calving  = ', ln_use_calving
-      WRITE(numout, FMT = *) '   CFL speed limit for a berg            speed_limit                = ', rn_speed_limit
-      WRITE(numout, FMT = *) '   Writing Iceberg status information to icebergs.stat file        '
+      WRITE(numout, *) '   Timesteps between verbose messages                           nn_verbose_write    = ', nn_verbose_write
+      WRITE(numout, *) '   Density of icebergs                           rn_rho_bergs  = ', rn_rho_bergs
+      WRITE(numout, *) '   Initial ratio L/W for newly calved icebergs   rn_LoW_ratio  = ', rn_LoW_ratio
+      WRITE(numout, *) '   Turn on more verbose output                          level  = ', nn_verbose_level
+      WRITE(numout, *) '   Use first order operator splitting for thermodynamics    ', 'use_operator_splitting = ', ln_operator_splitting
+      WRITE(numout, *) '   Fraction of erosion melt flux to divert to bergy bits    ', 'bits_erosion_fraction = ', rn_bits_erosion_fraction
+      WRITE(numout, *) '   Shift of sea-ice concentration in erosion flux modulation ', '(0<sicn_shift<1)    rn_sicn_shift  = ', rn_sicn_shift
+      WRITE(numout, *) '   Do not add freshwater flux from icebergs to ocean                ', '                  passive_mode            = ', ln_passive_mode
+      WRITE(numout, *) '   Time average the weight on the ocean   time_average_weight       = ', ln_time_average_weight
+      WRITE(numout, *) '   Create icebergs in absence of a restart file   nn_test_icebergs  = ', nn_test_icebergs
+      WRITE(numout, *) '                   in lon/lat box                                   = ', rn_test_box
+      WRITE(numout, *) '   Use calving data even if nn_test_icebergs > 0    ln_use_calving  = ', ln_use_calving
+      WRITE(numout, *) '   CFL speed limit for a berg            speed_limit                = ', rn_speed_limit
+      WRITE(numout, *) '   Writing Iceberg status information to icebergs.stat file        '
     END IF
     zfact = SUM(rn_distribution)
     IF (zfact /= 1._wp .AND. 0_wp /= zfact) THEN
       rn_distribution(:) = rn_distribution(:) / zfact
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '      ==>>> CAUTION:    sum of berg input distribution = ', zfact
-        WRITE(numout, FMT = *) '            *******     redistribution has been rescaled'
-        WRITE(numout, FMT = *) '                        updated berg distribution is :'
+        WRITE(numout, *)
+        WRITE(numout, *) '      ==>>> CAUTION:    sum of berg input distribution = ', zfact
+        WRITE(numout, *) '            *******     redistribution has been rescaled'
+        WRITE(numout, *) '                        updated berg distribution is :'
         DO jn = 1, nclasses
-          WRITE(numout, FMT = '(a,f10.4)') '                                   ', rn_distribution(jn)
+          WRITE(numout, '(a,f10.4)') '                                   ', rn_distribution(jn)
         END DO
       END IF
     END IF

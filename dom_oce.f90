@@ -129,25 +129,12 @@ MODULE dom_oce
     !$ACC END KERNELS
     ALLOCATE(mig(jpi), mjg(jpj), STAT = ierr(1))
     ALLOCATE(mi0(jpiglo), mi1(jpiglo), mj0(jpjglo), mj1(jpjglo), tpol(jpiglo), fpol(jpiglo), STAT = ierr(2))
-    ALLOCATE(glamt(jpi, jpj), glamu(jpi, jpj), glamv(jpi, jpj), glamf(jpi, jpj), gphit(jpi, jpj), gphiu(jpi, jpj), gphiv(jpi, &
-&jpj), gphif(jpi, jpj), e1t(jpi, jpj), e2t(jpi, jpj), r1_e1t(jpi, jpj), r1_e2t(jpi, jpj), e1u(jpi, jpj), e2u(jpi, jpj), &
-&r1_e1u(jpi, jpj), r1_e2u(jpi, jpj), e1v(jpi, jpj), e2v(jpi, jpj), r1_e1v(jpi, jpj), r1_e2v(jpi, jpj), e1f(jpi, jpj), e2f(jpi, &
-&jpj), r1_e1f(jpi, jpj), r1_e2f(jpi, jpj), e1e2t(jpi, jpj), r1_e1e2t(jpi, jpj), e1e2u(jpi, jpj), r1_e1e2u(jpi, jpj), e2_e1u(jpi, &
-&jpj), e1e2v(jpi, jpj), r1_e1e2v(jpi, jpj), e1_e2v(jpi, jpj), e1e2f(jpi, jpj), r1_e1e2f(jpi, jpj), ff_f(jpi, jpj), ff_t(jpi, jpj), &
-&STAT = ierr(3))
-    ALLOCATE(gdept_0(jpi, jpj, jpk), gdepw_0(jpi, jpj, jpk), gde3w_0(jpi, jpj, jpk), gdept_b(jpi, jpj, jpk), gdepw_b(jpi, jpj, &
-&jpk), gdept_n(jpi, jpj, jpk), gdepw_n(jpi, jpj, jpk), gde3w_n(jpi, jpj, jpk), STAT = ierr(4))
-    ALLOCATE(e3t_0(jpi, jpj, jpk), e3u_0(jpi, jpj, jpk), e3v_0(jpi, jpj, jpk), e3f_0(jpi, jpj, jpk), e3w_0(jpi, jpj, jpk), &
-&e3t_b(jpi, jpj, jpk), e3u_b(jpi, jpj, jpk), e3v_b(jpi, jpj, jpk), e3w_b(jpi, jpj, jpk), e3t_n(jpi, jpj, jpk), e3u_n(jpi, jpj, &
-&jpk), e3v_n(jpi, jpj, jpk), e3f_n(jpi, jpj, jpk), e3w_n(jpi, jpj, jpk), e3t_a(jpi, jpj, jpk), e3u_a(jpi, jpj, jpk), e3v_a(jpi, &
-&jpj, jpk), e3uw_0(jpi, jpj, jpk), e3vw_0(jpi, jpj, jpk), e3uw_b(jpi, jpj, jpk), e3vw_b(jpi, jpj, jpk), e3uw_n(jpi, jpj, jpk), &
-&e3vw_n(jpi, jpj, jpk), STAT = ierr(5))
-    ALLOCATE(ht_0(jpi, jpj), hu_0(jpi, jpj), hv_0(jpi, jpj), hu_b(jpi, jpj), hv_b(jpi, jpj), r1_hu_b(jpi, jpj), r1_hv_b(jpi, jpj), &
-&ht_n(jpi, jpj), hu_n(jpi, jpj), hv_n(jpi, jpj), r1_hu_n(jpi, jpj), r1_hv_n(jpi, jpj), hu_a(jpi, jpj), hv_a(jpi, jpj), &
-&r1_hu_a(jpi, jpj), r1_hv_a(jpi, jpj), STAT = ierr(6))
+    ALLOCATE(glamt(jpi, jpj), glamu(jpi, jpj), glamv(jpi, jpj), glamf(jpi, jpj), gphit(jpi, jpj), gphiu(jpi, jpj), gphiv(jpi, jpj), gphif(jpi, jpj), e1t(jpi, jpj), e2t(jpi, jpj), r1_e1t(jpi, jpj), r1_e2t(jpi, jpj), e1u(jpi, jpj), e2u(jpi, jpj), r1_e1u(jpi, jpj), r1_e2u(jpi, jpj), e1v(jpi, jpj), e2v(jpi, jpj), r1_e1v(jpi, jpj), r1_e2v(jpi, jpj), e1f(jpi, jpj), e2f(jpi, jpj), r1_e1f(jpi, jpj), r1_e2f(jpi, jpj), e1e2t(jpi, jpj), r1_e1e2t(jpi, jpj), e1e2u(jpi, jpj), r1_e1e2u(jpi, jpj), e2_e1u(jpi, jpj), e1e2v(jpi, jpj), r1_e1e2v(jpi, jpj), e1_e2v(jpi, jpj), e1e2f(jpi, jpj), r1_e1e2f(jpi, jpj), ff_f(jpi, jpj), ff_t(jpi, jpj), STAT = ierr(3))
+    ALLOCATE(gdept_0(jpi, jpj, jpk), gdepw_0(jpi, jpj, jpk), gde3w_0(jpi, jpj, jpk), gdept_b(jpi, jpj, jpk), gdepw_b(jpi, jpj, jpk), gdept_n(jpi, jpj, jpk), gdepw_n(jpi, jpj, jpk), gde3w_n(jpi, jpj, jpk), STAT = ierr(4))
+    ALLOCATE(e3t_0(jpi, jpj, jpk), e3u_0(jpi, jpj, jpk), e3v_0(jpi, jpj, jpk), e3f_0(jpi, jpj, jpk), e3w_0(jpi, jpj, jpk), e3t_b(jpi, jpj, jpk), e3u_b(jpi, jpj, jpk), e3v_b(jpi, jpj, jpk), e3w_b(jpi, jpj, jpk), e3t_n(jpi, jpj, jpk), e3u_n(jpi, jpj, jpk), e3v_n(jpi, jpj, jpk), e3f_n(jpi, jpj, jpk), e3w_n(jpi, jpj, jpk), e3t_a(jpi, jpj, jpk), e3u_a(jpi, jpj, jpk), e3v_a(jpi, jpj, jpk), e3uw_0(jpi, jpj, jpk), e3vw_0(jpi, jpj, jpk), e3uw_b(jpi, jpj, jpk), e3vw_b(jpi, jpj, jpk), e3uw_n(jpi, jpj, jpk), e3vw_n(jpi, jpj, jpk), STAT = ierr(5))
+    ALLOCATE(ht_0(jpi, jpj), hu_0(jpi, jpj), hv_0(jpi, jpj), hu_b(jpi, jpj), hv_b(jpi, jpj), r1_hu_b(jpi, jpj), r1_hv_b(jpi, jpj), ht_n(jpi, jpj), hu_n(jpi, jpj), hv_n(jpi, jpj), r1_hu_n(jpi, jpj), r1_hv_n(jpi, jpj), hu_a(jpi, jpj), hv_a(jpi, jpj), r1_hu_a(jpi, jpj), r1_hv_a(jpi, jpj), STAT = ierr(6))
     ALLOCATE(gdept_1d(jpk), gdepw_1d(jpk), e3t_1d(jpk), e3w_1d(jpk), STAT = ierr(7))
-    ALLOCATE(tmask_i(jpi, jpj), tmask_h(jpi, jpj), ssmask(jpi, jpj), ssumask(jpi, jpj), ssvmask(jpi, jpj), mbkt(jpi, jpj), &
-&mbku(jpi, jpj), mbkv(jpi, jpj), STAT = ierr(9))
+    ALLOCATE(tmask_i(jpi, jpj), tmask_h(jpi, jpj), ssmask(jpi, jpj), ssumask(jpi, jpj), ssvmask(jpi, jpj), mbkt(jpi, jpj), mbku(jpi, jpj), mbkv(jpi, jpj), STAT = ierr(9))
     ALLOCATE(misfdep(jpi, jpj), mikt(jpi, jpj), miku(jpi, jpj), risfdep(jpi, jpj), mikv(jpi, jpj), mikf(jpi, jpj), STAT = ierr(10))
     ALLOCATE(tmask(jpi, jpj, jpk), umask(jpi, jpj, jpk), vmask(jpi, jpj, jpk), fmask(jpi, jpj, jpk), STAT = ierr(11))
     ALLOCATE(wmask(jpi, jpj, jpk), wumask(jpi, jpj, jpk), wvmask(jpi, jpj, jpk), STAT = ierr(12))

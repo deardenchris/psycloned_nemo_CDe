@@ -42,8 +42,7 @@ MODULE stopts
               zdtsjm = (pts(ji, jj, jk, jts) - pts(ji, jjm1, jk, jts)) * tmask(ji, jjm1, jk)
               zdtskp = (pts(ji, jj, jkp1, jts) - pts(ji, jj, jk, jts)) * tmask(ji, jj, jkp1)
               zdtskm = (pts(ji, jj, jk, jts) - pts(ji, jj, jkm1, jts)) * tmask(ji, jj, jkm1)
-              zdts = (zdtsip + zdtsim) * sto2d(ji, jj, jsto_eosi(jdof)) + (zdtsjp + zdtsjm) * sto2d(ji, jj, jsto_eosj(jdof)) + &
-&(zdtskp + zdtskm) * sto2d(ji, jj, jsto_eosk(jdof))
+              zdts = (zdtsip + zdtsim) * sto2d(ji, jj, jsto_eosi(jdof)) + (zdtsjp + zdtsjm) * sto2d(ji, jj, jsto_eosj(jdof)) + (zdtskp + zdtskm) * sto2d(ji, jj, jsto_eosk(jdof))
               zdts = zdts * tmask(ji, jj, jk) * SIN(gphit(ji, jj) * rad)
               pts_ran(ji, jj, jk, jts, jdof) = zdts * 0.5_wp
             END DO
@@ -55,11 +54,10 @@ MODULE stopts
     DO jdof = 1, nn_sto_eos
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
-            pts_ran(ji, jj, jk, jp_sal, jdof) = MIN(ABS(pts_ran(ji, jj, jk, jp_sal, jdof)), MAX(pts(ji, jj, jk, jp_sal), 0._wp)) * &
-&SIGN(1._wp, pts_ran(ji, jj, jk, jp_sal, jdof))
+            pts_ran(ji, jj, jk, jp_sal, jdof) = MIN(ABS(pts_ran(ji, jj, jk, jp_sal, jdof)), MAX(pts(ji, jj, jk, jp_sal), 0._wp)) * SIGN(1._wp, pts_ran(ji, jj, jk, jp_sal, jdof))
           END DO
         END DO
       END DO

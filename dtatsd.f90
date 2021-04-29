@@ -33,21 +33,20 @@ MODULE dtatsd
     IF (lwm) WRITE(numond, namtsd)
     IF (PRESENT(ld_tradmp)) ln_tsd_dmp = .TRUE.
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dta_tsd_init : Temperature & Salinity data '
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~ '
-      WRITE(numout, FMT = *) '   Namelist namtsd'
-      WRITE(numout, FMT = *) '      Initialisation of ocean T & S with T &S input data   ln_tsd_init = ', ln_tsd_init
-      WRITE(numout, FMT = *) '      damping of ocean T & S toward T &S input data        ln_tsd_dmp  = ', ln_tsd_dmp
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
+      WRITE(numout, *) 'dta_tsd_init : Temperature & Salinity data '
+      WRITE(numout, *) '~~~~~~~~~~~~ '
+      WRITE(numout, *) '   Namelist namtsd'
+      WRITE(numout, *) '      Initialisation of ocean T & S with T &S input data   ln_tsd_init = ', ln_tsd_init
+      WRITE(numout, *) '      damping of ocean T & S toward T &S input data        ln_tsd_dmp  = ', ln_tsd_dmp
+      WRITE(numout, *)
       IF (.NOT. ln_tsd_init .AND. .NOT. ln_tsd_dmp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '   ===>>   T & S data not used'
+        WRITE(numout, *)
+        WRITE(numout, *) '   ===>>   T & S data not used'
       END IF
     END IF
     IF (ln_rstart .AND. ln_tsd_init) THEN
-      CALL ctl_warn('dta_tsd_init: ocean restart and T & S data intialisation, ', &
-&'we keep the restart T & S values and set ln_tsd_init to FALSE')
+      CALL ctl_warn('dta_tsd_init: ocean restart and T & S data intialisation, ', 'we keep the restart T & S values and set ln_tsd_init to FALSE')
       ln_tsd_init = .FALSE.
     END IF
     IF (ln_tsd_init .OR. ln_tsd_dmp) THEN
@@ -83,12 +82,15 @@ MODULE dtatsd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('dta_tsd', 'r0', 0, 0)
     CALL fld_read(kt, 1, sf_tsd)
+    CALL profile_psy_data0 % PostEnd
+    !$ACC KERNELS
     IF (cn_cfg == "orca" .OR. cn_cfg == "ORCA") THEN
       IF (nn_cfg == 2 .AND. ln_tsd_dmp) THEN
         ij0 = 101
         ij1 = 109
         ii0 = 141
         ii1 = 155
+        !$ACC loop independent collapse(2)
         DO jj = mj0(ij0), mj1(ij1)
           DO ji = mi0(ii0), mi1(ii1)
             sf_tsd(jp_tem) % fnow(ji, jj, 13 : 13) = sf_tsd(jp_tem) % fnow(ji, jj, 13 : 13) - 0.20_wp
@@ -111,12 +113,12 @@ MODULE dtatsd
     END IF
     ptsd(:, :, :, jp_tem) = sf_tsd(jp_tem) % fnow(:, :, :)
     ptsd(:, :, :, jp_sal) = sf_tsd(jp_sal) % fnow(:, :, :)
-    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
     IF (ln_sco) THEN
       CALL profile_psy_data1 % PreStart('dta_tsd', 'r1', 0, 0)
       IF (kt == nit000 .AND. lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) 'dta_tsd: interpolates T & S data onto the s- or mixed s-z-coordinate mesh'
+        WRITE(numout, *)
+        WRITE(numout, *) 'dta_tsd: interpolates T & S data onto the s- or mixed s-z-coordinate mesh'
       END IF
       CALL profile_psy_data1 % PostEnd
       DO jj = 1, jpj
@@ -158,7 +160,7 @@ MODULE dtatsd
       !$ACC END KERNELS
       IF (ln_zps) THEN
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             ik = mbkt(ji, jj)
@@ -180,7 +182,7 @@ MODULE dtatsd
     END IF
     CALL profile_psy_data3 % PreStart('dta_tsd', 'r3', 0, 0)
     IF (.NOT. ln_tsd_dmp) THEN
-      IF (lwp) WRITE(numout, FMT = *) 'dta_tsd: deallocte T & S arrays as they are only use to initialize the run'
+      IF (lwp) WRITE(numout, *) 'dta_tsd: deallocte T & S arrays as they are only use to initialize the run'
       DEALLOCATE(sf_tsd(jp_tem) % fnow)
       IF (sf_tsd(jp_tem) % ln_tint) DEALLOCATE(sf_tsd(jp_tem) % fdta)
       DEALLOCATE(sf_tsd(jp_sal) % fnow)

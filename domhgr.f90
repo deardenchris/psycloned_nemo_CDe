@@ -19,28 +19,27 @@ MODULE domhgr
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('dom_hgr', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('dom_hgr')
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dom_hgr : define the horizontal mesh from ithe following par_oce parameters '
-      WRITE(numout, FMT = *) '~~~~~~~   '
-      WRITE(numout, FMT = *) '   namcfg : read (=T) or user defined (=F) configuration    ln_read_cfg  = ', ln_read_cfg
+      WRITE(numout, *)
+      WRITE(numout, *) 'dom_hgr : define the horizontal mesh from ithe following par_oce parameters '
+      WRITE(numout, *) '~~~~~~~   '
+      WRITE(numout, *) '   namcfg : read (=T) or user defined (=F) configuration    ln_read_cfg  = ', ln_read_cfg
     END IF
     IF (ln_read_cfg) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   read horizontal mesh in ', TRIM(cn_domcfg), ' file'
-      CALL hgr_read(glamt, glamu, glamv, glamf, gphit, gphiu, gphiv, gphif, iff, ff_f, ff_t, e1t, e1u, e1v, e1f, e2t, e2u, e2v, &
-&e2f, ie1e2u_v, e1e2u, e1e2v)
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   read horizontal mesh in ', TRIM(cn_domcfg), ' file'
+      CALL hgr_read(glamt, glamu, glamv, glamf, gphit, gphiu, gphiv, gphif, iff, ff_f, ff_t, e1t, e1u, e1v, e1f, e2t, e2u, e2v, e2f, ie1e2u_v, e1e2u, e1e2v)
     ELSE
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '          User defined horizontal mesh (usr_def_hgr)'
-      CALL usr_def_hgr(glamt, glamu, glamv, glamf, gphit, gphiu, gphiv, gphif, iff, ff_f, ff_t, e1t, e1u, e1v, e1f, e2t, e2u, e2v, &
-&e2f, ie1e2u_v, e1e2u, e1e2v)
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '          User defined horizontal mesh (usr_def_hgr)'
+      CALL usr_def_hgr(glamt, glamu, glamv, glamf, gphit, gphiu, gphiv, gphif, iff, ff_f, ff_t, e1t, e1u, e1v, e1f, e2t, e2u, e2v, e2f, ie1e2u_v, e1e2u, e1e2v)
     END IF
     CALL profile_psy_data0 % PostEnd
     IF (iff == 0) THEN
-      IF (lwp) WRITE(numout, FMT = *) '          Coriolis parameter calculated on the sphere from gphif & gphit'
+      IF (lwp) WRITE(numout, *) '          Coriolis parameter calculated on the sphere from gphif & gphit'
       !$ACC KERNELS
       ff_f(:, :) = 2. * omega * SIN(rad * gphif(:, :))
       ff_t(:, :) = 2. * omega * SIN(rad * gphit(:, :))
@@ -48,9 +47,9 @@ MODULE domhgr
     ELSE
       CALL profile_psy_data1 % PreStart('dom_hgr', 'r1', 0, 0)
       IF (ln_read_cfg) THEN
-        IF (lwp) WRITE(numout, FMT = *) '          Coriolis parameter have been read in ', TRIM(cn_domcfg), ' file'
+        IF (lwp) WRITE(numout, *) '          Coriolis parameter have been read in ', TRIM(cn_domcfg), ' file'
       ELSE
-        IF (lwp) WRITE(numout, FMT = *) '          Coriolis parameter have been set in usr_def_hgr routine'
+        IF (lwp) WRITE(numout, *) '          Coriolis parameter have been set in usr_def_hgr routine'
       END IF
       CALL profile_psy_data1 % PostEnd
     END IF
@@ -69,15 +68,15 @@ MODULE domhgr
     r1_e1e2f(:, :) = 1._wp / e1e2f(:, :)
     !$ACC END KERNELS
     IF (ie1e2u_v == 0) THEN
-      IF (lwp) WRITE(numout, FMT = *) '          u- & v-surfaces calculated as e1 e2 product'
+      IF (lwp) WRITE(numout, *) '          u- & v-surfaces calculated as e1 e2 product'
       !$ACC KERNELS
       e1e2u(:, :) = e1u(:, :) * e2u(:, :)
       e1e2v(:, :) = e1v(:, :) * e2v(:, :)
       !$ACC END KERNELS
     ELSE
       CALL profile_psy_data2 % PreStart('dom_hgr', 'r2', 0, 0)
-      IF (lwp) WRITE(numout, FMT = *) '          u- & v-surfaces have been read in "mesh_mask" file:'
-      IF (lwp) WRITE(numout, FMT = *) '                     grid size reduction in strait(s) is used'
+      IF (lwp) WRITE(numout, *) '          u- & v-surfaces have been read in "mesh_mask" file:'
+      IF (lwp) WRITE(numout, *) '                     grid size reduction in strait(s) is used'
       CALL profile_psy_data2 % PostEnd
     END IF
     !$ACC KERNELS
@@ -86,10 +85,11 @@ MODULE domhgr
     e2_e1u(:, :) = e2u(:, :) / e1u(:, :)
     e1_e2v(:, :) = e1v(:, :) / e2v(:, :)
     !$ACC END KERNELS
+    CALL profile_psy_data3 % PreStart('dom_hgr', 'r3', 0, 0)
     IF (ln_timing) CALL timing_stop('dom_hgr')
+    CALL profile_psy_data3 % PostEnd
   END SUBROUTINE dom_hgr
-  SUBROUTINE hgr_read(plamt, plamu, plamv, plamf, pphit, pphiu, pphiv, pphif, kff, pff_f, pff_t, pe1t, pe1u, pe1v, pe1f, pe2t, &
-&pe2u, pe2v, pe2f, ke1e2u_v, pe1e2u, pe1e2v)
+  SUBROUTINE hgr_read(plamt, plamu, plamv, plamf, pphit, pphiu, pphiv, pphif, kff, pff_f, pff_t, pe1t, pe1u, pe1v, pe1f, pe2t, pe2u, pe2v, pe2f, ke1e2u_v, pe1e2u, pe1e2v)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), DIMENSION(:, :), INTENT(OUT) :: plamt, plamu, plamv, plamf
     REAL(KIND = wp), DIMENSION(:, :), INTENT(OUT) :: pphit, pphiu, pphiv, pphif
@@ -103,9 +103,9 @@ MODULE domhgr
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('hgr_read', 'r0', 0, 0)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '   hgr_read : read the horizontal coordinates in mesh_mask'
-      WRITE(numout, FMT = *) '   ~~~~~~~~      jpiglo = ', jpiglo, ' jpjglo = ', jpjglo, ' jpk = ', jpk
+      WRITE(numout, *)
+      WRITE(numout, *) '   hgr_read : read the horizontal coordinates in mesh_mask'
+      WRITE(numout, *) '   ~~~~~~~~      jpiglo = ', jpiglo, ' jpjglo = ', jpjglo, ' jpk = ', jpk
     END IF
     CALL iom_open(cn_domcfg, inum)
     CALL iom_get(inum, jpdom_data, 'glamt', plamt, lrowattr = ln_use_jattr)
@@ -125,7 +125,7 @@ MODULE domhgr
     CALL iom_get(inum, jpdom_data, 'e2v', pe2v, lrowattr = ln_use_jattr)
     CALL iom_get(inum, jpdom_data, 'e2f', pe2f, lrowattr = ln_use_jattr)
     IF (iom_varid(inum, 'ff_f', ldstop = .FALSE.) > 0 .AND. iom_varid(inum, 'ff_t', ldstop = .FALSE.) > 0) THEN
-      IF (lwp) WRITE(numout, FMT = *) '           Coriolis factor at f- and t-points read in ', TRIM(cn_domcfg), ' file'
+      IF (lwp) WRITE(numout, *) '           Coriolis factor at f- and t-points read in ', TRIM(cn_domcfg), ' file'
       CALL iom_get(inum, jpdom_data, 'ff_f', pff_f, lrowattr = ln_use_jattr)
       CALL iom_get(inum, jpdom_data, 'ff_t', pff_t, lrowattr = ln_use_jattr)
       kff = 1
@@ -133,7 +133,7 @@ MODULE domhgr
       kff = 0
     END IF
     IF (iom_varid(inum, 'e1e2u', ldstop = .FALSE.) > 0) THEN
-      IF (lwp) WRITE(numout, FMT = *) '           e1e2u & e1e2v read in ', TRIM(cn_domcfg), ' file'
+      IF (lwp) WRITE(numout, *) '           e1e2u & e1e2v read in ', TRIM(cn_domcfg), ' file'
       CALL iom_get(inum, jpdom_data, 'e1e2u', pe1e2u, lrowattr = ln_use_jattr)
       CALL iom_get(inum, jpdom_data, 'e1e2v', pe1e2v, lrowattr = ln_use_jattr)
       ke1e2u_v = 1

@@ -61,6 +61,6 @@ MODULE icblbc
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_lbc_nfld
   SUBROUTINE icb_lbc_mpp
-    WRITE(numout, FMT = *) 'icb_lbc_mpp: You should not have seen this message!!'
+    WRITE(numout, *) 'icb_lbc_mpp: You should not have seen this message!!'
   END SUBROUTINE icb_lbc_mpp
 END MODULE icblbc

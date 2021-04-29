@@ -92,7 +92,7 @@ MODULE dianam
     IF (iyear2 < 10000) THEN
       clfmt = "(i4.4,2i2.2)"
     ELSE
-      WRITE(clfmt, FMT = "('(i',i1,',2i2.2)')") INT(LOG10(REAL(iyear2, wp))) + 1
+      WRITE(clfmt, "('(i',i1,',2i2.2)')") INT(LOG10(REAL(iyear2, wp))) + 1
     END IF
     WRITE(cldate1, clfmt) iyear1, imonth1, iday1
     WRITE(cldate2, clfmt) iyear2, imonth2, iday2

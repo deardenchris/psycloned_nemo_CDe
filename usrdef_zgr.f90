@@ -9,8 +9,7 @@ MODULE usrdef_zgr
   PRIVATE
   PUBLIC :: usr_def_zgr
   CONTAINS
-  SUBROUTINE usr_def_zgr(ld_zco, ld_zps, ld_sco, ld_isfcav, pdept_1d, pdepw_1d, pe3t_1d, pe3w_1d, pdept, pdepw, pe3t, pe3u, pe3v, &
-&pe3f, pe3w, pe3uw, pe3vw, k_top, k_bot)
+  SUBROUTINE usr_def_zgr(ld_zco, ld_zps, ld_sco, ld_isfcav, pdept_1d, pdepw_1d, pe3t_1d, pe3w_1d, pdept, pdepw, pe3t, pe3u, pe3v, pe3f, pe3w, pe3uw, pe3vw, k_top, k_bot)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     LOGICAL, INTENT(OUT) :: ld_zco, ld_zps, ld_sco
     LOGICAL, INTENT(OUT) :: ld_isfcav
@@ -25,9 +24,9 @@ MODULE usrdef_zgr
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: z2d
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('usr_def_zgr', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) 'usr_def_zgr : GYRE configuration (z-coordinate closed flat box ocean without cavities)'
-    IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) 'usr_def_zgr : GYRE configuration (z-coordinate closed flat box ocean without cavities)'
+    IF (lwp) WRITE(numout, *) '~~~~~~~~~~~'
     ld_zco = .TRUE.
     ld_zps = .FALSE.
     ld_sco = .FALSE.
@@ -52,15 +51,15 @@ MODULE usrdef_zgr
     zkth = 17.28520372419791_wp
     zacr = 5.0_wp
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '    zgr_z   : Reference vertical z-coordinates '
-      WRITE(numout, FMT = *) '    ~~~~~~~'
-      WRITE(numout, FMT = *) '       GYRE case : MI96 function with the following coefficients :'
-      WRITE(numout, FMT = *) '                 zsur = ', zsur
-      WRITE(numout, FMT = *) '                 za0  = ', za0
-      WRITE(numout, FMT = *) '                 za1  = ', za1
-      WRITE(numout, FMT = *) '                 zkth = ', zkth
-      WRITE(numout, FMT = *) '                 zacr = ', zacr
+      WRITE(numout, *)
+      WRITE(numout, *) '    zgr_z   : Reference vertical z-coordinates '
+      WRITE(numout, *) '    ~~~~~~~'
+      WRITE(numout, *) '       GYRE case : MI96 function with the following coefficients :'
+      WRITE(numout, *) '                 zsur = ', zsur
+      WRITE(numout, *) '                 za0  = ', za0
+      WRITE(numout, *) '                 za1  = ', za1
+      WRITE(numout, *) '                 zkth = ', zkth
+      WRITE(numout, *) '                 zacr = ', zacr
     END IF
     DO jk = 1, jpk
       zw = REAL(jk, wp)
@@ -71,10 +70,10 @@ MODULE usrdef_zgr
     CALL depth_to_e3(pdept_1d, pdepw_1d, pe3t_1d, pe3w_1d)
     CALL e3_to_depth(pe3t_1d, pe3w_1d, pdept_1d, pdepw_1d)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '              Reference 1D z-coordinate depth and scale factors:'
-      WRITE(numout, FMT = "(9x,' level  gdept_1d  gdepw_1d  e3t_1d   e3w_1d  ')")
-      WRITE(numout, FMT = "(10x, i4, 4f9.2)") (jk, pdept_1d(jk), pdepw_1d(jk), pe3t_1d(jk), pe3w_1d(jk), jk = 1, jpk)
+      WRITE(numout, *)
+      WRITE(numout, *) '              Reference 1D z-coordinate depth and scale factors:'
+      WRITE(numout, "(9x,' level  gdept_1d  gdepw_1d  e3t_1d   e3w_1d  ')")
+      WRITE(numout, "(10x, i4, 4f9.2)") (jk, pdept_1d(jk), pdepw_1d(jk), pe3t_1d(jk), pe3w_1d(jk), jk = 1, jpk)
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE zgr_z
@@ -83,16 +82,19 @@ MODULE usrdef_zgr
     INTEGER, DIMENSION(:, :), INTENT(OUT) :: k_top, k_bot
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: z2d
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('zgr_msk_top_bot', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) '    zgr_top_bot : defines the top and bottom wet ocean levels.'
-    IF (lwp) WRITE(numout, FMT = *) '    ~~~~~~~~~~~'
-    IF (lwp) WRITE(numout, FMT = *) '       GYRE case : closed flat box ocean without ocean cavities'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) '    zgr_top_bot : defines the top and bottom wet ocean levels.'
+    IF (lwp) WRITE(numout, *) '    ~~~~~~~~~~~'
+    IF (lwp) WRITE(numout, *) '       GYRE case : closed flat box ocean without ocean cavities'
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     z2d(:, :) = REAL(jpkm1, wp)
     !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('zgr_msk_top_bot', 'r1', 0, 0)
     CALL lbc_lnk('usrdef_zgr', z2d, 'T', 1.)
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     k_bot(:, :) = NINT(z2d(:, :))
     k_top(:, :) = MIN(1, k_bot(:, :))
@@ -105,8 +107,8 @@ MODULE usrdef_zgr
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(OUT) :: pe3t, pe3u, pe3v, pe3f
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(OUT) :: pe3w, pe3uw, pe3vw
     INTEGER :: jk
+    !$ACC KERNELS
     DO jk = 1, jpk
-      !$ACC KERNELS
       pdept(:, :, jk) = pdept_1d(jk)
       pdepw(:, :, jk) = pdepw_1d(jk)
       pe3t(:, :, jk) = pe3t_1d(jk)
@@ -116,7 +118,7 @@ MODULE usrdef_zgr
       pe3w(:, :, jk) = pe3w_1d(jk)
       pe3uw(:, :, jk) = pe3w_1d(jk)
       pe3vw(:, :, jk) = pe3w_1d(jk)
-      !$ACC END KERNELS
     END DO
+    !$ACC END KERNELS
   END SUBROUTINE zgr_zco
 END MODULE usrdef_zgr

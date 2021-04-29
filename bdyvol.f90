@@ -37,15 +37,13 @@ MODULE bdyvol
       DO jb = 1, idx % nblenrim(jgrd)
         ii = idx % nbi(jb, jgrd)
         ij = idx % nbj(jb, jgrd)
-        zubtpecor = zubtpecor + idx % flagu(jb, jgrd) * pua2d(ii, ij) * e2u(ii, ij) * phu(ii, ij) * tmask_i(ii, ij) * tmask_i(ii + &
-&1, ij)
+        zubtpecor = zubtpecor + idx % flagu(jb, jgrd) * pua2d(ii, ij) * e2u(ii, ij) * phu(ii, ij) * tmask_i(ii, ij) * tmask_i(ii + 1, ij)
       END DO
       jgrd = 3
       DO jb = 1, idx % nblenrim(jgrd)
         ii = idx % nbi(jb, jgrd)
         ij = idx % nbj(jb, jgrd)
-        zubtpecor = zubtpecor + idx % flagv(jb, jgrd) * pva2d(ii, ij) * e1v(ii, ij) * phv(ii, ij) * tmask_i(ii, ij) * tmask_i(ii, &
-&ij + 1)
+        zubtpecor = zubtpecor + idx % flagv(jb, jgrd) * pva2d(ii, ij) * e1v(ii, ij) * phv(ii, ij) * tmask_i(ii, ij) * tmask_i(ii, ij + 1)
       END DO
     END DO
     IF (lk_mpp) CALL mpp_sum('bdyvol', zubtpecor)
@@ -77,25 +75,23 @@ MODULE bdyvol
         DO jb = 1, idx % nblenrim(jgrd)
           ii = idx % nbi(jb, jgrd)
           ij = idx % nbj(jb, jgrd)
-          ztranst = ztranst + idx % flagu(jb, jgrd) * pua2d(ii, ij) * e2u(ii, ij) * phu(ii, ij) * tmask_i(ii, ij) * tmask_i(ii + &
-&1, ij)
+          ztranst = ztranst + idx % flagu(jb, jgrd) * pua2d(ii, ij) * e2u(ii, ij) * phu(ii, ij) * tmask_i(ii, ij) * tmask_i(ii + 1, ij)
         END DO
         jgrd = 3
         DO jb = 1, idx % nblenrim(jgrd)
           ii = idx % nbi(jb, jgrd)
           ij = idx % nbj(jb, jgrd)
-          ztranst = ztranst + idx % flagv(jb, jgrd) * pva2d(ii, ij) * e1v(ii, ij) * phv(ii, ij) * tmask_i(ii, ij) * tmask_i(ii, ij &
-&+ 1)
+          ztranst = ztranst + idx % flagv(jb, jgrd) * pva2d(ii, ij) * e1v(ii, ij) * phv(ii, ij) * tmask_i(ii, ij) * tmask_i(ii, ij + 1)
         END DO
       END DO
       IF (lk_mpp) CALL mpp_sum('bdyvol', ztranst)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'bdy_vol : time step :', kt
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~ '
-      IF (lwp) WRITE(numout, FMT = *) '          cumulate flux EMP             =', z_cflxemp, ' (m3/s)'
-      IF (lwp) WRITE(numout, FMT = *) '          total lateral surface of OBC  =', bdysurftot, '(m2)'
-      IF (lwp) WRITE(numout, FMT = *) '          correction velocity zubtpecor =', zubtpecor, '(m/s)'
-      IF (lwp) WRITE(numout, FMT = *) '          cumulated transport ztranst   =', ztranst, '(m3/s)'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'bdy_vol : time step :', kt
+      IF (lwp) WRITE(numout, *) '~~~~~~~ '
+      IF (lwp) WRITE(numout, *) '          cumulate flux EMP             =', z_cflxemp, ' (m3/s)'
+      IF (lwp) WRITE(numout, *) '          total lateral surface of OBC  =', bdysurftot, '(m2)'
+      IF (lwp) WRITE(numout, *) '          correction velocity zubtpecor =', zubtpecor, '(m/s)'
+      IF (lwp) WRITE(numout, *) '          cumulated transport ztranst   =', ztranst, '(m3/s)'
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE bdy_vol2d

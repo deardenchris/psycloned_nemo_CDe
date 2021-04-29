@@ -38,6 +38,9 @@ MODULE lbclnk
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('lbc_lnk_2d', 'r0', 0, 0)
     ipk = 1
     ipl = 1
@@ -57,8 +60,10 @@ MODULE lbclnk
           ptab(jpi, :) = ptab(2, :)
           !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS
+          CALL profile_psy_data1 % PreStart('lbc_lnk_2d', 'r1', 0, 0)
           IF (.NOT. cd_nat == 'F') ptab(1, :) = zland
+          CALL profile_psy_data1 % PostEnd
+          !$ACC KERNELS
           ptab(jpi, :) = zland
           !$ACC END KERNELS
         END IF
@@ -68,13 +73,15 @@ MODULE lbclnk
           ptab(:, jpj) = ptab(:, 2)
           !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
-          !$ACC KERNELS
+          CALL profile_psy_data2 % PreStart('lbc_lnk_2d', 'r2', 0, 0)
           IF (.NOT. cd_nat == 'F') ptab(:, 1) = zland
-          !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat, psgn)
+          CALL profile_psy_data2 % PostEnd
         ELSE
-          !$ACC KERNELS
+          CALL profile_psy_data3 % PreStart('lbc_lnk_2d', 'r3', 0, 0)
           IF (.NOT. cd_nat == 'F') ptab(:, 1) = zland
+          CALL profile_psy_data3 % PostEnd
+          !$ACC KERNELS
           ptab(:, jpj) = zland
           !$ACC END KERNELS
         END IF
@@ -95,6 +102,9 @@ MODULE lbclnk
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('lbc_lnk_2d_ptr', 'r0', 0, 0)
     ipk = 1
     ipl = 1
@@ -105,28 +115,42 @@ MODULE lbclnk
     ELSE
       zland = 0._wp
     END IF
+    CALL profile_psy_data0 % PostEnd
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
+          !$ACC KERNELS
           ptab(jf) % pt2d(1, :) = ptab(jf) % pt2d(jpim1, :)
           ptab(jf) % pt2d(jpi, :) = ptab(jf) % pt2d(2, :)
+          !$ACC END KERNELS
         ELSE
+          CALL profile_psy_data1 % PreStart('lbc_lnk_2d_ptr', 'r1', 0, 0)
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(1, :) = zland
+          CALL profile_psy_data1 % PostEnd
+          !$ACC KERNELS
           ptab(jf) % pt2d(jpi, :) = zland
+          !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
+          !$ACC KERNELS
           ptab(jf) % pt2d(:, 1) = ptab(jf) % pt2d(:, jpjm1)
           ptab(jf) % pt2d(:, jpj) = ptab(jf) % pt2d(:, 2)
+          !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
+          CALL profile_psy_data2 % PreStart('lbc_lnk_2d_ptr', 'r2', 0, 0)
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(:, 1) = zland
           CALL lbc_nfd(ptab, cd_nat(:), psgn(:), ipf)
+          CALL profile_psy_data2 % PostEnd
         ELSE
+          CALL profile_psy_data3 % PreStart('lbc_lnk_2d_ptr', 'r3', 0, 0)
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(:, 1) = zland
+          CALL profile_psy_data3 % PostEnd
+          !$ACC KERNELS
           ptab(jf) % pt2d(:, jpj) = zland
+          !$ACC END KERNELS
         END IF
       END DO
     END IF
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_lnk_2d_ptr
   SUBROUTINE lbc_lnk_3d(cdname, ptab, cd_nat, psgn, cd_mpp, pval)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -141,6 +165,9 @@ MODULE lbclnk
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('lbc_lnk_3d', 'r0', 0, 0)
     ipk = SIZE(ptab, 3)
     ipl = 1
@@ -160,8 +187,10 @@ MODULE lbclnk
           ptab(jpi, :, :) = ptab(2, :, :)
           !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS
+          CALL profile_psy_data1 % PreStart('lbc_lnk_3d', 'r1', 0, 0)
           IF (.NOT. cd_nat == 'F') ptab(1, :, :) = zland
+          CALL profile_psy_data1 % PostEnd
+          !$ACC KERNELS
           ptab(jpi, :, :) = zland
           !$ACC END KERNELS
         END IF
@@ -171,13 +200,15 @@ MODULE lbclnk
           ptab(:, jpj, :) = ptab(:, 2, :)
           !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
-          !$ACC KERNELS
+          CALL profile_psy_data2 % PreStart('lbc_lnk_3d', 'r2', 0, 0)
           IF (.NOT. cd_nat == 'F') ptab(:, 1, :) = zland
-          !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat, psgn)
+          CALL profile_psy_data2 % PostEnd
         ELSE
-          !$ACC KERNELS
+          CALL profile_psy_data3 % PreStart('lbc_lnk_3d', 'r3', 0, 0)
           IF (.NOT. cd_nat == 'F') ptab(:, 1, :) = zland
+          CALL profile_psy_data3 % PostEnd
+          !$ACC KERNELS
           ptab(:, jpj, :) = zland
           !$ACC END KERNELS
         END IF
@@ -198,6 +229,9 @@ MODULE lbclnk
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('lbc_lnk_3d_ptr', 'r0', 0, 0)
     ipk = SIZE(ptab(1) % pt3d, 3)
     ipl = 1
@@ -208,28 +242,42 @@ MODULE lbclnk
     ELSE
       zland = 0._wp
     END IF
+    CALL profile_psy_data0 % PostEnd
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
+          !$ACC KERNELS
           ptab(jf) % pt3d(1, :, :) = ptab(jf) % pt3d(jpim1, :, :)
           ptab(jf) % pt3d(jpi, :, :) = ptab(jf) % pt3d(2, :, :)
+          !$ACC END KERNELS
         ELSE
+          CALL profile_psy_data1 % PreStart('lbc_lnk_3d_ptr', 'r1', 0, 0)
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(1, :, :) = zland
+          CALL profile_psy_data1 % PostEnd
+          !$ACC KERNELS
           ptab(jf) % pt3d(jpi, :, :) = zland
+          !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
+          !$ACC KERNELS
           ptab(jf) % pt3d(:, 1, :) = ptab(jf) % pt3d(:, jpjm1, :)
           ptab(jf) % pt3d(:, jpj, :) = ptab(jf) % pt3d(:, 2, :)
+          !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
+          CALL profile_psy_data2 % PreStart('lbc_lnk_3d_ptr', 'r2', 0, 0)
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(:, 1, :) = zland
           CALL lbc_nfd(ptab, cd_nat(:), psgn(:), ipf)
+          CALL profile_psy_data2 % PostEnd
         ELSE
+          CALL profile_psy_data3 % PreStart('lbc_lnk_3d_ptr', 'r3', 0, 0)
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(:, 1, :) = zland
+          CALL profile_psy_data3 % PostEnd
+          !$ACC KERNELS
           ptab(jf) % pt3d(:, jpj, :) = zland
+          !$ACC END KERNELS
         END IF
       END DO
     END IF
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_lnk_3d_ptr
   SUBROUTINE lbc_lnk_4d(cdname, ptab, cd_nat, psgn, cd_mpp, pval)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -244,6 +292,9 @@ MODULE lbclnk
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('lbc_lnk_4d', 'r0', 0, 0)
     ipk = SIZE(ptab, 3)
     ipl = SIZE(ptab, 4)
@@ -263,8 +314,10 @@ MODULE lbclnk
           ptab(jpi, :, :, :) = ptab(2, :, :, :)
           !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS
+          CALL profile_psy_data1 % PreStart('lbc_lnk_4d', 'r1', 0, 0)
           IF (.NOT. cd_nat == 'F') ptab(1, :, :, :) = zland
+          CALL profile_psy_data1 % PostEnd
+          !$ACC KERNELS
           ptab(jpi, :, :, :) = zland
           !$ACC END KERNELS
         END IF
@@ -274,13 +327,15 @@ MODULE lbclnk
           ptab(:, jpj, :, :) = ptab(:, 2, :, :)
           !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
-          !$ACC KERNELS
+          CALL profile_psy_data2 % PreStart('lbc_lnk_4d', 'r2', 0, 0)
           IF (.NOT. cd_nat == 'F') ptab(:, 1, :, :) = zland
-          !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat, psgn)
+          CALL profile_psy_data2 % PostEnd
         ELSE
-          !$ACC KERNELS
+          CALL profile_psy_data3 % PreStart('lbc_lnk_4d', 'r3', 0, 0)
           IF (.NOT. cd_nat == 'F') ptab(:, 1, :, :) = zland
+          CALL profile_psy_data3 % PostEnd
+          !$ACC KERNELS
           ptab(:, jpj, :, :) = zland
           !$ACC END KERNELS
         END IF
@@ -301,6 +356,9 @@ MODULE lbclnk
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('lbc_lnk_4d_ptr', 'r0', 0, 0)
     ipk = SIZE(ptab(1) % pt4d, 3)
     ipl = SIZE(ptab(1) % pt4d, 4)
@@ -311,63 +369,92 @@ MODULE lbclnk
     ELSE
       zland = 0._wp
     END IF
+    CALL profile_psy_data0 % PostEnd
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
+          !$ACC KERNELS
           ptab(jf) % pt4d(1, :, :, :) = ptab(jf) % pt4d(jpim1, :, :, :)
           ptab(jf) % pt4d(jpi, :, :, :) = ptab(jf) % pt4d(2, :, :, :)
+          !$ACC END KERNELS
         ELSE
+          CALL profile_psy_data1 % PreStart('lbc_lnk_4d_ptr', 'r1', 0, 0)
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(1, :, :, :) = zland
+          CALL profile_psy_data1 % PostEnd
+          !$ACC KERNELS
           ptab(jf) % pt4d(jpi, :, :, :) = zland
+          !$ACC END KERNELS
         END IF
         IF (l_Jperio) THEN
+          !$ACC KERNELS
           ptab(jf) % pt4d(:, 1, :, :) = ptab(jf) % pt4d(:, jpjm1, :, :)
           ptab(jf) % pt4d(:, jpj, :, :) = ptab(jf) % pt4d(:, 2, :, :)
+          !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
+          CALL profile_psy_data2 % PreStart('lbc_lnk_4d_ptr', 'r2', 0, 0)
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(:, 1, :, :) = zland
           CALL lbc_nfd(ptab, cd_nat(:), psgn(:), ipf)
+          CALL profile_psy_data2 % PostEnd
         ELSE
+          CALL profile_psy_data3 % PreStart('lbc_lnk_4d_ptr', 'r3', 0, 0)
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(:, 1, :, :) = zland
+          CALL profile_psy_data3 % PostEnd
+          !$ACC KERNELS
           ptab(jf) % pt4d(:, jpj, :, :) = zland
+          !$ACC END KERNELS
         END IF
       END DO
     END IF
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_lnk_4d_ptr
   SUBROUTINE lbc_bdy_lnk_4d(cdname, pt4d, cd_type, psgn, ib_bdy)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdname
     REAL(KIND = wp), DIMENSION(:, :, :, :), INTENT(INOUT) :: pt4d
     CHARACTER(LEN = 1), INTENT(IN) :: cd_type
     REAL(KIND = wp), INTENT(IN) :: psgn
     INTEGER, INTENT(IN) :: ib_bdy
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    CALL profile_psy_data0 % PreStart('lbc_bdy_lnk_4d', 'r0', 0, 0)
     CALL lbc_lnk_4d(cdname, pt4d, cd_type, psgn)
+    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_bdy_lnk_4d
   SUBROUTINE lbc_bdy_lnk_3d(cdname, pt3d, cd_type, psgn, ib_bdy)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdname
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(INOUT) :: pt3d
     CHARACTER(LEN = 1), INTENT(IN) :: cd_type
     REAL(KIND = wp), INTENT(IN) :: psgn
     INTEGER, INTENT(IN) :: ib_bdy
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    CALL profile_psy_data0 % PreStart('lbc_bdy_lnk_3d', 'r0', 0, 0)
     CALL lbc_lnk_3d(cdname, pt3d, cd_type, psgn)
+    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_bdy_lnk_3d
   SUBROUTINE lbc_bdy_lnk_2d(cdname, pt2d, cd_type, psgn, ib_bdy)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdname
     REAL(KIND = wp), DIMENSION(:, :), INTENT(INOUT) :: pt2d
     CHARACTER(LEN = 1), INTENT(IN) :: cd_type
     REAL(KIND = wp), INTENT(IN) :: psgn
     INTEGER, INTENT(IN) :: ib_bdy
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    CALL profile_psy_data0 % PreStart('lbc_bdy_lnk_2d', 'r0', 0, 0)
     CALL lbc_lnk_2d(cdname, pt2d, cd_type, psgn)
+    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_bdy_lnk_2d
   SUBROUTINE lbc_lnk_2d_icb(cdname, pt2d, cd_type, psgn, ki, kj)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdname
     REAL(KIND = wp), DIMENSION(:, :), INTENT(INOUT) :: pt2d
     CHARACTER(LEN = 1), INTENT(IN) :: cd_type
     REAL(KIND = wp), INTENT(IN) :: psgn
     INTEGER, INTENT(IN) :: ki, kj
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    CALL profile_psy_data0 % PreStart('lbc_lnk_2d_icb', 'r0', 0, 0)
     CALL lbc_lnk_2d(cdname, pt2d, cd_type, psgn)
+    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_lnk_2d_icb
-  SUBROUTINE lbc_lnk_2d_multi(cdname, pt1, cdna1, psgn1, pt2, cdna2, psgn2, pt3, cdna3, psgn3, pt4, cdna4, psgn4, pt5, cdna5, &
-&psgn5, pt6, cdna6, psgn6, pt7, cdna7, psgn7, pt8, cdna8, psgn8, pt9, cdna9, psgn9, cd_mpp, pval)
+  SUBROUTINE lbc_lnk_2d_multi(cdname, pt1, cdna1, psgn1, pt2, cdna2, psgn2, pt3, cdna3, psgn3, pt4, cdna4, psgn4, pt5, cdna5, psgn5, pt6, cdna6, psgn6, pt7, cdna7, psgn7, pt8, cdna8, psgn8, pt9, cdna9, psgn9, cd_mpp, pval)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdname
     REAL(KIND = wp), DIMENSION(:, :), TARGET, INTENT(INOUT) :: pt1
@@ -414,8 +501,7 @@ MODULE lbclnk
     psgn_ptr(kfld) = psgn
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE load_ptr_2d
-  SUBROUTINE lbc_lnk_3d_multi(cdname, pt1, cdna1, psgn1, pt2, cdna2, psgn2, pt3, cdna3, psgn3, pt4, cdna4, psgn4, pt5, cdna5, &
-&psgn5, pt6, cdna6, psgn6, pt7, cdna7, psgn7, pt8, cdna8, psgn8, pt9, cdna9, psgn9, cd_mpp, pval)
+  SUBROUTINE lbc_lnk_3d_multi(cdname, pt1, cdna1, psgn1, pt2, cdna2, psgn2, pt3, cdna3, psgn3, pt4, cdna4, psgn4, pt5, cdna5, psgn5, pt6, cdna6, psgn6, pt7, cdna7, psgn7, pt8, cdna8, psgn8, pt9, cdna9, psgn9, cd_mpp, pval)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdname
     REAL(KIND = wp), DIMENSION(:, :, :), TARGET, INTENT(INOUT) :: pt1
@@ -462,8 +548,7 @@ MODULE lbclnk
     psgn_ptr(kfld) = psgn
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE load_ptr_3d
-  SUBROUTINE lbc_lnk_4d_multi(cdname, pt1, cdna1, psgn1, pt2, cdna2, psgn2, pt3, cdna3, psgn3, pt4, cdna4, psgn4, pt5, cdna5, &
-&psgn5, pt6, cdna6, psgn6, pt7, cdna7, psgn7, pt8, cdna8, psgn8, pt9, cdna9, psgn9, cd_mpp, pval)
+  SUBROUTINE lbc_lnk_4d_multi(cdname, pt1, cdna1, psgn1, pt2, cdna2, psgn2, pt3, cdna3, psgn3, pt4, cdna4, psgn4, pt5, cdna5, psgn5, pt6, cdna6, psgn6, pt7, cdna7, psgn7, pt8, cdna8, psgn8, pt9, cdna9, psgn9, cd_mpp, pval)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdname
     REAL(KIND = wp), DIMENSION(:, :, :, :), TARGET, INTENT(INOUT) :: pt1

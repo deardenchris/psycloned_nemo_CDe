@@ -120,12 +120,15 @@ MODULE eosbn2
     REAL(KIND = wp) :: zt, zh, zs, ztm
     REAL(KIND = wp) :: zn, zn0, zn1, zn2, zn3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    CALL profile_psy_data0 % PreStart('eos_insitu', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('eos-insitu')
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     SELECT CASE (neos)
     CASE (np_teos10, np_eos80)
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zh = pdep(ji, jj, jk) * r1_Z0
@@ -134,12 +137,8 @@ MODULE eosbn2
             ztm = tmask(ji, jj, jk)
             zn3 = EOS013 * zt + EOS103 * zs + EOS003
             zn2 = (EOS022 * zt + EOS112 * zs + EOS012) * zt + (EOS202 * zs + EOS102) * zs + EOS002
-            zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + &
-&EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
-            zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + &
-&EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + &
-&((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + &
-&EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
+            zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
+            zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + ((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
             zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
             prd(ji, jj, jk) = (zn * r1_rau0 - 1._wp) * ztm
           END DO
@@ -147,25 +146,24 @@ MODULE eosbn2
       END DO
     CASE (np_seos)
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zt = pts(ji, jj, jk, jp_tem) - 10._wp
             zs = pts(ji, jj, jk, jp_sal) - 35._wp
             zh = pdep(ji, jj, jk)
             ztm = tmask(ji, jj, jk)
-            zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt + rn_mu1 * zh) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs - &
-&rn_mu2 * zh) * zs - rn_nu * zt * zs
+            zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt + rn_mu1 * zh) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs - rn_mu2 * zh) * zs - rn_nu * zt * zs
             prd(ji, jj, jk) = zn * r1_rau0 * ztm
           END DO
         END DO
       END DO
     END SELECT
     !$ACC END KERNELS
-    CALL profile_psy_data0 % PreStart('eos_insitu', 'r0', 0, 0)
+    CALL profile_psy_data1 % PreStart('eos_insitu', 'r1', 0, 0)
     IF (ln_ctl) CALL prt_ctl(tab3d_1 = prd, clinfo1 = ' eos-insitu  : ', kdim = jpk)
     IF (ln_timing) CALL timing_stop('eos-insitu')
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data1 % PostEnd
   END SUBROUTINE eos_insitu
   SUBROUTINE eos_insitu_pot(pts, prd, prhop, pdep)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -180,22 +178,25 @@ MODULE eosbn2
     REAL(KIND = wp), DIMENSION(:), ALLOCATABLE :: zn0_sto, zn_sto, zsign
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    CALL profile_psy_data0 % PreStart('eos_insitu_pot', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('eos-pot')
+    CALL profile_psy_data0 % PostEnd
     SELECT CASE (neos)
     CASE (np_teos10, np_eos80)
       IF (ln_sto_eos) THEN
-        CALL profile_psy_data0 % PreStart('eos_insitu_pot', 'r0', 0, 0)
+        CALL profile_psy_data1 % PreStart('eos_insitu_pot', 'r1', 0, 0)
         ALLOCATE(zn0_sto(1 : 2 * nn_sto_eos))
         ALLOCATE(zn_sto(1 : 2 * nn_sto_eos))
         ALLOCATE(zsign(1 : 2 * nn_sto_eos))
-        CALL profile_psy_data0 % PostEnd
+        CALL profile_psy_data1 % PostEnd
         !$ACC KERNELS
         DO jsmp = 1, 2 * nn_sto_eos, 2
           zsign(jsmp) = 1._wp
           zsign(jsmp + 1) = - 1._wp
         END DO
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               DO jsmp = 1, nn_sto_eos * 2
@@ -207,12 +208,8 @@ MODULE eosbn2
                 ztm = tmask(ji, jj, jk)
                 zn3 = EOS013 * zt + EOS103 * zs + EOS003
                 zn2 = (EOS022 * zt + EOS112 * zs + EOS012) * zt + (EOS202 * zs + EOS102) * zs + EOS002
-                zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + &
-&EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
-                zn0_sto(jsmp) = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + &
-&((EOS330 * zs + EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + &
-&EOS020) * zt + ((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + &
-&EOS500) * zs + EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
+                zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
+                zn0_sto(jsmp) = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + ((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
                 zn_sto(jsmp) = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0_sto(jsmp)
               END DO
               prhop(ji, jj, jk) = 0._wp
@@ -231,7 +228,7 @@ MODULE eosbn2
       ELSE
         !$ACC KERNELS
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               zh = pdep(ji, jj, jk) * r1_Z0
@@ -240,12 +237,8 @@ MODULE eosbn2
               ztm = tmask(ji, jj, jk)
               zn3 = EOS013 * zt + EOS103 * zs + EOS003
               zn2 = (EOS022 * zt + EOS112 * zs + EOS012) * zt + (EOS202 * zs + EOS102) * zs + EOS002
-              zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + &
-&EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
-              zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + &
-&EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + &
-&((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + &
-&EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
+              zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
+              zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + ((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
               zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
               prhop(ji, jj, jk) = zn0 * ztm
               prd(ji, jj, jk) = (zn * r1_rau0 - 1._wp) * ztm
@@ -257,15 +250,14 @@ MODULE eosbn2
     CASE (np_seos)
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zt = pts(ji, jj, jk, jp_tem) - 10._wp
             zs = pts(ji, jj, jk, jp_sal) - 35._wp
             zh = pdep(ji, jj, jk)
             ztm = tmask(ji, jj, jk)
-            zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs) * zs - rn_nu * zt &
-&* zs
+            zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs) * zs - rn_nu * zt * zs
             prhop(ji, jj, jk) = (rau0 + zn) * ztm
             zn = zn - (rn_a0 * rn_mu1 * zt + rn_b0 * rn_mu2 * zs) * zh
             prd(ji, jj, jk) = zn * r1_rau0 * ztm
@@ -274,10 +266,10 @@ MODULE eosbn2
       END DO
       !$ACC END KERNELS
     END SELECT
-    CALL profile_psy_data1 % PreStart('eos_insitu_pot', 'r1', 0, 0)
+    CALL profile_psy_data2 % PreStart('eos_insitu_pot', 'r2', 0, 0)
     IF (ln_ctl) CALL prt_ctl(tab3d_1 = prd, clinfo1 = ' eos-pot: ', tab3d_2 = prhop, clinfo2 = ' pot : ', kdim = jpk)
     IF (ln_timing) CALL timing_stop('eos-pot')
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE eos_insitu_pot
   SUBROUTINE eos_insitu_2d(pts, pdep, prd)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -288,14 +280,19 @@ MODULE eosbn2
     REAL(KIND = wp) :: zt, zh, zs
     REAL(KIND = wp) :: zn, zn0, zn1, zn2, zn3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    CALL profile_psy_data0 % PreStart('eos_insitu_2d', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('eos2d')
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     prd(:, :) = 0._wp
     !$ACC END KERNELS
     SELECT CASE (neos)
     CASE (np_teos10, np_eos80)
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           zh = pdep(ji, jj) * r1_Z0
@@ -303,38 +300,37 @@ MODULE eosbn2
           zs = SQRT(ABS(pts(ji, jj, jp_sal) + rdeltaS) * r1_S0)
           zn3 = EOS013 * zt + EOS103 * zs + EOS003
           zn2 = (EOS022 * zt + EOS112 * zs + EOS012) * zt + (EOS202 * zs + EOS102) * zs + EOS002
-          zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + EOS211) &
-&* zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
-          zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + &
-&EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + &
-&((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + &
-&EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
+          zn1 = (((EOS041 * zt + EOS131 * zs + EOS031) * zt + (EOS221 * zs + EOS121) * zs + EOS021) * zt + ((EOS311 * zs + EOS211) * zs + EOS111) * zs + EOS011) * zt + (((EOS401 * zs + EOS301) * zs + EOS201) * zs + EOS101) * zs + EOS001
+          zn0 = (((((EOS060 * zt + EOS150 * zs + EOS050) * zt + (EOS240 * zs + EOS140) * zs + EOS040) * zt + ((EOS330 * zs + EOS230) * zs + EOS130) * zs + EOS030) * zt + (((EOS420 * zs + EOS320) * zs + EOS220) * zs + EOS120) * zs + EOS020) * zt + ((((EOS510 * zs + EOS410) * zs + EOS310) * zs + EOS210) * zs + EOS110) * zs + EOS010) * zt + (((((EOS600 * zs + EOS500) * zs + EOS400) * zs + EOS300) * zs + EOS200) * zs + EOS100) * zs + EOS000
           zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
           prd(ji, jj) = zn * r1_rau0 - 1._wp
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data1 % PreStart('eos_insitu_2d', 'r1', 0, 0)
       CALL lbc_lnk('eosbn2', prd, 'T', 1.)
+      CALL profile_psy_data1 % PostEnd
     CASE (np_seos)
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           zt = pts(ji, jj, jp_tem) - 10._wp
           zs = pts(ji, jj, jp_sal) - 35._wp
           zh = pdep(ji, jj)
-          zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt + rn_mu1 * zh) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs - &
-&rn_mu2 * zh) * zs - rn_nu * zt * zs
+          zn = - rn_a0 * (1._wp + 0.5_wp * rn_lambda1 * zt + rn_mu1 * zh) * zt + rn_b0 * (1._wp - 0.5_wp * rn_lambda2 * zs - rn_mu2 * zh) * zs - rn_nu * zt * zs
           prd(ji, jj) = zn * r1_rau0
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data2 % PreStart('eos_insitu_2d', 'r2', 0, 0)
       CALL lbc_lnk('eosbn2', prd, 'T', 1.)
+      CALL profile_psy_data2 % PostEnd
     END SELECT
-    CALL profile_psy_data0 % PreStart('eos_insitu_2d', 'r0', 0, 0)
+    CALL profile_psy_data3 % PreStart('eos_insitu_2d', 'r3', 0, 0)
     IF (ln_ctl) CALL prt_ctl(tab2d_1 = prd, clinfo1 = ' eos2d: ')
     IF (ln_timing) CALL timing_stop('eos2d')
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data3 % PostEnd
   END SUBROUTINE eos_insitu_2d
   SUBROUTINE rab_3d(pts, pab)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -345,12 +341,15 @@ MODULE eosbn2
     REAL(KIND = wp) :: zn, zn0, zn1, zn2, zn3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    CALL profile_psy_data0 % PreStart('rab_3d', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('rab_3d')
+    CALL profile_psy_data0 % PostEnd
     SELECT CASE (neos)
     CASE (np_teos10, np_eos80)
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zh = gdept_n(ji, jj, jk) * r1_Z0
@@ -359,20 +358,14 @@ MODULE eosbn2
             ztm = tmask(ji, jj, jk)
             zn3 = ALP003
             zn2 = ALP012 * zt + ALP102 * zs + ALP002
-            zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + &
-&ALP201) * zs + ALP101) * zs + ALP001
-            zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + &
-&ALP220) * zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + &
-&((((ALP500 * zs + ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
+            zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + ALP201) * zs + ALP101) * zs + ALP001
+            zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + ALP220) * zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + ((((ALP500 * zs + ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
             zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
             pab(ji, jj, jk, jp_tem) = zn * r1_rau0 * ztm
             zn3 = BET003
             zn2 = BET012 * zt + BET102 * zs + BET002
-            zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + &
-&BET201) * zs + BET101) * zs + BET001
-            zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + &
-&BET220) * zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + &
-&((((BET500 * zs + BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
+            zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + BET201) * zs + BET101) * zs + BET001
+            zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + BET220) * zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + ((((BET500 * zs + BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
             zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
             pab(ji, jj, jk, jp_sal) = zn / zs * r1_rau0 * ztm
           END DO
@@ -382,7 +375,7 @@ MODULE eosbn2
     CASE (np_seos)
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zt = pts(ji, jj, jk, jp_tem) - 10._wp
@@ -398,16 +391,15 @@ MODULE eosbn2
       END DO
       !$ACC END KERNELS
     CASE DEFAULT
-      CALL profile_psy_data0 % PreStart('rab_3d', 'r0', 0, 0)
-      WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos
+      CALL profile_psy_data1 % PreStart('rab_3d', 'r1', 0, 0)
+      WRITE(ctmp1, *) '          bad flag value for neos = ', neos
       CALL ctl_stop('rab_3d:', ctmp1)
-      CALL profile_psy_data0 % PostEnd
+      CALL profile_psy_data1 % PostEnd
     END SELECT
-    CALL profile_psy_data1 % PreStart('rab_3d', 'r1', 0, 0)
-    IF (ln_ctl) CALL prt_ctl(tab3d_1 = pab(:, :, :, jp_tem), clinfo1 = ' rab_3d_t: ', tab3d_2 = pab(:, :, :, jp_sal), clinfo2 = ' &
-&rab_3d_s : ', kdim = jpk)
+    CALL profile_psy_data2 % PreStart('rab_3d', 'r2', 0, 0)
+    IF (ln_ctl) CALL prt_ctl(tab3d_1 = pab(:, :, :, jp_tem), clinfo1 = ' rab_3d_t: ', tab3d_2 = pab(:, :, :, jp_sal), clinfo2 = ' rab_3d_s : ', kdim = jpk)
     IF (ln_timing) CALL timing_stop('rab_3d')
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE rab_3d
   SUBROUTINE rab_2d(pts, pdep, pab)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -419,14 +411,19 @@ MODULE eosbn2
     REAL(KIND = wp) :: zn, zn0, zn1, zn2, zn3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    CALL profile_psy_data0 % PreStart('rab_2d', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('rab_2d')
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     pab(:, :, :) = 0._wp
     !$ACC END KERNELS
     SELECT CASE (neos)
     CASE (np_teos10, np_eos80)
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           zh = pdep(ji, jj) * r1_Z0
@@ -434,29 +431,25 @@ MODULE eosbn2
           zs = SQRT(ABS(pts(ji, jj, jp_sal) + rdeltaS) * r1_S0)
           zn3 = ALP003
           zn2 = ALP012 * zt + ALP102 * zs + ALP002
-          zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + ALP201) &
-&* zs + ALP101) * zs + ALP001
-          zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + &
-&ALP220) * zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + &
-&((((ALP500 * zs + ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
+          zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + ALP201) * zs + ALP101) * zs + ALP001
+          zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + ALP220) * zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + ((((ALP500 * zs + ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
           zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
           pab(ji, jj, jp_tem) = zn * r1_rau0
           zn3 = BET003
           zn2 = BET012 * zt + BET102 * zs + BET002
-          zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + BET201) &
-&* zs + BET101) * zs + BET001
-          zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + &
-&BET220) * zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + &
-&((((BET500 * zs + BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
+          zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + BET201) * zs + BET101) * zs + BET001
+          zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + BET220) * zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + ((((BET500 * zs + BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
           zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
           pab(ji, jj, jp_sal) = zn / zs * r1_rau0
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data1 % PreStart('rab_2d', 'r1', 0, 0)
       CALL lbc_lnk_multi('eosbn2', pab(:, :, jp_tem), 'T', 1., pab(:, :, jp_sal), 'T', 1.)
+      CALL profile_psy_data1 % PostEnd
     CASE (np_seos)
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           zt = pts(ji, jj, jp_tem) - 10._wp
@@ -469,18 +462,19 @@ MODULE eosbn2
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data2 % PreStart('rab_2d', 'r2', 0, 0)
       CALL lbc_lnk_multi('eosbn2', pab(:, :, jp_tem), 'T', 1., pab(:, :, jp_sal), 'T', 1.)
+      CALL profile_psy_data2 % PostEnd
     CASE DEFAULT
-      CALL profile_psy_data0 % PreStart('rab_2d', 'r0', 0, 0)
-      WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos
+      CALL profile_psy_data3 % PreStart('rab_2d', 'r3', 0, 0)
+      WRITE(ctmp1, *) '          bad flag value for neos = ', neos
       CALL ctl_stop('rab_2d:', ctmp1)
-      CALL profile_psy_data0 % PostEnd
+      CALL profile_psy_data3 % PostEnd
     END SELECT
-    CALL profile_psy_data1 % PreStart('rab_2d', 'r1', 0, 0)
-    IF (ln_ctl) CALL prt_ctl(tab2d_1 = pab(:, :, jp_tem), clinfo1 = ' rab_2d_t: ', tab2d_2 = pab(:, :, jp_sal), clinfo2 = ' &
-&rab_2d_s : ')
+    CALL profile_psy_data4 % PreStart('rab_2d', 'r4', 0, 0)
+    IF (ln_ctl) CALL prt_ctl(tab2d_1 = pab(:, :, jp_tem), clinfo1 = ' rab_2d_t: ', tab2d_2 = pab(:, :, jp_sal), clinfo2 = ' rab_2d_s : ')
     IF (ln_timing) CALL timing_stop('rab_2d')
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data4 % PostEnd
   END SUBROUTINE rab_2d
   SUBROUTINE rab_0d(pts, pdep, pab)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -490,11 +484,14 @@ MODULE eosbn2
     REAL(KIND = wp) :: zt, zh, zs
     REAL(KIND = wp) :: zn, zn0, zn1, zn2, zn3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    CALL profile_psy_data0 % PreStart('rab_0d', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('rab_0d')
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     pab(:) = 0._wp
     !$ACC END KERNELS
-    CALL profile_psy_data0 % PreStart('rab_0d', 'r0', 0, 0)
+    CALL profile_psy_data1 % PreStart('rab_0d', 'r1', 0, 0)
     SELECT CASE (neos)
     CASE (np_teos10, np_eos80)
       zh = pdep * r1_Z0
@@ -502,20 +499,14 @@ MODULE eosbn2
       zs = SQRT(ABS(pts(jp_sal) + rdeltaS) * r1_S0)
       zn3 = ALP003
       zn2 = ALP012 * zt + ALP102 * zs + ALP002
-      zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + ALP201) * zs &
-&+ ALP101) * zs + ALP001
-      zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + ALP220) * &
-&zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + ((((ALP500 * zs + &
-&ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
+      zn1 = ((ALP031 * zt + ALP121 * zs + ALP021) * zt + (ALP211 * zs + ALP111) * zs + ALP011) * zt + ((ALP301 * zs + ALP201) * zs + ALP101) * zs + ALP001
+      zn0 = ((((ALP050 * zt + ALP140 * zs + ALP040) * zt + (ALP230 * zs + ALP130) * zs + ALP030) * zt + ((ALP320 * zs + ALP220) * zs + ALP120) * zs + ALP020) * zt + (((ALP410 * zs + ALP310) * zs + ALP210) * zs + ALP110) * zs + ALP010) * zt + ((((ALP500 * zs + ALP400) * zs + ALP300) * zs + ALP200) * zs + ALP100) * zs + ALP000
       zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
       pab(jp_tem) = zn * r1_rau0
       zn3 = BET003
       zn2 = BET012 * zt + BET102 * zs + BET002
-      zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + BET201) * zs &
-&+ BET101) * zs + BET001
-      zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + BET220) * &
-&zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + ((((BET500 * zs + &
-&BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
+      zn1 = ((BET031 * zt + BET121 * zs + BET021) * zt + (BET211 * zs + BET111) * zs + BET011) * zt + ((BET301 * zs + BET201) * zs + BET101) * zs + BET001
+      zn0 = ((((BET050 * zt + BET140 * zs + BET040) * zt + (BET230 * zs + BET130) * zs + BET030) * zt + ((BET320 * zs + BET220) * zs + BET120) * zs + BET020) * zt + (((BET410 * zs + BET310) * zs + BET210) * zs + BET110) * zs + BET010) * zt + ((((BET500 * zs + BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
       zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
       pab(jp_sal) = zn / zs * r1_rau0
     CASE (np_seos)
@@ -527,11 +518,11 @@ MODULE eosbn2
       zn = rn_b0 * (1._wp - rn_lambda2 * zs - rn_mu2 * zh) - rn_nu * zt
       pab(jp_sal) = zn * r1_rau0
     CASE DEFAULT
-      WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos
+      WRITE(ctmp1, *) '          bad flag value for neos = ', neos
       CALL ctl_stop('rab_0d:', ctmp1)
     END SELECT
     IF (ln_timing) CALL timing_stop('rab_0d')
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data1 % PostEnd
   END SUBROUTINE rab_0d
   SUBROUTINE bn2(pts, pab, pn2)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -541,27 +532,30 @@ MODULE eosbn2
     INTEGER :: ji, jj, jk
     REAL(KIND = wp) :: zaw, zbw, zrw
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    CALL profile_psy_data0 % PreStart('bn2', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('bn2')
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     DO jk = 2, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           zrw = (gdepw_n(ji, jj, jk) - gdept_n(ji, jj, jk)) / (gdept_n(ji, jj, jk - 1) - gdept_n(ji, jj, jk))
           zaw = pab(ji, jj, jk, jp_tem) * (1. - zrw) + pab(ji, jj, jk - 1, jp_tem) * zrw
           zbw = pab(ji, jj, jk, jp_sal) * (1. - zrw) + pab(ji, jj, jk - 1, jp_sal) * zrw
-          pn2(ji, jj, jk) = grav * (zaw * (pts(ji, jj, jk - 1, jp_tem) - pts(ji, jj, jk, jp_tem)) - zbw * (pts(ji, jj, jk - 1, &
-&jp_sal) - pts(ji, jj, jk, jp_sal))) / e3w_n(ji, jj, jk) * wmask(ji, jj, jk)
+          pn2(ji, jj, jk) = grav * (zaw * (pts(ji, jj, jk - 1, jp_tem) - pts(ji, jj, jk, jp_tem)) - zbw * (pts(ji, jj, jk - 1, jp_sal) - pts(ji, jj, jk, jp_sal))) / e3w_n(ji, jj, jk) * wmask(ji, jj, jk)
         END DO
       END DO
     END DO
     !$ACC END KERNELS
-    CALL profile_psy_data0 % PreStart('bn2', 'r0', 0, 0)
+    CALL profile_psy_data1 % PreStart('bn2', 'r1', 0, 0)
     IF (ln_ctl) CALL prt_ctl(tab3d_1 = pn2, clinfo1 = ' bn2  : ', kdim = jpk)
     IF (ln_timing) CALL timing_stop('bn2')
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data1 % PostEnd
   END SUBROUTINE bn2
   FUNCTION eos_pt_from_ct(ctmp, psal) RESULT(ptmp)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: ctmp
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: psal
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: ptmp
@@ -569,29 +563,30 @@ MODULE eosbn2
     REAL(KIND = wp) :: zt, zs, ztm
     REAL(KIND = wp) :: zn, zd
     REAL(KIND = wp) :: zdeltaS, z1_S0, z1_T0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    CALL profile_psy_data0 % PreStart('eos_pt_from_ct', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('eos_pt_from_ct')
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     zdeltaS = 5._wp
     z1_S0 = 0.875_wp / 35.16504_wp
     z1_T0 = 1._wp / 40._wp
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zt = ctmp(ji, jj) * z1_T0
         zs = SQRT(ABS(psal(ji, jj) + zdeltaS) * r1_S0)
         ztm = tmask(ji, jj, 1)
-        zn = ((((- 2.1385727895E-01_wp * zt - 2.7674419971E-01_wp * zs + 1.0728094330_wp) * zt + (2.6366564313_wp * zs + &
-&3.3546960647_wp) * zs - 7.8012209473_wp) * zt + ((1.8835586562_wp * zs + 7.3949191679_wp) * zs - 3.3937395875_wp) * zs - &
-&5.6414948432_wp) * zt + (((3.5737370589_wp * zs - 1.5512427389E+01_wp) * zs + 2.4625741105E+01_wp) * zs + 1.9912291000E+01_wp) * &
-&zs - 3.2191146312E+01_wp) * zt + ((((5.7153204649E-01_wp * zs - 3.0943149543_wp) * zs + 9.3052495181_wp) * zs - 9.4528934807_wp) &
-&* zs + 3.1066408996_wp) * zs - 4.3504021262E-01_wp
-        zd = (2.0035003456_wp * zt - 3.4570358592E-01_wp * zs + 5.6471810638_wp) * zt + (1.5393993508_wp * zs - 6.9394762624_wp) * &
-&zs + 1.2750522650E+01_wp
+        zn = ((((- 2.1385727895E-01_wp * zt - 2.7674419971E-01_wp * zs + 1.0728094330_wp) * zt + (2.6366564313_wp * zs + 3.3546960647_wp) * zs - 7.8012209473_wp) * zt + ((1.8835586562_wp * zs + 7.3949191679_wp) * zs - 3.3937395875_wp) * zs - 5.6414948432_wp) * zt + (((3.5737370589_wp * zs - 1.5512427389E+01_wp) * zs + 2.4625741105E+01_wp) * zs + 1.9912291000E+01_wp) * zs - 3.2191146312E+01_wp) * zt + ((((5.7153204649E-01_wp * zs - 3.0943149543_wp) * zs + 9.3052495181_wp) * zs - 9.4528934807_wp) * zs + 3.1066408996_wp) * zs - 4.3504021262E-01_wp
+        zd = (2.0035003456_wp * zt - 3.4570358592E-01_wp * zs + 5.6471810638_wp) * zt + (1.5393993508_wp * zs - 6.9394762624_wp) * zs + 1.2750522650E+01_wp
         ptmp(ji, jj) = (zt / z1_T0 + zn / zd) * ztm
       END DO
     END DO
     !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('eos_pt_from_ct', 'r1', 0, 0)
     IF (ln_timing) CALL timing_stop('eos_pt_from_ct')
+    CALL profile_psy_data1 % PostEnd
   END FUNCTION eos_pt_from_ct
   SUBROUTINE eos_fzp_2d(psal, ptf, pdep)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -607,12 +602,11 @@ MODULE eosbn2
     CASE (np_teos10, np_seos)
       !$ACC KERNELS
       z1_S0 = 1._wp / 35.16504_wp
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           zs = SQRT(ABS(psal(ji, jj)) * z1_S0)
-          ptf(ji, jj) = ((((1.46873E-03_wp * zs - 9.64972E-03_wp) * zs + 2.28348E-02_wp) * zs - 3.12775E-02_wp) * zs + &
-&2.07679E-02_wp) * zs - 5.87701E-02_wp
+          ptf(ji, jj) = ((((1.46873E-03_wp * zs - 9.64972E-03_wp) * zs + 2.28348E-02_wp) * zs - 3.12775E-02_wp) * zs + 2.07679E-02_wp) * zs - 5.87701E-02_wp
         END DO
       END DO
       ptf(:, :) = ptf(:, :) * psal(:, :)
@@ -629,7 +623,7 @@ MODULE eosbn2
       CALL profile_psy_data1 % PostEnd
     CASE DEFAULT
       CALL profile_psy_data2 % PreStart('eos_fzp_2d', 'r2', 0, 0)
-      WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos
+      WRITE(ctmp1, *) '          bad flag value for neos = ', neos
       CALL ctl_stop('eos_fzp_2d:', ctmp1)
       CALL profile_psy_data2 % PostEnd
     END SELECT
@@ -645,15 +639,14 @@ MODULE eosbn2
     SELECT CASE (neos)
     CASE (np_teos10, np_seos)
       zs = SQRT(ABS(psal) / 35.16504_wp)
-      ptf = ((((1.46873E-03_wp * zs - 9.64972E-03_wp) * zs + 2.28348E-02_wp) * zs - 3.12775E-02_wp) * zs + 2.07679E-02_wp) * zs - &
-&5.87701E-02_wp
+      ptf = ((((1.46873E-03_wp * zs - 9.64972E-03_wp) * zs + 2.28348E-02_wp) * zs - 3.12775E-02_wp) * zs + 2.07679E-02_wp) * zs - 5.87701E-02_wp
       ptf = ptf * psal
       IF (PRESENT(pdep)) ptf = ptf - 7.53E-4 * pdep
     CASE (np_eos80)
       ptf = (- 0.0575_wp + 1.710523E-3_wp * SQRT(psal) - 2.154996E-4_wp * psal) * psal
       IF (PRESENT(pdep)) ptf = ptf - 7.53E-4 * pdep
     CASE DEFAULT
-      WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos
+      WRITE(ctmp1, *) '          bad flag value for neos = ', neos
       CALL ctl_stop('eos_fzp_0d:', ctmp1)
     END SELECT
     CALL profile_psy_data0 % PostEnd
@@ -667,12 +660,16 @@ MODULE eosbn2
     REAL(KIND = wp) :: zt, zh, zs, ztm
     REAL(KIND = wp) :: zn, zn0, zn1, zn2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    CALL profile_psy_data0 % PreStart('eos_pen', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('eos_pen')
+    CALL profile_psy_data0 % PostEnd
     SELECT CASE (neos)
     CASE (np_teos10, np_eos80)
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zh = gdept_n(ji, jj, jk) * r1_Z0
@@ -681,20 +678,17 @@ MODULE eosbn2
             ztm = tmask(ji, jj, jk)
             zn2 = (PEN012) * zt + PEN102 * zs + PEN002
             zn1 = ((PEN021) * zt + PEN111 * zs + PEN011) * zt + (PEN201 * zs + PEN101) * zs + PEN001
-            zn0 = ((((PEN040) * zt + PEN130 * zs + PEN030) * zt + (PEN220 * zs + PEN120) * zs + PEN020) * zt + ((PEN310 * zs + &
-&PEN210) * zs + PEN110) * zs + PEN010) * zt + (((PEN400 * zs + PEN300) * zs + PEN200) * zs + PEN100) * zs + PEN000
+            zn0 = ((((PEN040) * zt + PEN130 * zs + PEN030) * zt + (PEN220 * zs + PEN120) * zs + PEN020) * zt + ((PEN310 * zs + PEN210) * zs + PEN110) * zs + PEN010) * zt + (((PEN400 * zs + PEN300) * zs + PEN200) * zs + PEN100) * zs + PEN000
             zn = (zn2 * zh + zn1) * zh + zn0
             ppen(ji, jj, jk) = zn * zh * r1_rau0 * ztm
             zn2 = APE002
             zn1 = (APE011) * zt + APE101 * zs + APE001
-            zn0 = (((APE030) * zt + APE120 * zs + APE020) * zt + (APE210 * zs + APE110) * zs + APE010) * zt + ((APE300 * zs + &
-&APE200) * zs + APE100) * zs + APE000
+            zn0 = (((APE030) * zt + APE120 * zs + APE020) * zt + (APE210 * zs + APE110) * zs + APE010) * zt + ((APE300 * zs + APE200) * zs + APE100) * zs + APE000
             zn = (zn2 * zh + zn1) * zh + zn0
             pab_pe(ji, jj, jk, jp_tem) = zn * zh * r1_rau0 * ztm
             zn2 = BPE002
             zn1 = (BPE011) * zt + BPE101 * zs + BPE001
-            zn0 = (((BPE030) * zt + BPE120 * zs + BPE020) * zt + (BPE210 * zs + BPE110) * zs + BPE010) * zt + ((BPE300 * zs + &
-&BPE200) * zs + BPE100) * zs + BPE000
+            zn0 = (((BPE030) * zt + BPE120 * zs + BPE020) * zt + (BPE210 * zs + BPE110) * zs + BPE010) * zt + ((BPE300 * zs + BPE200) * zs + BPE100) * zs + BPE000
             zn = (zn2 * zh + zn1) * zh + zn0
             pab_pe(ji, jj, jk, jp_sal) = zn / zs * zh * r1_rau0 * ztm
           END DO
@@ -704,7 +698,7 @@ MODULE eosbn2
     CASE (np_seos)
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zt = pts(ji, jj, jk, jp_tem) - 10._wp
@@ -720,12 +714,14 @@ MODULE eosbn2
       END DO
       !$ACC END KERNELS
     CASE DEFAULT
-      CALL profile_psy_data0 % PreStart('eos_pen', 'r0', 0, 0)
-      WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos
+      CALL profile_psy_data1 % PreStart('eos_pen', 'r1', 0, 0)
+      WRITE(ctmp1, *) '          bad flag value for neos = ', neos
       CALL ctl_stop('eos_pen:', ctmp1)
-      CALL profile_psy_data0 % PostEnd
+      CALL profile_psy_data1 % PostEnd
     END SELECT
+    CALL profile_psy_data2 % PreStart('eos_pen', 'r2', 0, 0)
     IF (ln_timing) CALL timing_stop('eos_pen')
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE eos_pen
   SUBROUTINE eos_init
     INTEGER :: ios
@@ -741,13 +737,13 @@ MODULE eosbn2
     rau0 = 1026._wp
     rcp = 3991.86795711963_wp
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'eos_init : equation of state'
-      WRITE(numout, FMT = *) '~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist nameos : Chosen the Equation Of Seawater (EOS)'
-      WRITE(numout, FMT = *) '      TEOS-10 : rho=F(Conservative Temperature, Absolute  Salinity, depth)   ln_TEOS10 = ', ln_TEOS10
-      WRITE(numout, FMT = *) '      EOS-80  : rho=F(Potential    Temperature, Practical Salinity, depth)   ln_EOS80  = ', ln_EOS80
-      WRITE(numout, FMT = *) '      S-EOS   : rho=F(Conservative Temperature, Absolute  Salinity, depth)   ln_SEOS   = ', ln_SEOS
+      WRITE(numout, *)
+      WRITE(numout, *) 'eos_init : equation of state'
+      WRITE(numout, *) '~~~~~~~~'
+      WRITE(numout, *) '   Namelist nameos : Chosen the Equation Of Seawater (EOS)'
+      WRITE(numout, *) '      TEOS-10 : rho=F(Conservative Temperature, Absolute  Salinity, depth)   ln_TEOS10 = ', ln_TEOS10
+      WRITE(numout, *) '      EOS-80  : rho=F(Potential    Temperature, Practical Salinity, depth)   ln_EOS80  = ', ln_EOS80
+      WRITE(numout, *) '      S-EOS   : rho=F(Conservative Temperature, Absolute  Salinity, depth)   ln_SEOS   = ', ln_SEOS
     END IF
     ioptio = 0
     IF (ln_teos10) THEN
@@ -765,8 +761,8 @@ MODULE eosbn2
     IF (ioptio /= 1) CALL ctl_stop("Exactly one equation of state option must be selected")
     SELECT CASE (neos)
     CASE (np_teos10)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   use of TEOS-10 equation of state (cons. temp. and abs. salinity)'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   use of TEOS-10 equation of state (cons. temp. and abs. salinity)'
       l_useCT = .TRUE.
       rdeltaS = 32._wp
       r1_S0 = 0.875_wp / 35.16504_wp
@@ -947,8 +943,8 @@ MODULE eosbn2
       BPE011 = 1.7676120780E-03_wp
       BPE002 = 1.7269476440E-04_wp
     CASE (np_eos80)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '   ==>>>   use of EOS-80 equation of state (pot. temp. and pract. salinity)'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '   ==>>>   use of EOS-80 equation of state (pot. temp. and pract. salinity)'
       l_useCT = .FALSE.
       rdeltaS = 20._wp
       r1_S0 = 1._wp / 40._wp
@@ -1130,23 +1126,23 @@ MODULE eosbn2
       BPE002 = 5.3661089288E-04_wp
     CASE (np_seos)
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '   ==>>>   use of simplified eos:    '
-        WRITE(numout, FMT = *) '              rhd(dT=T-10,dS=S-35,Z) = [-a0*(1+lambda1/2*dT+mu1*Z)*dT '
-        WRITE(numout, FMT = *) '                                       + b0*(1+lambda2/2*dT+mu2*Z)*dS - nu*dT*dS] / rau0'
-        WRITE(numout, FMT = *) '              with the following coefficients :'
-        WRITE(numout, FMT = *) '                 thermal exp. coef.    rn_a0      = ', rn_a0
-        WRITE(numout, FMT = *) '                 saline  cont. coef.   rn_b0      = ', rn_b0
-        WRITE(numout, FMT = *) '                 cabbeling coef.       rn_lambda1 = ', rn_lambda1
-        WRITE(numout, FMT = *) '                 cabbeling coef.       rn_lambda2 = ', rn_lambda2
-        WRITE(numout, FMT = *) '                 thermobar. coef.      rn_mu1     = ', rn_mu1
-        WRITE(numout, FMT = *) '                 thermobar. coef.      rn_mu2     = ', rn_mu2
-        WRITE(numout, FMT = *) '                 2nd cabbel. coef.     rn_nu      = ', rn_nu
-        WRITE(numout, FMT = *) '              Caution: rn_beta0=0 incompatible with ddm parameterization '
+        WRITE(numout, *)
+        WRITE(numout, *) '   ==>>>   use of simplified eos:    '
+        WRITE(numout, *) '              rhd(dT=T-10,dS=S-35,Z) = [-a0*(1+lambda1/2*dT+mu1*Z)*dT '
+        WRITE(numout, *) '                                       + b0*(1+lambda2/2*dT+mu2*Z)*dS - nu*dT*dS] / rau0'
+        WRITE(numout, *) '              with the following coefficients :'
+        WRITE(numout, *) '                 thermal exp. coef.    rn_a0      = ', rn_a0
+        WRITE(numout, *) '                 saline  cont. coef.   rn_b0      = ', rn_b0
+        WRITE(numout, *) '                 cabbeling coef.       rn_lambda1 = ', rn_lambda1
+        WRITE(numout, *) '                 cabbeling coef.       rn_lambda2 = ', rn_lambda2
+        WRITE(numout, *) '                 thermobar. coef.      rn_mu1     = ', rn_mu1
+        WRITE(numout, *) '                 thermobar. coef.      rn_mu2     = ', rn_mu2
+        WRITE(numout, *) '                 2nd cabbel. coef.     rn_nu      = ', rn_nu
+        WRITE(numout, *) '              Caution: rn_beta0=0 incompatible with ddm parameterization '
       END IF
       l_useCT = .TRUE.
     CASE DEFAULT
-      WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos, '. You should never see this error'
+      WRITE(ctmp1, *) '          bad flag value for neos = ', neos, '. You should never see this error'
       CALL ctl_stop(ctmp1)
     END SELECT
     rau0_rcp = rau0 * rcp
@@ -1155,20 +1151,20 @@ MODULE eosbn2
     r1_rau0_rcp = 1._wp / rau0_rcp
     IF (lwp) THEN
       IF (l_useCT) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '   ==>>>   model uses Conservative Temperature'
-        WRITE(numout, FMT = *) '           Important: model must be initialized with CT and SA fields'
+        WRITE(numout, *)
+        WRITE(numout, *) '   ==>>>   model uses Conservative Temperature'
+        WRITE(numout, *) '           Important: model must be initialized with CT and SA fields'
       ELSE
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '   ==>>>   model does not use Conservative Temperature'
+        WRITE(numout, *)
+        WRITE(numout, *) '   ==>>>   model does not use Conservative Temperature'
       END IF
     END IF
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) '   Associated physical constant'
-    IF (lwp) WRITE(numout, FMT = *) '      volumic mass of reference           rau0  = ', rau0, ' kg/m^3'
-    IF (lwp) WRITE(numout, FMT = *) '      1. / rau0                        r1_rau0  = ', r1_rau0, ' m^3/kg'
-    IF (lwp) WRITE(numout, FMT = *) '      ocean specific heat                 rcp   = ', rcp, ' J/Kelvin'
-    IF (lwp) WRITE(numout, FMT = *) '      rau0 * rcp                       rau0_rcp = ', rau0_rcp
-    IF (lwp) WRITE(numout, FMT = *) '      1. / ( rau0 * rcp )           r1_rau0_rcp = ', r1_rau0_rcp
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) '   Associated physical constant'
+    IF (lwp) WRITE(numout, *) '      volumic mass of reference           rau0  = ', rau0, ' kg/m^3'
+    IF (lwp) WRITE(numout, *) '      1. / rau0                        r1_rau0  = ', r1_rau0, ' m^3/kg'
+    IF (lwp) WRITE(numout, *) '      ocean specific heat                 rcp   = ', rcp, ' J/Kelvin'
+    IF (lwp) WRITE(numout, *) '      rau0 * rcp                       rau0_rcp = ', rau0_rcp
+    IF (lwp) WRITE(numout, *) '      1. / ( rau0 * rcp )           r1_rau0_rcp = ', r1_rau0_rcp
   END SUBROUTINE eos_init
 END MODULE eosbn2

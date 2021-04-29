@@ -21,32 +21,34 @@ MODULE icbclv
     INTEGER :: imx
     LOGICAL, SAVE :: ll_first_call = .TRUE.
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('icb_clv_flx', 'r0', 0, 0)
+    !$ACC KERNELS
     zfact = ((1000._wp) ** 3 / (NINT(rday) * nyear_len(1))) * rn_rho_bergs
     berg_grid % calving(:, :) = src_calving(:, :) * zfact * tmask_i(:, :) * tmask(:, :, 1)
     berg_grid % calving_hflx(:, :) = src_calving_hflx(:, :) * tmask_i(:, :) * tmask(:, :, 1)
     IF (ll_first_call .AND. .NOT. l_restarted_bergs) THEN
       ll_first_call = .FALSE.
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          IF (berg_grid % calving(ji, jj) /= 0._wp) berg_grid % stored_heat(ji, jj) = SUM(berg_grid % stored_ice(ji, jj, :)) * &
-&berg_grid % calving_hflx(ji, jj) * e1e2t(ji, jj) / berg_grid % calving(ji, jj)
+          IF (berg_grid % calving(ji, jj) /= 0._wp) berg_grid % stored_heat(ji, jj) = SUM(berg_grid % stored_ice(ji, jj, :)) * berg_grid % calving_hflx(ji, jj) * e1e2t(ji, jj) / berg_grid % calving(ji, jj)
         END DO
       END DO
     END IF
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         imx = berg_grid % maxclass(ji, jj)
         zdist = SUM(rn_distribution(1 : nclasses)) / SUM(rn_distribution(1 : imx))
         DO jn = 1, imx
-          berg_grid % stored_ice(ji, jj, jn) = berg_grid % stored_ice(ji, jj, jn) + berg_dt * berg_grid % calving(ji, jj) * &
-&rn_distribution(jn) * zdist
+          berg_grid % stored_ice(ji, jj, jn) = berg_grid % stored_ice(ji, jj, jn) + berg_dt * berg_grid % calving(ji, jj) * rn_distribution(jn) * zdist
         END DO
       END DO
     END DO
     zcalving_used = SUM(berg_grid % calving(:, :))
     berg_grid % tmp(:, :) = berg_dt * berg_grid % calving_hflx(:, :) * e1e2t(:, :) * tmask_i(:, :)
     berg_grid % stored_heat(:, :) = berg_grid % stored_heat(:, :) + berg_grid % tmp(:, :)
+    !$ACC END KERNELS
+    CALL profile_psy_data0 % PreStart('icb_clv_flx', 'r0', 0, 0)
     CALL icb_dia_income(kt, zcalving_used, berg_grid % tmp)
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_clv_flx
@@ -100,7 +102,7 @@ MODULE icbclv
       CALL lbc_lnk('icbclv', berg_grid % stored_ice(:, :, jn), 'T', 1._wp)
     END DO
     CALL lbc_lnk('icbclv', berg_grid % stored_heat, 'T', 1._wp)
-    IF (nn_verbose_level > 0 .AND. icntmax > 1) WRITE(numicb, FMT = *) 'icb_clv: icnt=', icnt, ' on', narea
+    IF (nn_verbose_level > 0 .AND. icntmax > 1) WRITE(numicb, *) 'icb_clv: icnt=', icnt, ' on', narea
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_clv
 END MODULE icbclv

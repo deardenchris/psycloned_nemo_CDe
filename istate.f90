@@ -20,9 +20,9 @@ MODULE istate
   SUBROUTINE istate_init
     INTEGER :: ji, jj, jk
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :, :, :) :: zuvd
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) 'istate_init : Initialization of the dynamics and tracers'
-    IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) 'istate_init : Initialization of the dynamics and tracers'
+    IF (lwp) WRITE(numout, *) '~~~~~~~~~~~'
     CALL dta_tsd_init
     !$ACC KERNELS
     rhd(:, :, :) = 0._wp
@@ -49,7 +49,7 @@ MODULE istate
         IF (ll_wd) THEN
           !$ACC KERNELS
           sshb(:, :) = - ssh_ref
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               IF (ht_0(ji, jj) + sshb(ji, jj) < rn_wdmin1) THEN
@@ -81,7 +81,7 @@ MODULE istate
     ub_b(:, :) = 0._wp
     vb_b(:, :) = 0._wp
     DO jk = 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           un_b(ji, jj) = un_b(ji, jj) + e3u_n(ji, jj, jk) * un(ji, jj, jk) * umask(ji, jj, jk)

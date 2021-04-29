@@ -44,9 +44,9 @@ MODULE dynadv
     INTEGER :: ioptio, ios
     NAMELIST /namdyn_adv/ ln_dynadv_OFF, ln_dynadv_vec, nn_dynkeg, ln_dynadv_cen2, ln_dynadv_ubs
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dyn_adv_init : choice/control of the momentum advection scheme'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+      WRITE(numout, *)
+      WRITE(numout, *) 'dyn_adv_init : choice/control of the momentum advection scheme'
+      WRITE(numout, *) '~~~~~~~~~~~~'
     END IF
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, namdyn_adv, IOSTAT = ios, ERR = 901)
@@ -56,12 +56,12 @@ MODULE dynadv
 902 IF (ios > 0) CALL ctl_nam(ios, 'namdyn_adv in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namdyn_adv)
     IF (lwp) THEN
-      WRITE(numout, FMT = *) '   Namelist namdyn_adv : chose a advection formulation & scheme for momentum'
-      WRITE(numout, FMT = *) '      linear dynamics : no momentum advection          ln_dynadv_OFF  = ', ln_dynadv_OFF
-      WRITE(numout, FMT = *) '      Vector form: 2nd order centered scheme           ln_dynadv_vec  = ', ln_dynadv_vec
-      WRITE(numout, FMT = *) '         with Hollingsworth scheme (=1) or not (=0)       nn_dynkeg   = ', nn_dynkeg
-      WRITE(numout, FMT = *) '      flux form: 2nd order centred scheme              ln_dynadv_cen2 = ', ln_dynadv_cen2
-      WRITE(numout, FMT = *) '                 3rd order UBS scheme                  ln_dynadv_ubs  = ', ln_dynadv_ubs
+      WRITE(numout, *) '   Namelist namdyn_adv : chose a advection formulation & scheme for momentum'
+      WRITE(numout, *) '      linear dynamics : no momentum advection          ln_dynadv_OFF  = ', ln_dynadv_OFF
+      WRITE(numout, *) '      Vector form: 2nd order centered scheme           ln_dynadv_vec  = ', ln_dynadv_vec
+      WRITE(numout, *) '         with Hollingsworth scheme (=1) or not (=0)       nn_dynkeg   = ', nn_dynkeg
+      WRITE(numout, *) '      flux form: 2nd order centred scheme              ln_dynadv_cen2 = ', ln_dynadv_cen2
+      WRITE(numout, *) '                 3rd order UBS scheme                  ln_dynadv_ubs  = ', ln_dynadv_ubs
     END IF
     ioptio = 0
     IF (ln_dynadv_off) THEN
@@ -83,18 +83,18 @@ MODULE dynadv
     IF (ioptio /= 1) CALL ctl_stop('choose ONE and only ONE advection scheme')
     IF (nn_dynkeg /= nkeg_C2 .AND. nn_dynkeg /= nkeg_HW) CALL ctl_stop('KEG scheme wrong value of nn_dynkeg')
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
       SELECT CASE (n_dynadv)
       CASE (np_lin_dyn)
-        WRITE(numout, FMT = *) '   ==>>>   linear dynamics : no momentum advection used'
+        WRITE(numout, *) '   ==>>>   linear dynamics : no momentum advection used'
       CASE (np_vec_c2)
-        WRITE(numout, FMT = *) '   ==>>>   vector form : keg + zad + vor is used'
-        IF (nn_dynkeg == nkeg_C2) WRITE(numout, FMT = *) '              with Centered standard keg scheme'
-        IF (nn_dynkeg == nkeg_HW) WRITE(numout, FMT = *) '              with Hollingsworth keg scheme'
+        WRITE(numout, *) '   ==>>>   vector form : keg + zad + vor is used'
+        IF (nn_dynkeg == nkeg_C2) WRITE(numout, *) '              with Centered standard keg scheme'
+        IF (nn_dynkeg == nkeg_HW) WRITE(numout, *) '              with Hollingsworth keg scheme'
       CASE (np_flx_c2)
-        WRITE(numout, FMT = *) '   ==>>>   flux form   : 2nd order scheme is used'
+        WRITE(numout, *) '   ==>>>   flux form   : 2nd order scheme is used'
       CASE (np_flx_ubs)
-        WRITE(numout, FMT = *) '   ==>>>   flux form   : UBS       scheme is used'
+        WRITE(numout, *) '   ==>>>   flux form   : UBS       scheme is used'
       END SELECT
     END IF
   END SUBROUTINE dyn_adv_init

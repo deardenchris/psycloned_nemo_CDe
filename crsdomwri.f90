@@ -26,9 +26,9 @@ MODULE crsdomwri
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('crs_dom_wri', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) 'crs_dom_wri : create NetCDF mesh and mask file'
-    IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) 'crs_dom_wri : create NetCDF mesh and mask file'
+    IF (lwp) WRITE(numout, *) '~~~~~~~~~~~'
     clnam = 'mesh_mask_crs'
     CALL iom_open(TRIM(clnam), inum, ldwrt = .TRUE.)
     CALL iom_rstput(0, 0, inum, 'tmask', tmask_crs, ktype = jp_i1)
@@ -110,7 +110,7 @@ MODULE crsdomwri
     CALL profile_psy_data2 % PostEnd
     !$ACC KERNELS
     DO jk = 1, jpk
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj_crsm1
         DO ji = 1, jpi_crsm1
           zdepu(ji, jj, jk) = MIN(gdept_crs(ji, jj, jk), gdept_crs(ji + 1, jj, jk)) * umask_crs(ji, jj, jk)
@@ -157,6 +157,8 @@ MODULE crsdomwri
     LOGICAL, DIMENSION(SIZE(puniq, 1), SIZE(puniq, 2), 1) :: lldbl
     REAL(KIND = wp), DIMENSION(jpi_crs, jpj_crs) :: ztstref
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     CALL profile_psy_data0 % PreStart('dom_uniq_crs', 'r0', 0, 0)
     zshift = jpi_crs * jpj_crs * (narea - 1)
     ztstref(:, :) = RESHAPE((/(zshift + REAL(ji, wp), ji = 1, jpi_crs * jpj_crs)/), (/jpi_crs, jpj_crs/))
@@ -164,11 +166,15 @@ MODULE crsdomwri
     !$ACC KERNELS
     puniq(:, :) = ztstref(:, :)
     !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('dom_uniq_crs', 'r1', 0, 0)
     CALL crs_lbc_lnk(puniq, cdgrd, 1.)
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     lldbl(:, :, 1) = puniq(:, :) == ztstref(:, :)
     puniq(:, :) = 1.
-    puniq(nldi_crs : nlei_crs, nldj_crs : nlej_crs) = REAL(COUNT(lldbl(nldi_crs : nlei_crs, nldj_crs : nlej_crs, :), dim = 3), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data2 % PreStart('dom_uniq_crs', 'r2', 0, 0)
+    puniq(nldi_crs : nlei_crs, nldj_crs : nlej_crs) = REAL(COUNT(lldbl(nldi_crs : nlei_crs, nldj_crs : nlej_crs, :), dim = 3), wp)
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE dom_uniq_crs
 END MODULE crsdomwri

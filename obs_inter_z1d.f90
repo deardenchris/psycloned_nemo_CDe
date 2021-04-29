@@ -29,8 +29,7 @@ MODULE obs_inter_z1d
         pobs(jdep) = (z1dm * pobsk(kkco(jdep) - 1) + z1dp * pobsk(kkco(jdep))) / zsum
       ELSE IF (k1dint == 1) THEN
         zsum2 = zsum * zsum
-        pobs(jdep) = (z1dm * pobsk(kkco(jdep) - 1) + z1dp * pobsk(kkco(jdep)) + (z1dm * (z1dm * z1dm - zsum2) * pobs2k(kkco(jdep) &
-&- 1) + z1dp * (z1dp * z1dp - zsum2) * pobs2k(kkco(jdep))) / 6.0_wp) / zsum
+        pobs(jdep) = (z1dm * pobsk(kkco(jdep) - 1) + z1dp * pobsk(kkco(jdep)) + (z1dm * (z1dm * z1dm - zsum2) * pobs2k(kkco(jdep) - 1) + z1dp * (z1dp * z1dp - zsum2) * pobs2k(kkco(jdep))) / 6.0_wp) / zsum
       END IF
     END DO
     CALL profile_psy_data0 % PostEnd

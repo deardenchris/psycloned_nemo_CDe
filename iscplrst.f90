@@ -89,14 +89,10 @@ MODULE iscplrst
     tsn(:, :, :, jp_sal) = tsn(:, :, :, jp_sal) * ptmask_b(:, :, :)
     zwmaskn(:, :, 1) = tmask(:, :, 1)
     zwmaskb(:, :, 1) = ptmask_b(:, :, 1)
-    !$ACC END KERNELS
     DO jk = 2, jpk
-      !$ACC KERNELS
       zwmaskn(:, :, jk) = tmask(:, :, jk) * tmask(:, :, jk - 1)
       zwmaskb(:, :, jk) = ptmask_b(:, :, jk) * ptmask_b(:, :, jk - 1)
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
     sshb(:, :) = sshn(:, :)
     zssh0(:, :) = sshn(:, :)
     zsmask0(:, :) = psmask_b(:, :)
@@ -105,7 +101,7 @@ MODULE iscplrst
     DO iz = 1, 10
       !$ACC KERNELS
       zdsmask(:, :) = ssmask(:, :) - zsmask0(:, :)
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpj - 1
         DO ji = 2, jpim1
           jip1 = ji + 1
@@ -114,8 +110,7 @@ MODULE iscplrst
           jjm1 = jj - 1
           summsk = (zsmask0(jip1, jj) + zsmask0(jim1, jj) + zsmask0(ji, jjp1) + zsmask0(ji, jjm1))
           IF (zdsmask(ji, jj) == 1._wp .AND. summsk /= 0._wp) THEN
-            sshn(ji, jj) = (zssh0(jip1, jj) * zsmask0(jip1, jj) + zssh0(jim1, jj) * zsmask0(jim1, jj) + zssh0(ji, jjp1) * &
-&zsmask0(ji, jjp1) + zssh0(ji, jjm1) * zsmask0(ji, jjm1)) / summsk
+            sshn(ji, jj) = (zssh0(jip1, jj) * zsmask0(jip1, jj) + zssh0(jim1, jj) * zsmask0(jim1, jj) + zssh0(ji, jjp1) * zsmask0(ji, jjp1) + zssh0(ji, jjm1) * zsmask0(ji, jjm1)) / summsk
             zsmask1(ji, jj) = 1._wp
           END IF
         END DO
@@ -131,12 +126,11 @@ MODULE iscplrst
     IF (.NOT. ln_linssh) THEN
       !$ACC KERNELS
       DO jk = 1, jpk
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             IF (tmask(ji, jj, 1) == 0._wp .OR. ptmask_b(ji, jj, 1) == 0._wp) THEN
-              e3t_n(ji, jj, jk) = e3t_0(ji, jj, jk) * (1._wp + sshn(ji, jj) / (ht_0(ji, jj) + 1._wp - ssmask(ji, jj)) * tmask(ji, &
-&jj, jk))
+              e3t_n(ji, jj, jk) = e3t_0(ji, jj, jk) * (1._wp + sshn(ji, jj) / (ht_0(ji, jj) + 1._wp - ssmask(ji, jj)) * tmask(ji, jj, jk))
             END IF
           END DO
         END DO
@@ -179,15 +173,11 @@ MODULE iscplrst
       ht_n(:, :) = 0._wp
       hu_n(:, :) = 0._wp
       hv_n(:, :) = 0._wp
-      !$ACC END KERNELS
       DO jk = 1, jpkm1
-        !$ACC KERNELS
         hu_n(:, :) = hu_n(:, :) + e3u_n(:, :, jk) * umask(:, :, jk)
         hv_n(:, :) = hv_n(:, :) + e3v_n(:, :, jk) * vmask(:, :, jk)
         ht_n(:, :) = ht_n(:, :) + e3t_n(:, :, jk) * tmask(:, :, jk)
-        !$ACC END KERNELS
       END DO
-      !$ACC KERNELS
       r1_hu_n(:, :) = 1._wp / (hu_n(:, :) + 1._wp - ssumask(:, :)) * ssumask(:, :)
       r1_hv_n(:, :) = 1._wp / (hv_n(:, :) + 1._wp - ssvmask(:, :)) * ssvmask(:, :)
       !$ACC END KERNELS
@@ -196,7 +186,7 @@ MODULE iscplrst
     ub(:, :, :) = un(:, :, :)
     vb(:, :, :) = vn(:, :, :)
     DO jk = 1, jpk
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           un(ji, jj, jk) = ub(ji, jj, jk) * pe3u_b(ji, jj, jk) * pumask_b(ji, jj, jk) / e3u_n(ji, jj, jk) * umask(ji, jj, jk)
@@ -205,26 +195,30 @@ MODULE iscplrst
       END DO
     END DO
     ztrp(:, :, :) = ub(:, :, :) * pe3u_b(:, :, :)
+    !$ACC END KERNELS
     zbub(:, :) = SUM(ztrp, DIM = 3)
+    !$ACC KERNELS
     ztrp(:, :, :) = vb(:, :, :) * pe3v_b(:, :, :)
+    !$ACC END KERNELS
     zbvb(:, :) = SUM(ztrp, DIM = 3)
+    !$ACC KERNELS
     ztrp(:, :, :) = un(:, :, :) * e3u_n(:, :, :)
+    !$ACC END KERNELS
     zbun(:, :) = SUM(ztrp, DIM = 3)
+    !$ACC KERNELS
     ztrp(:, :, :) = vn(:, :, :) * e3v_n(:, :, :)
+    !$ACC END KERNELS
     zbvn(:, :) = SUM(ztrp, DIM = 3)
+    !$ACC KERNELS
     zhu1 = 0.0_wp
     zhv1 = 0.0_wp
-    !$ACC END KERNELS
     DO jk = 1, jpk
-      !$ACC KERNELS
       zhu1(:, :) = zhu1(:, :) + e3u_n(:, :, jk) * umask(:, :, jk)
       zhv1(:, :) = zhv1(:, :) + e3v_n(:, :, jk) * vmask(:, :, jk)
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
     zucorr = 0._wp
     zvcorr = 0._wp
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         IF (zbun(ji, jj) /= zbub(ji, jj) .AND. zhu1(ji, jj) /= 0._wp) THEN
@@ -235,14 +229,10 @@ MODULE iscplrst
         END IF
       END DO
     END DO
-    !$ACC END KERNELS
     DO jk = 1, jpk
-      !$ACC KERNELS
       un(:, :, jk) = (un(:, :, jk) - zucorr(:, :)) * umask(:, :, jk)
       vn(:, :, jk) = (vn(:, :, jk) - zvcorr(:, :)) * vmask(:, :, jk)
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
     tsb(:, :, :, :) = tsn(:, :, :, :)
     zts0(:, :, :, :) = tsn(:, :, :, :)
     ztmask1(:, :, :) = ptmask_b(:, :, :)
@@ -252,7 +242,7 @@ MODULE iscplrst
       !$ACC KERNELS
       DO jk = 1, jpk - 1
         zdmask = tmask(:, :, jk) - ztmask0(:, :, jk)
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpj - 1
           DO ji = 2, jpim1
             jip1 = ji + 1
@@ -261,20 +251,16 @@ MODULE iscplrst
             jjm1 = jj - 1
             summsk = (ztmask0(jip1, jj, jk) + ztmask0(jim1, jj, jk) + ztmask0(ji, jjp1, jk) + ztmask0(ji, jjm1, jk))
             IF (zdmask(ji, jj) == 1._wp .AND. summsk /= 0._wp) THEN
-              tsn(ji, jj, jk, 1) = (zts0(jip1, jj, jk, 1) * ztmask0(jip1, jj, jk) + zts0(jim1, jj, jk, 1) * ztmask0(jim1, jj, jk) &
-&+ zts0(ji, jjp1, jk, 1) * ztmask0(ji, jjp1, jk) + zts0(ji, jjm1, jk, 1) * ztmask0(ji, jjm1, jk)) / summsk
-              tsn(ji, jj, jk, 2) = (zts0(jip1, jj, jk, 2) * ztmask0(jip1, jj, jk) + zts0(jim1, jj, jk, 2) * ztmask0(jim1, jj, jk) &
-&+ zts0(ji, jjp1, jk, 2) * ztmask0(ji, jjp1, jk) + zts0(ji, jjm1, jk, 2) * ztmask0(ji, jjm1, jk)) / summsk
+              tsn(ji, jj, jk, 1) = (zts0(jip1, jj, jk, 1) * ztmask0(jip1, jj, jk) + zts0(jim1, jj, jk, 1) * ztmask0(jim1, jj, jk) + zts0(ji, jjp1, jk, 1) * ztmask0(ji, jjp1, jk) + zts0(ji, jjm1, jk, 1) * ztmask0(ji, jjm1, jk)) / summsk
+              tsn(ji, jj, jk, 2) = (zts0(jip1, jj, jk, 2) * ztmask0(jip1, jj, jk) + zts0(jim1, jj, jk, 2) * ztmask0(jim1, jj, jk) + zts0(ji, jjp1, jk, 2) * ztmask0(ji, jjp1, jk) + zts0(ji, jjm1, jk, 2) * ztmask0(ji, jjm1, jk)) / summsk
               ztmask1(ji, jj, jk) = 1
             ELSE IF (zdmask(ji, jj) == 1._wp .AND. summsk == 0._wp) THEN
               jkm1 = MAX(1, jk - 1)
               jkp1 = MIN(jpk, jk + 1)
               summsk = (ztmask0(ji, jj, jkm1) + ztmask0(ji, jj, jkp1))
               IF (zdmask(ji, jj) == 1._wp .AND. summsk /= 0._wp) THEN
-                tsn(ji, jj, jk, 1) = (zts0(ji, jj, jkp1, 1) * ztmask0(ji, jj, jkp1) + zts0(ji, jj, jkm1, 1) * ztmask0(ji, jj, &
-&jkm1)) / summsk
-                tsn(ji, jj, jk, 2) = (zts0(ji, jj, jkp1, 2) * ztmask0(ji, jj, jkp1) + zts0(ji, jj, jkm1, 2) * ztmask0(ji, jj, &
-&jkm1)) / summsk
+                tsn(ji, jj, jk, 1) = (zts0(ji, jj, jkp1, 1) * ztmask0(ji, jj, jkp1) + zts0(ji, jj, jkm1, 1) * ztmask0(ji, jj, jkm1)) / summsk
+                tsn(ji, jj, jk, 2) = (zts0(ji, jj, jkp1, 2) * ztmask0(ji, jj, jkp1) + zts0(ji, jj, jkm1, 2) * ztmask0(ji, jj, jkm1)) / summsk
                 ztmask1(ji, jj, jk) = 1._wp
               END IF
             END IF
@@ -296,18 +282,15 @@ MODULE iscplrst
       DO jk = 2, jpk - 1
         DO jj = 1, jpj
           DO ji = 1, jpi
-            IF (zwmaskn(ji, jj, jk) * zwmaskb(ji, jj, jk) == 1._wp .AND. (tmask(ji, jj, 1) == 0._wp .OR. ptmask_b(ji, jj, 1) == &
-&0._wp)) THEN
+            IF (zwmaskn(ji, jj, jk) * zwmaskb(ji, jj, jk) == 1._wp .AND. (tmask(ji, jj, 1) == 0._wp .OR. ptmask_b(ji, jj, 1) == 0._wp)) THEN
               zdzp1 = MAX(0._wp, gdepw_n(ji, jj, jk + 1) - pdepw_b(ji, jj, jk + 1))
               zdz = gdepw_n(ji, jj, jk + 1) - pdepw_b(ji, jj, jk)
               zdzm1 = MAX(0._wp, pdepw_b(ji, jj, jk) - gdepw_n(ji, jj, jk))
               IF (zdz .LT. 0._wp) THEN
                 CALL ctl_stop('STOP', 'rst_iscpl : unable to compute the interpolation')
               END IF
-              tsn(ji, jj, jk, jp_tem) = (zdzp1 * tsb(ji, jj, jk + 1, jp_tem) + zdz * tsb(ji, jj, jk, jp_tem) + zdzm1 * tsb(ji, jj, &
-&jk - 1, jp_tem)) / e3t_n(ji, jj, jk)
-              tsn(ji, jj, jk, jp_sal) = (zdzp1 * tsb(ji, jj, jk + 1, jp_sal) + zdz * tsb(ji, jj, jk, jp_sal) + zdzm1 * tsb(ji, jj, &
-&jk - 1, jp_sal)) / e3t_n(ji, jj, jk)
+              tsn(ji, jj, jk, jp_tem) = (zdzp1 * tsb(ji, jj, jk + 1, jp_tem) + zdz * tsb(ji, jj, jk, jp_tem) + zdzm1 * tsb(ji, jj, jk - 1, jp_tem)) / e3t_n(ji, jj, jk)
+              tsn(ji, jj, jk, jp_sal) = (zdzp1 * tsb(ji, jj, jk + 1, jp_sal) + zdz * tsb(ji, jj, jk, jp_sal) + zdzm1 * tsb(ji, jj, jk - 1, jp_sal)) / e3t_n(ji, jj, jk)
             END IF
           END DO
         END DO

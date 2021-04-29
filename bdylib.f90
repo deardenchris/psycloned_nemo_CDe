@@ -13,15 +13,13 @@ MODULE bdylib
   PUBLIC :: bdy_orlanski_3d
   CONTAINS
   SUBROUTINE bdy_frs(idx, pta, dta)
-    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     TYPE(OBC_INDEX), INTENT(IN) :: idx
     REAL(KIND = wp), DIMENSION(:, :), INTENT(IN) :: dta
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk), INTENT(INOUT) :: pta
     REAL(KIND = wp) :: zwgt
     INTEGER :: ib, ik, igrd
     INTEGER :: ii, ij
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('bdy_frs', 'r0', 0, 0)
+    !$ACC KERNELS
     igrd = 1
     DO ib = 1, idx % nblen(igrd)
       DO ik = 1, jpkm1
@@ -31,32 +29,25 @@ MODULE bdylib
         pta(ii, ij, ik) = (pta(ii, ij, ik) + zwgt * (dta(ib, ik) - pta(ii, ij, ik))) * tmask(ii, ij, ik)
       END DO
     END DO
-    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
   END SUBROUTINE bdy_frs
   SUBROUTINE bdy_spe(idx, pta, dta)
-    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     TYPE(OBC_INDEX), INTENT(IN) :: idx
     REAL(KIND = wp), DIMENSION(:, :), INTENT(IN) :: dta
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk), INTENT(INOUT) :: pta
     REAL(KIND = wp) :: zwgt
     INTEGER :: ib, ik, igrd
     INTEGER :: ii, ij
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    CALL profile_psy_data0 % PreStart('bdy_spe', 'r0', 0, 0)
+    !$ACC KERNELS
     igrd = 1
-    CALL profile_psy_data0 % PostEnd
     DO ib = 1, idx % nblenrim(igrd)
-      CALL profile_psy_data1 % PreStart('bdy_spe', 'r1', 0, 0)
       ii = idx % nbi(ib, igrd)
       ij = idx % nbj(ib, igrd)
-      CALL profile_psy_data1 % PostEnd
-      !$ACC KERNELS
       DO ik = 1, jpkm1
         pta(ii, ij, ik) = dta(ib, ik) * tmask(ii, ij, ik)
       END DO
-      !$ACC END KERNELS
     END DO
+    !$ACC END KERNELS
   END SUBROUTINE bdy_spe
   SUBROUTINE bdy_orl(idx, ptb, pta, dta, ll_npo)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -146,8 +137,7 @@ MODULE bdylib
       ijbm1jp1 = ij + flagv + ABS(flagu)
       zex1 = (ABS(iibm1 - iibm2) * pe_xdif(iibm1 + ii_offset, ijbm1) + ABS(ijbm1 - ijbm2) * pe_ydif(iibm1, ijbm1 + ij_offset))
       zex2 = (ABS(iibm1 - iibm2) * pe_xdif(iibm2 + ii_offset, ijbm2) + ABS(ijbm1 - ijbm2) * pe_ydif(iibm2, ijbm2 + ij_offset))
-      zey1 = ((iibm1 - iibm1jm1) * pe_xdif(iibm1jm1 + ii_offset, ijbm1jm1) + (ijbm1 - ijbm1jm1) * pe_ydif(iibm1jm1, ijbm1jm1 + &
-&ij_offset))
+      zey1 = ((iibm1 - iibm1jm1) * pe_xdif(iibm1jm1 + ii_offset, ijbm1jm1) + (ijbm1 - ijbm1jm1) * pe_ydif(iibm1jm1, ijbm1jm1 + ij_offset))
       zey2 = ((iibm1jp1 - iibm1) * pe_xdif(iibm1 + ii_offset, ijbm1) + (ijbm1jp1 - ijbm1) * pe_ydif(iibm1, ijbm1 + ij_offset))
       IF (zey1 .LT. rsmall) zey1 = zey2
       IF (zey2 .LT. rsmall) zey2 = zey1
@@ -155,12 +145,9 @@ MODULE bdylib
       zex2 = MAX(zex2, rsmall)
       zey1 = MAX(zey1, rsmall)
       zey2 = MAX(zey2, rsmall)
-      zmask_x = (ABS(iibm1 - iibm2) * pmask_xdif(iibm2 + ii_offset, ijbm2) + ABS(ijbm1 - ijbm2) * pmask_ydif(iibm2, ijbm2 + &
-&ij_offset))
-      zmask_y1 = ((iibm1 - iibm1jm1) * pmask_xdif(iibm1jm1 + ii_offset, ijbm1jm1) + (ijbm1 - ijbm1jm1) * pmask_ydif(iibm1jm1, &
-&ijbm1jm1 + ij_offset))
-      zmask_y2 = ((iibm1jp1 - iibm1) * pmask_xdif(iibm1 + ii_offset, ijbm1) + (ijbm1jp1 - ijbm1) * pmask_ydif(iibm1, ijbm1 + &
-&ij_offset))
+      zmask_x = (ABS(iibm1 - iibm2) * pmask_xdif(iibm2 + ii_offset, ijbm2) + ABS(ijbm1 - ijbm2) * pmask_ydif(iibm2, ijbm2 + ij_offset))
+      zmask_y1 = ((iibm1 - iibm1jm1) * pmask_xdif(iibm1jm1 + ii_offset, ijbm1jm1) + (ijbm1 - ijbm1jm1) * pmask_ydif(iibm1jm1, ijbm1jm1 + ij_offset))
+      zmask_y2 = ((iibm1jp1 - iibm1) * pmask_xdif(iibm1 + ii_offset, ijbm1) + (ijbm1jp1 - ijbm1) * pmask_ydif(iibm1, ijbm1 + ij_offset))
       zdt = phia(iibm1, ijbm1) - phib(iibm1, ijbm1)
       zdx = ((phia(iibm1, ijbm1) - phia(iibm2, ijbm2)) / zex2) * zmask_x
       zdy_1 = ((phib(iibm1, ijbm1) - phib(iibm1jm1, ijbm1jm1)) / zey1) * zmask_y1
@@ -176,16 +163,13 @@ MODULE bdylib
       zout = 0.5 * (zout + ABS(zout))
       zwgt = 2. * rdt * ((1. - zout) * idx % nbd(jb, igrd) + zout * idx % nbdout(jb, igrd))
       IF (ll_npo) THEN
-        phia(ii, ij) = (1. - zout) * (phib(ii, ij) + zwgt * (phi_ext(jb) - phib(ii, ij))) + zout * (phib(ii, ij) + zrx * &
-&phia(iibm1, ijbm1) + zwgt * (phi_ext(jb) - phib(ii, ij))) / (1. + zrx)
+        phia(ii, ij) = (1. - zout) * (phib(ii, ij) + zwgt * (phi_ext(jb) - phib(ii, ij))) + zout * (phib(ii, ij) + zrx * phia(iibm1, ijbm1) + zwgt * (phi_ext(jb) - phib(ii, ij))) / (1. + zrx)
       ELSE
         zsign_ups = SIGN(1., zdt * zdy)
         zsign_ups = 0.5 * (zsign_ups + ABS(zsign_ups))
         zey = zsign_ups * zey1 + (1. - zsign_ups) * zey2
         zry = zdt * zdy / (zey * znor2)
-        phia(ii, ij) = (1. - zout) * (phib(ii, ij) + zwgt * (phi_ext(jb) - phib(ii, ij))) + zout * (phib(ii, ij) + zrx * &
-&phia(iibm1, ijbm1) - zsign_ups * zry * (phib(ii, ij) - phib(iijm1, ijjm1)) - (1. - zsign_ups) * zry * (phib(iijp1, ijjp1) - &
-&phib(ii, ij)) + zwgt * (phi_ext(jb) - phib(ii, ij))) / (1. + zrx)
+        phia(ii, ij) = (1. - zout) * (phib(ii, ij) + zwgt * (phi_ext(jb) - phib(ii, ij))) + zout * (phib(ii, ij) + zrx * phia(iibm1, ijbm1) - zsign_ups * zry * (phib(ii, ij) - phib(iijm1, ijjm1)) - (1. - zsign_ups) * zry * (phib(iijp1, ijjp1) - phib(ii, ij)) + zwgt * (phi_ext(jb) - phib(ii, ij))) / (1. + zrx)
       END IF
       phia(ii, ij) = phia(ii, ij) * pmask(ii, ij)
     END DO
@@ -266,8 +250,7 @@ MODULE bdylib
         ijbm1jp1 = ij + flagv + ABS(flagu)
         zex1 = (ABS(iibm1 - iibm2) * pe_xdif(iibm1 + ii_offset, ijbm1) + ABS(ijbm1 - ijbm2) * pe_ydif(iibm1, ijbm1 + ij_offset))
         zex2 = (ABS(iibm1 - iibm2) * pe_xdif(iibm2 + ii_offset, ijbm2) + ABS(ijbm1 - ijbm2) * pe_ydif(iibm2, ijbm2 + ij_offset))
-        zey1 = ((iibm1 - iibm1jm1) * pe_xdif(iibm1jm1 + ii_offset, ijbm1jm1) + (ijbm1 - ijbm1jm1) * pe_ydif(iibm1jm1, ijbm1jm1 + &
-&ij_offset))
+        zey1 = ((iibm1 - iibm1jm1) * pe_xdif(iibm1jm1 + ii_offset, ijbm1jm1) + (ijbm1 - ijbm1jm1) * pe_ydif(iibm1jm1, ijbm1jm1 + ij_offset))
         zey2 = ((iibm1jp1 - iibm1) * pe_xdif(iibm1 + ii_offset, ijbm1) + (ijbm1jp1 - ijbm1) * pe_ydif(iibm1, ijbm1 + ij_offset))
         IF (zey1 .LT. rsmall) zey1 = zey2
         IF (zey2 .LT. rsmall) zey2 = zey1
@@ -275,12 +258,9 @@ MODULE bdylib
         zex2 = MAX(zex2, rsmall)
         zey1 = MAX(zey1, rsmall)
         zey2 = MAX(zey2, rsmall)
-        zmask_x = (ABS(iibm1 - iibm2) * pmask_xdif(iibm2 + ii_offset, ijbm2, jk) + ABS(ijbm1 - ijbm2) * pmask_ydif(iibm2, ijbm2 + &
-&ij_offset, jk))
-        zmask_y1 = ((iibm1 - iibm1jm1) * pmask_xdif(iibm1jm1 + ii_offset, ijbm1jm1, jk) + (ijbm1 - ijbm1jm1) * &
-&pmask_ydif(iibm1jm1, ijbm1jm1 + ij_offset, jk))
-        zmask_y2 = ((iibm1jp1 - iibm1) * pmask_xdif(iibm1 + ii_offset, ijbm1, jk) + (ijbm1jp1 - ijbm1) * pmask_ydif(iibm1, ijbm1 + &
-&ij_offset, jk))
+        zmask_x = (ABS(iibm1 - iibm2) * pmask_xdif(iibm2 + ii_offset, ijbm2, jk) + ABS(ijbm1 - ijbm2) * pmask_ydif(iibm2, ijbm2 + ij_offset, jk))
+        zmask_y1 = ((iibm1 - iibm1jm1) * pmask_xdif(iibm1jm1 + ii_offset, ijbm1jm1, jk) + (ijbm1 - ijbm1jm1) * pmask_ydif(iibm1jm1, ijbm1jm1 + ij_offset, jk))
+        zmask_y2 = ((iibm1jp1 - iibm1) * pmask_xdif(iibm1 + ii_offset, ijbm1, jk) + (ijbm1jp1 - ijbm1) * pmask_ydif(iibm1, ijbm1 + ij_offset, jk))
         zdt = phia(iibm1, ijbm1, jk) - phib(iibm1, ijbm1, jk)
         zdx = ((phia(iibm1, ijbm1, jk) - phia(iibm2, ijbm2, jk)) / zex2) * zmask_x
         zdy_1 = ((phib(iibm1, ijbm1, jk) - phib(iibm1jm1, ijbm1jm1, jk)) / zey1) * zmask_y1
@@ -296,16 +276,13 @@ MODULE bdylib
         zout = 0.5 * (zout + ABS(zout))
         zwgt = 2. * rdt * ((1. - zout) * idx % nbd(jb, igrd) + zout * idx % nbdout(jb, igrd))
         IF (ll_npo) THEN
-          phia(ii, ij, jk) = (1. - zout) * (phib(ii, ij, jk) + zwgt * (phi_ext(jb, jk) - phib(ii, ij, jk))) + zout * (phib(ii, ij, &
-&jk) + zrx * phia(iibm1, ijbm1, jk) + zwgt * (phi_ext(jb, jk) - phib(ii, ij, jk))) / (1. + zrx)
+          phia(ii, ij, jk) = (1. - zout) * (phib(ii, ij, jk) + zwgt * (phi_ext(jb, jk) - phib(ii, ij, jk))) + zout * (phib(ii, ij, jk) + zrx * phia(iibm1, ijbm1, jk) + zwgt * (phi_ext(jb, jk) - phib(ii, ij, jk))) / (1. + zrx)
         ELSE
           zsign_ups = SIGN(1., zdt * zdy)
           zsign_ups = 0.5 * (zsign_ups + ABS(zsign_ups))
           zey = zsign_ups * zey1 + (1. - zsign_ups) * zey2
           zry = zdt * zdy / (zey * znor2)
-          phia(ii, ij, jk) = (1. - zout) * (phib(ii, ij, jk) + zwgt * (phi_ext(jb, jk) - phib(ii, ij, jk))) + zout * (phib(ii, ij, &
-&jk) + zrx * phia(iibm1, ijbm1, jk) - zsign_ups * zry * (phib(ii, ij, jk) - phib(iijm1, ijjm1, jk)) - (1. - zsign_ups) * zry * &
-&(phib(iijp1, ijjp1, jk) - phib(ii, ij, jk)) + zwgt * (phi_ext(jb, jk) - phib(ii, ij, jk))) / (1. + zrx)
+          phia(ii, ij, jk) = (1. - zout) * (phib(ii, ij, jk) + zwgt * (phi_ext(jb, jk) - phib(ii, ij, jk))) + zout * (phib(ii, ij, jk) + zrx * phia(iibm1, ijbm1, jk) - zsign_ups * zry * (phib(ii, ij, jk) - phib(iijm1, ijjm1, jk)) - (1. - zsign_ups) * zry * (phib(iijp1, ijjp1, jk) - phib(ii, ij, jk)) + zwgt * (phi_ext(jb, jk) - phib(ii, ij, jk))) / (1. + zrx)
         END IF
         phia(ii, ij, jk) = phia(ii, ij, jk) * pmask(ii, ij, jk)
       END DO
@@ -323,7 +300,6 @@ MODULE bdylib
     INTEGER :: ib, ik
     INTEGER :: ii, ij, ip, jp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('bdy_nmn', 'r0', 0, 0)
     SELECT CASE (igrd)
     CASE (1)
@@ -339,30 +315,24 @@ MODULE bdylib
       CALL ctl_stop('unrecognised value for igrd in bdy_nmn')
     END SELECT
     CALL profile_psy_data0 % PostEnd
+    !$ACC KERNELS
     DO ib = 1, idx % nblenrim(igrd)
-      CALL profile_psy_data1 % PreStart('bdy_nmn', 'r1', 0, 0)
       ii = idx % nbi(ib, igrd)
       ij = idx % nbj(ib, igrd)
-      CALL profile_psy_data1 % PostEnd
-      !$ACC KERNELS
       DO ik = 1, jpkm1
         zcoef1 = bdypmask(ii - 1, ij) * pmask(ii - 1, ij, ik) + bdypmask(ii + 1, ij) * pmask(ii + 1, ij, ik)
         zcoef2 = bdypmask(ii, ij - 1) * pmask(ii, ij - 1, ik) + bdypmask(ii, ij + 1) * pmask(ii, ij + 1, ik)
         IF (NINT(zcoef1 + zcoef2) == 0) THEN
           zcoef = pmask(ii - 1, ij, ik) + pmask(ii + 1, ij, ik) + pmask(ii, ij - 1, ik) + pmask(ii, ij + 1, ik)
           IF (zcoef > .5_wp) THEN
-            phia(ii, ij, ik) = phia(ii - 1, ij, ik) * pmask(ii - 1, ij, ik) + phia(ii + 1, ij, ik) * pmask(ii + 1, ij, ik) + &
-&phia(ii, ij - 1, ik) * pmask(ii, ij - 1, ik) + phia(ii, ij + 1, ik) * pmask(ii, ij + 1, ik)
+            phia(ii, ij, ik) = phia(ii - 1, ij, ik) * pmask(ii - 1, ij, ik) + phia(ii + 1, ij, ik) * pmask(ii + 1, ij, ik) + phia(ii, ij - 1, ik) * pmask(ii, ij - 1, ik) + phia(ii, ij + 1, ik) * pmask(ii, ij + 1, ik)
             phia(ii, ij, ik) = (phia(ii, ij, ik) / zcoef) * pmask(ii, ij, ik)
           ELSE
             phia(ii, ij, ik) = phia(ii, ij, ik) * pmask(ii, ij, ik)
           END IF
         ELSE IF (NINT(zcoef1 + zcoef2) == 2) THEN
-          zcoef = pmask(ii - 1, ij, ik) * bdypmask(ii - 1, ij) + pmask(ii + 1, ij, ik) * bdypmask(ii + 1, ij) + pmask(ii, ij - 1, &
-&ik) * bdypmask(ii, ij - 1) + pmask(ii, ij + 1, ik) * bdypmask(ii, ij + 1)
-          phia(ii, ij, ik) = phia(ii - 1, ij, ik) * pmask(ii - 1, ij, ik) * bdypmask(ii - 1, ij) + phia(ii + 1, ij, ik) * pmask(ii &
-&+ 1, ij, ik) * bdypmask(ii + 1, ij) + phia(ii, ij - 1, ik) * pmask(ii, ij - 1, ik) * bdypmask(ii, ij - 1) + phia(ii, ij + 1, ik) &
-&* pmask(ii, ij + 1, ik) * bdypmask(ii, ij + 1)
+          zcoef = pmask(ii - 1, ij, ik) * bdypmask(ii - 1, ij) + pmask(ii + 1, ij, ik) * bdypmask(ii + 1, ij) + pmask(ii, ij - 1, ik) * bdypmask(ii, ij - 1) + pmask(ii, ij + 1, ik) * bdypmask(ii, ij + 1)
+          phia(ii, ij, ik) = phia(ii - 1, ij, ik) * pmask(ii - 1, ij, ik) * bdypmask(ii - 1, ij) + phia(ii + 1, ij, ik) * pmask(ii + 1, ij, ik) * bdypmask(ii + 1, ij) + phia(ii, ij - 1, ik) * pmask(ii, ij - 1, ik) * bdypmask(ii, ij - 1) + phia(ii, ij + 1, ik) * pmask(ii, ij + 1, ik) * bdypmask(ii, ij + 1)
           phia(ii, ij, ik) = (phia(ii, ij, ik) / MAX(1._wp, zcoef)) * pmask(ii, ij, ik)
         ELSE
           ip = NINT(bdypmask(ii + 1, ij) * pmask(ii + 1, ij, ik) - bdypmask(ii - 1, ij) * pmask(ii - 1, ij, ik))
@@ -370,7 +340,7 @@ MODULE bdylib
           phia(ii, ij, ik) = phia(ii + ip, ij + jp, ik) * pmask(ii + ip, ij + jp, ik)
         END IF
       END DO
-      !$ACC END KERNELS
     END DO
+    !$ACC END KERNELS
   END SUBROUTINE bdy_nmn
 END MODULE bdylib

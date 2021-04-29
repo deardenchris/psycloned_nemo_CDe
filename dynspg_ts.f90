@@ -89,6 +89,13 @@ MODULE dynspg_ts
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data9
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data10
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data11
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data12
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data13
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data14
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data15
     CALL profile_psy_data0 % PreStart('dyn_spg_ts', 'r0', 0, 0)
     IF (ln_wd_il) ALLOCATE(zcpx(jpi, jpj), zcpy(jpi, jpj))
     IF (ln_wd_dl) ALLOCATE(ztwdmask(jpi, jpj), zuwdmask(jpi, jpj), zvwdmask(jpi, jpj), zuwdav2(jpi, jpj), zvwdav2(jpi, jpj))
@@ -108,10 +115,10 @@ MODULE dynspg_ts
       noffset = 0
     END IF
     IF (kt == nit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'dyn_spg_ts : surface pressure gradient trend'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~   free surface with time splitting'
-      IF (lwp) WRITE(numout, FMT = *)
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'dyn_spg_ts : surface pressure gradient trend'
+      IF (lwp) WRITE(numout, *) '~~~~~~~~~~   free surface with time splitting'
+      IF (lwp) WRITE(numout, *)
       IF (neuler == 0) ll_init = .TRUE.
       IF (ln_bt_fw .OR. neuler == 0) THEN
         ll_fw_start = .TRUE.
@@ -124,7 +131,7 @@ MODULE dynspg_ts
     CALL profile_psy_data0 % PostEnd
     IF (ln_isfcav) THEN
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zCdU_u(ji, jj) = r1_2 * (rCdU_bot(ji + 1, jj) + rCdU_bot(ji, jj) + rCdU_top(ji + 1, jj) + rCdU_top(ji, jj))
@@ -134,7 +141,7 @@ MODULE dynspg_ts
       !$ACC END KERNELS
     ELSE
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zCdU_u(ji, jj) = r1_2 * (rCdU_bot(ji + 1, jj) + rCdU_bot(ji, jj))
@@ -149,7 +156,7 @@ MODULE dynspg_ts
         SELECT CASE (nn_een_e3f)
         CASE (0)
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
               zwz(ji, jj) = (ht_n(ji, jj + 1) + ht_n(ji + 1, jj + 1) + ht_n(ji, jj) + ht_n(ji + 1, jj)) * 0.25_wp
@@ -159,23 +166,24 @@ MODULE dynspg_ts
           !$ACC END KERNELS
         CASE (1)
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
-              zwz(ji, jj) = (ht_n(ji, jj + 1) + ht_n(ji + 1, jj + 1) + ht_n(ji, jj) + ht_n(ji + 1, jj)) / (MAX(1._wp, ssmask(ji, &
-&jj + 1) + ssmask(ji + 1, jj + 1) + ssmask(ji, jj) + ssmask(ji + 1, jj)))
+              zwz(ji, jj) = (ht_n(ji, jj + 1) + ht_n(ji + 1, jj + 1) + ht_n(ji, jj) + ht_n(ji + 1, jj)) / (MAX(1._wp, ssmask(ji, jj + 1) + ssmask(ji + 1, jj + 1) + ssmask(ji, jj) + ssmask(ji + 1, jj)))
               IF (zwz(ji, jj) /= 0._wp) zwz(ji, jj) = ff_f(ji, jj) / zwz(ji, jj)
             END DO
           END DO
           !$ACC END KERNELS
         END SELECT
+        CALL profile_psy_data1 % PreStart('dyn_spg_ts', 'r1', 0, 0)
         CALL lbc_lnk('dynspg_ts', zwz, 'F', 1._wp)
+        CALL profile_psy_data1 % PostEnd
         !$ACC KERNELS
         ftne(1, :) = 0._wp
         ftnw(1, :) = 0._wp
         ftse(1, :) = 0._wp
         ftsw(1, :) = 0._wp
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpj
           DO ji = 2, jpi
             ftne(ji, jj) = zwz(ji - 1, jj) + zwz(ji, jj) + zwz(ji, jj - 1)
@@ -191,7 +199,7 @@ MODULE dynspg_ts
         ftnw(1, :) = 0._wp
         ftse(1, :) = 0._wp
         ftsw(1, :) = 0._wp
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpj
           DO ji = 2, jpi
             z1_ht = ssmask(ji, jj) / (ht_n(ji, jj) + 1._wp - ssmask(ji, jj))
@@ -210,24 +218,23 @@ MODULE dynspg_ts
         IF (.NOT. ln_sco) THEN
         ELSE
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
-              zhf(ji, jj) = (ht_0(ji, jj) + ht_0(ji + 1, jj) + ht_0(ji, jj + 1) + ht_0(ji + 1, jj + 1)) / MAX(ssmask(ji, jj) + &
-&ssmask(ji + 1, jj) + ssmask(ji, jj + 1) + ssmask(ji + 1, jj + 1), 1._wp)
+              zhf(ji, jj) = (ht_0(ji, jj) + ht_0(ji + 1, jj) + ht_0(ji, jj + 1) + ht_0(ji + 1, jj + 1)) / MAX(ssmask(ji, jj) + ssmask(ji + 1, jj) + ssmask(ji, jj + 1) + ssmask(ji + 1, jj + 1), 1._wp)
             END DO
           END DO
           !$ACC END KERNELS
         END IF
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpjm1
           DO ji = 1, jpi
             zhf(ji, jj) = zhf(ji, jj) * (1._wp - umask(ji, jj, 1) * umask(ji, jj + 1, 1))
           END DO
         END DO
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpi
               zhf(ji, jj) = zhf(ji, jj) + e3f_n(ji, jj, jk) * umask(ji, jj, jk) * umask(ji, jj + 1, jk)
@@ -235,9 +242,11 @@ MODULE dynspg_ts
           END DO
         END DO
         !$ACC END KERNELS
+        CALL profile_psy_data2 % PreStart('dyn_spg_ts', 'r2', 0, 0)
         CALL lbc_lnk('dynspg_ts', zhf, 'F', 1._wp)
+        CALL profile_psy_data2 % PostEnd
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             IF (zhf(ji, jj) /= 0._wp) zwz(ji, jj) = 1._wp / zhf(ji, jj)
@@ -247,27 +256,23 @@ MODULE dynspg_ts
         !$ACC END KERNELS
       END SELECT
     END IF
-    CALL profile_psy_data1 % PreStart('dyn_spg_ts', 'r1', 0, 0)
+    CALL profile_psy_data3 % PreStart('dyn_spg_ts', 'r3', 0, 0)
     IF (.NOT. ln_bt_fw .AND. (neuler == 0 .AND. kt == nit000 + 1)) THEN
       ll_fw_start = .FALSE.
       CALL ts_wgt(ln_bt_av, ll_fw_start, icycle, wgtbtp1, wgtbtp2)
     END IF
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data3 % PostEnd
     !$ACC KERNELS
     zu_frc(:, :) = 0._wp
     zv_frc(:, :) = 0._wp
-    !$ACC END KERNELS
     DO jk = 1, jpkm1
-      !$ACC KERNELS
       zu_frc(:, :) = zu_frc(:, :) + e3u_n(:, :, jk) * ua(:, :, jk) * umask(:, :, jk)
       zv_frc(:, :) = zv_frc(:, :) + e3v_n(:, :, jk) * va(:, :, jk) * vmask(:, :, jk)
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
     zu_frc(:, :) = zu_frc(:, :) * r1_hu_n(:, :)
     zv_frc(:, :) = zv_frc(:, :) * r1_hv_n(:, :)
     DO jk = 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           ua(ji, jj, jk) = ua(ji, jj, jk) - zu_frc(ji, jj) * umask(ji, jj, jk)
@@ -279,17 +284,15 @@ MODULE dynspg_ts
     zwy(:, :) = vn_b(:, :) * hv_n(:, :) * e1v(:, :)
     SELECT CASE (nvor_scheme)
     CASE (np_ENT)
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          zu_trd(ji, jj) = + r1_4 * r1_e1e2u(ji, jj) * r1_hu_n(ji, jj) * (e1e2t(ji + 1, jj) * ht_n(ji + 1, jj) * ff_t(ji + 1, jj) &
-&* (vn_b(ji + 1, jj) + vn_b(ji + 1, jj - 1)) + e1e2t(ji, jj) * ht_n(ji, jj) * ff_t(ji, jj) * (vn_b(ji, jj) + vn_b(ji, jj - 1)))
-          zv_trd(ji, jj) = - r1_4 * r1_e1e2v(ji, jj) * r1_hv_n(ji, jj) * (e1e2t(ji, jj + 1) * ht_n(ji, jj + 1) * ff_t(ji, jj + 1) &
-&* (un_b(ji, jj + 1) + un_b(ji - 1, jj + 1)) + e1e2t(ji, jj) * ht_n(ji, jj) * ff_t(ji, jj) * (un_b(ji, jj) + un_b(ji - 1, jj)))
+          zu_trd(ji, jj) = + r1_4 * r1_e1e2u(ji, jj) * r1_hu_n(ji, jj) * (e1e2t(ji + 1, jj) * ht_n(ji + 1, jj) * ff_t(ji + 1, jj) * (vn_b(ji + 1, jj) + vn_b(ji + 1, jj - 1)) + e1e2t(ji, jj) * ht_n(ji, jj) * ff_t(ji, jj) * (vn_b(ji, jj) + vn_b(ji, jj - 1)))
+          zv_trd(ji, jj) = - r1_4 * r1_e1e2v(ji, jj) * r1_hv_n(ji, jj) * (e1e2t(ji, jj + 1) * ht_n(ji, jj + 1) * ff_t(ji, jj + 1) * (un_b(ji, jj + 1) + un_b(ji - 1, jj + 1)) + e1e2t(ji, jj) * ht_n(ji, jj) * ff_t(ji, jj) * (un_b(ji, jj) + un_b(ji - 1, jj)))
         END DO
       END DO
     CASE (np_ENE, np_MIX)
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zy1 = (zwy(ji, jj - 1) + zwy(ji + 1, jj - 1)) * r1_e1u(ji, jj)
@@ -301,7 +304,7 @@ MODULE dynspg_ts
         END DO
       END DO
     CASE (np_ENS)
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zy1 = r1_8 * (zwy(ji, jj - 1) + zwy(ji + 1, jj - 1) + zwy(ji, jj) + zwy(ji + 1, jj)) * r1_e1u(ji, jj)
@@ -311,65 +314,55 @@ MODULE dynspg_ts
         END DO
       END DO
     CASE (np_EET, np_EEN)
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          zu_trd(ji, jj) = + r1_12 * r1_e1u(ji, jj) * (ftne(ji, jj) * zwy(ji, jj) + ftnw(ji + 1, jj) * zwy(ji + 1, jj) + ftse(ji, &
-&jj) * zwy(ji, jj - 1) + ftsw(ji + 1, jj) * zwy(ji + 1, jj - 1))
-          zv_trd(ji, jj) = - r1_12 * r1_e2v(ji, jj) * (ftsw(ji, jj + 1) * zwx(ji - 1, jj + 1) + ftse(ji, jj + 1) * zwx(ji, jj + 1) &
-&+ ftnw(ji, jj) * zwx(ji - 1, jj) + ftne(ji, jj) * zwx(ji, jj))
+          zu_trd(ji, jj) = + r1_12 * r1_e1u(ji, jj) * (ftne(ji, jj) * zwy(ji, jj) + ftnw(ji + 1, jj) * zwy(ji + 1, jj) + ftse(ji, jj) * zwy(ji, jj - 1) + ftsw(ji + 1, jj) * zwy(ji + 1, jj - 1))
+          zv_trd(ji, jj) = - r1_12 * r1_e2v(ji, jj) * (ftsw(ji, jj + 1) * zwx(ji - 1, jj + 1) + ftse(ji, jj + 1) * zwx(ji, jj + 1) + ftnw(ji, jj) * zwx(ji - 1, jj) + ftne(ji, jj) * zwx(ji, jj))
         END DO
       END DO
     END SELECT
     !$ACC END KERNELS
     IF (.NOT. ln_linssh) THEN
       IF (ln_wd_il) THEN
-        CALL profile_psy_data2 % PreStart('dyn_spg_ts', 'r2', 0, 0)
+        CALL profile_psy_data4 % PreStart('dyn_spg_ts', 'r4', 0, 0)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            ll_tmp1 = MIN(sshn(ji, jj), sshn(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) .AND. MAX(sshn(ji, jj) + &
-&ht_0(ji, jj), sshn(ji + 1, jj) + ht_0(ji + 1, jj)) > rn_wdmin1 + rn_wdmin2
-            ll_tmp2 = (ABS(sshn(ji + 1, jj) - sshn(ji, jj)) > 1.E-12) .AND. (MAX(sshn(ji, jj), sshn(ji + 1, jj)) > MAX(- ht_0(ji, &
-&jj), - ht_0(ji + 1, jj)) + rn_wdmin1 + rn_wdmin2)
+            ll_tmp1 = MIN(sshn(ji, jj), sshn(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) .AND. MAX(sshn(ji, jj) + ht_0(ji, jj), sshn(ji + 1, jj) + ht_0(ji + 1, jj)) > rn_wdmin1 + rn_wdmin2
+            ll_tmp2 = (ABS(sshn(ji + 1, jj) - sshn(ji, jj)) > 1.E-12) .AND. (MAX(sshn(ji, jj), sshn(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) + rn_wdmin1 + rn_wdmin2)
             IF (ll_tmp1) THEN
               zcpx(ji, jj) = 1.0_wp
             ELSE IF (ll_tmp2) THEN
-              zcpx(ji, jj) = ABS((sshn(ji + 1, jj) + ht_0(ji + 1, jj) - sshn(ji, jj) - ht_0(ji, jj)) / (sshn(ji + 1, jj) - &
-&sshn(ji, jj)))
+              zcpx(ji, jj) = ABS((sshn(ji + 1, jj) + ht_0(ji + 1, jj) - sshn(ji, jj) - ht_0(ji, jj)) / (sshn(ji + 1, jj) - sshn(ji, jj)))
               zcpx(ji, jj) = MAX(MIN(zcpx(ji, jj), 1.0_wp), 0.0_wp)
             ELSE
               zcpx(ji, jj) = 0._wp
             END IF
-            ll_tmp1 = MIN(sshn(ji, jj), sshn(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) .AND. MAX(sshn(ji, jj) + &
-&ht_0(ji, jj), sshn(ji, jj + 1) + ht_0(ji, jj + 1)) > rn_wdmin1 + rn_wdmin2
-            ll_tmp2 = (ABS(sshn(ji, jj) - sshn(ji, jj + 1)) > 1.E-12) .AND. (MAX(sshn(ji, jj), sshn(ji, jj + 1)) > MAX(- ht_0(ji, &
-&jj), - ht_0(ji, jj + 1)) + rn_wdmin1 + rn_wdmin2)
+            ll_tmp1 = MIN(sshn(ji, jj), sshn(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) .AND. MAX(sshn(ji, jj) + ht_0(ji, jj), sshn(ji, jj + 1) + ht_0(ji, jj + 1)) > rn_wdmin1 + rn_wdmin2
+            ll_tmp2 = (ABS(sshn(ji, jj) - sshn(ji, jj + 1)) > 1.E-12) .AND. (MAX(sshn(ji, jj), sshn(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) + rn_wdmin1 + rn_wdmin2)
             IF (ll_tmp1) THEN
               zcpy(ji, jj) = 1.0_wp
             ELSE IF (ll_tmp2) THEN
-              zcpy(ji, jj) = ABS((sshn(ji, jj + 1) + ht_0(ji, jj + 1) - sshn(ji, jj) - ht_0(ji, jj)) / (sshn(ji, jj + 1) - &
-&sshn(ji, jj)))
+              zcpy(ji, jj) = ABS((sshn(ji, jj + 1) + ht_0(ji, jj + 1) - sshn(ji, jj) - ht_0(ji, jj)) / (sshn(ji, jj + 1) - sshn(ji, jj)))
               zcpy(ji, jj) = MAX(0._wp, MIN(zcpy(ji, jj), 1.0_wp))
             ELSE
               zcpy(ji, jj) = 0._wp
             END IF
           END DO
         END DO
-        CALL profile_psy_data2 % PostEnd
+        CALL profile_psy_data4 % PostEnd
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zu_trd(ji, jj) = zu_trd(ji, jj) - grav * (sshn(ji + 1, jj) - sshn(ji, jj)) * r1_e1u(ji, jj) * zcpx(ji, jj) * &
-&wdrampu(ji, jj)
-            zv_trd(ji, jj) = zv_trd(ji, jj) - grav * (sshn(ji, jj + 1) - sshn(ji, jj)) * r1_e2v(ji, jj) * zcpy(ji, jj) * &
-&wdrampv(ji, jj)
+            zu_trd(ji, jj) = zu_trd(ji, jj) - grav * (sshn(ji + 1, jj) - sshn(ji, jj)) * r1_e1u(ji, jj) * zcpx(ji, jj) * wdrampu(ji, jj)
+            zv_trd(ji, jj) = zv_trd(ji, jj) - grav * (sshn(ji, jj + 1) - sshn(ji, jj)) * r1_e2v(ji, jj) * zcpy(ji, jj) * wdrampv(ji, jj)
           END DO
         END DO
         !$ACC END KERNELS
       ELSE
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zu_trd(ji, jj) = zu_trd(ji, jj) - grav * (sshn(ji + 1, jj) - sshn(ji, jj)) * r1_e1u(ji, jj)
@@ -380,7 +373,7 @@ MODULE dynspg_ts
       END IF
     END IF
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         zu_frc(ji, jj) = zu_frc(ji, jj) - zu_trd(ji, jj) * ssumask(ji, jj)
@@ -390,7 +383,7 @@ MODULE dynspg_ts
     !$ACC END KERNELS
     IF (ln_bt_fw) THEN
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           ikbu = mbku(ji, jj)
@@ -402,7 +395,7 @@ MODULE dynspg_ts
       !$ACC END KERNELS
     ELSE
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           ikbu = mbku(ji, jj)
@@ -416,19 +409,17 @@ MODULE dynspg_ts
     IF (ln_wd_il) THEN
       !$ACC KERNELS
       zztmp = - 1._wp / rdtbt
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          zu_frc(ji, jj) = zu_frc(ji, jj) + MAX(r1_hu_n(ji, jj) * r1_2 * (rCdU_bot(ji + 1, jj) + rCdU_bot(ji, jj)), zztmp) * &
-&zwx(ji, jj) * wdrampu(ji, jj)
-          zv_frc(ji, jj) = zv_frc(ji, jj) + MAX(r1_hv_n(ji, jj) * r1_2 * (rCdU_bot(ji, jj + 1) + rCdU_bot(ji, jj)), zztmp) * &
-&zwy(ji, jj) * wdrampv(ji, jj)
+          zu_frc(ji, jj) = zu_frc(ji, jj) + MAX(r1_hu_n(ji, jj) * r1_2 * (rCdU_bot(ji + 1, jj) + rCdU_bot(ji, jj)), zztmp) * zwx(ji, jj) * wdrampu(ji, jj)
+          zv_frc(ji, jj) = zv_frc(ji, jj) + MAX(r1_hv_n(ji, jj) * r1_2 * (rCdU_bot(ji, jj + 1) + rCdU_bot(ji, jj)), zztmp) * zwy(ji, jj) * wdrampv(ji, jj)
         END DO
       END DO
       !$ACC END KERNELS
     ELSE
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zu_frc(ji, jj) = zu_frc(ji, jj) + r1_hu_n(ji, jj) * r1_2 * (rCdU_bot(ji + 1, jj) + rCdU_bot(ji, jj)) * zwx(ji, jj)
@@ -440,7 +431,7 @@ MODULE dynspg_ts
     IF (ln_isfcav) THEN
       IF (ln_bt_fw) THEN
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             iktu = miku(ji, jj)
@@ -452,7 +443,7 @@ MODULE dynspg_ts
         !$ACC END KERNELS
       ELSE
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             iktu = miku(ji, jj)
@@ -464,7 +455,7 @@ MODULE dynspg_ts
         !$ACC END KERNELS
       END IF
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zu_frc(ji, jj) = zu_frc(ji, jj) + r1_hu_n(ji, jj) * r1_2 * (rCdU_top(ji + 1, jj) + rCdU_top(ji, jj)) * zwx(ji, jj)
@@ -475,7 +466,7 @@ MODULE dynspg_ts
     END IF
     IF (ln_bt_fw) THEN
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zu_frc(ji, jj) = zu_frc(ji, jj) + r1_rau0 * utau(ji, jj) * r1_hu_n(ji, jj)
@@ -486,7 +477,7 @@ MODULE dynspg_ts
     ELSE
       !$ACC KERNELS
       zztmp = r1_rau0 * r1_2
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zu_frc(ji, jj) = zu_frc(ji, jj) + zztmp * (utau_b(ji, jj) + utau(ji, jj)) * r1_hu_n(ji, jj)
@@ -498,7 +489,7 @@ MODULE dynspg_ts
     IF (ln_apr_dyn) THEN
       IF (ln_bt_fw) THEN
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zu_spg = grav * (ssh_ib(ji + 1, jj) - ssh_ib(ji, jj)) * r1_e1u(ji, jj)
@@ -511,7 +502,7 @@ MODULE dynspg_ts
       ELSE
         !$ACC KERNELS
         zztmp = grav * r1_2
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zu_spg = zztmp * (ssh_ib(ji + 1, jj) - ssh_ib(ji, jj) + ssh_ibb(ji + 1, jj) - ssh_ibb(ji, jj)) * r1_e1u(ji, jj)
@@ -585,11 +576,11 @@ MODULE dynspg_ts
       !$ACC END KERNELS
     END IF
     DO jn = 1, icycle
-      CALL profile_psy_data3 % PreStart('dyn_spg_ts', 'r3', 0, 0)
+      CALL profile_psy_data5 % PreStart('dyn_spg_ts', 'r5', 0, 0)
       l_full_nf_update = jn == icycle
       IF (ln_bdy .AND. ln_tide) CALL bdy_dta_tides(kt, kit = jn, time_offset = noffset + 1)
       IF (ln_tide_pot .AND. ln_tide) CALL upd_tide(kt, kit = jn, time_offset = noffset)
-      CALL profile_psy_data3 % PostEnd
+      CALL profile_psy_data5 % PostEnd
       !$ACC KERNELS
       IF ((jn < 3) .AND. ll_init) THEN
         za1 = 1._wp
@@ -609,7 +600,7 @@ MODULE dynspg_ts
         !$ACC END KERNELS
         IF (ln_wd_dl) THEN
           IF (ln_wd_dl_rmp) THEN
-            CALL profile_psy_data4 % PreStart('dyn_spg_ts', 'r4', 0, 0)
+            CALL profile_psy_data6 % PreStart('dyn_spg_ts', 'r6', 0, 0)
             DO jj = 1, jpj
               DO ji = 1, jpi
                 IF (zsshp2_e(ji, jj) + ht_0(ji, jj) > 2._wp * rn_wdmin1) THEN
@@ -621,10 +612,10 @@ MODULE dynspg_ts
                 END IF
               END DO
             END DO
-            CALL profile_psy_data4 % PostEnd
+            CALL profile_psy_data6 % PostEnd
           ELSE
             !$ACC KERNELS
-            !$ACC LOOP INDEPENDENT COLLAPSE(2)
+            !$ACC loop independent collapse(2)
             DO jj = 1, jpj
               DO ji = 1, jpi
                 IF (zsshp2_e(ji, jj) + ht_0(ji, jj) > rn_wdmin1) THEN
@@ -638,17 +629,17 @@ MODULE dynspg_ts
           END IF
         END IF
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zwx(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji + 1, jj) * &
-&zsshp2_e(ji + 1, jj))
-            zwy(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji, jj + 1) * &
-&zsshp2_e(ji, jj + 1))
+            zwx(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji + 1, jj) * zsshp2_e(ji + 1, jj))
+            zwy(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji, jj + 1) * zsshp2_e(ji, jj + 1))
           END DO
         END DO
         !$ACC END KERNELS
+        CALL profile_psy_data7 % PreStart('dyn_spg_ts', 'r7', 0, 0)
         CALL lbc_lnk_multi('dynspg_ts', zwx, 'U', 1._wp, zwy, 'V', 1._wp)
+        CALL profile_psy_data7 % PostEnd
         !$ACC KERNELS
         zhup2_e(:, :) = hu_0(:, :) + zwx(:, :)
         zhvp2_e(:, :) = hv_0(:, :) + zwy(:, :)
@@ -661,15 +652,19 @@ MODULE dynspg_ts
         zhtp2_e(:, :) = ht_n(:, :)
         !$ACC END KERNELS
       END IF
+      CALL profile_psy_data8 % PreStart('dyn_spg_ts', 'r8', 0, 0)
       IF (ln_bdy .AND. ln_vol) CALL bdy_vol2d(kt, jn, ua_e, va_e, zhup2_e, zhvp2_e)
+      CALL profile_psy_data8 % PostEnd
       !$ACC KERNELS
       zwx(:, :) = e2u(:, :) * ua_e(:, :) * zhup2_e(:, :)
       zwy(:, :) = e1v(:, :) * va_e(:, :) * zhvp2_e(:, :)
       !$ACC END KERNELS
+      CALL profile_psy_data9 % PreStart('dyn_spg_ts', 'r9', 0, 0)
       IF (ln_wd_il) CALL wad_lmt_bt(zwx, zwy, sshn_e, zssh_frc, rdtbt)
+      CALL profile_psy_data9 % PostEnd
       IF (ln_wd_dl) THEN
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
             IF (zwx(ji, jj) > 0.0) THEN
@@ -702,7 +697,7 @@ MODULE dynspg_ts
         !$ACC END KERNELS
       END IF
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zhdiv(ji, jj) = (zwx(ji, jj) - zwx(ji - 1, jj) + zwy(ji, jj) - zwy(ji, jj - 1)) * r1_e1e2t(ji, jj)
@@ -710,23 +705,23 @@ MODULE dynspg_ts
       END DO
       ssha_e(:, :) = (sshn_e(:, :) - rdtbt * (zssh_frc(:, :) + zhdiv(:, :))) * ssmask(:, :)
       !$ACC END KERNELS
-      CALL profile_psy_data5 % PreStart('dyn_spg_ts', 'r5', 0, 0)
+      CALL profile_psy_data10 % PreStart('dyn_spg_ts', 'r10', 0, 0)
       CALL lbc_lnk('dynspg_ts', ssha_e, 'T', 1._wp)
       IF (ln_bdy) CALL bdy_ssh(ssha_e)
-      CALL profile_psy_data5 % PostEnd
+      CALL profile_psy_data10 % PostEnd
       IF (.NOT. ln_linssh) THEN
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zsshu_a(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * ssha_e(ji, jj) + e1e2t(ji + 1, jj) * &
-&ssha_e(ji + 1, jj))
-            zsshv_a(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * ssha_e(ji, jj) + e1e2t(ji, jj + 1) * &
-&ssha_e(ji, jj + 1))
+            zsshu_a(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * ssha_e(ji, jj) + e1e2t(ji + 1, jj) * ssha_e(ji + 1, jj))
+            zsshv_a(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * ssha_e(ji, jj) + e1e2t(ji, jj + 1) * ssha_e(ji, jj + 1))
           END DO
         END DO
         !$ACC END KERNELS
+        CALL profile_psy_data11 % PreStart('dyn_spg_ts', 'r11', 0, 0)
         CALL lbc_lnk_multi('dynspg_ts', zsshu_a, 'U', 1._wp, zsshv_a, 'V', 1._wp)
+        CALL profile_psy_data11 % PostEnd
       END IF
       !$ACC KERNELS
       IF ((jn == 1) .AND. ll_init) THEN
@@ -756,47 +751,39 @@ MODULE dynspg_ts
       END IF
       zsshp2_e(:, :) = za0 * ssha_e(:, :) + za1 * sshn_e(:, :) + za2 * sshb_e(:, :) + za3 * sshbb_e(:, :)
       !$ACC END KERNELS
-      CALL profile_psy_data6 % PreStart('dyn_spg_ts', 'r6', 0, 0)
+      CALL profile_psy_data12 % PreStart('dyn_spg_ts', 'r12', 0, 0)
       IF (ln_wd_il) THEN
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            ll_tmp1 = MIN(zsshp2_e(ji, jj), zsshp2_e(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) .AND. MAX(zsshp2_e(ji, &
-&jj) + ht_0(ji, jj), zsshp2_e(ji + 1, jj) + ht_0(ji + 1, jj)) > rn_wdmin1 + rn_wdmin2
-            ll_tmp2 = (ABS(zsshp2_e(ji, jj) - zsshp2_e(ji + 1, jj)) > 1.E-12) .AND. (MAX(zsshp2_e(ji, jj), zsshp2_e(ji + 1, jj)) > &
-&MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) + rn_wdmin1 + rn_wdmin2)
+            ll_tmp1 = MIN(zsshp2_e(ji, jj), zsshp2_e(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) .AND. MAX(zsshp2_e(ji, jj) + ht_0(ji, jj), zsshp2_e(ji + 1, jj) + ht_0(ji + 1, jj)) > rn_wdmin1 + rn_wdmin2
+            ll_tmp2 = (ABS(zsshp2_e(ji, jj) - zsshp2_e(ji + 1, jj)) > 1.E-12) .AND. (MAX(zsshp2_e(ji, jj), zsshp2_e(ji + 1, jj)) > MAX(- ht_0(ji, jj), - ht_0(ji + 1, jj)) + rn_wdmin1 + rn_wdmin2)
             IF (ll_tmp1) THEN
               zcpx(ji, jj) = 1.0_wp
             ELSE IF (ll_tmp2) THEN
-              zcpx(ji, jj) = ABS((zsshp2_e(ji + 1, jj) + ht_0(ji + 1, jj) - zsshp2_e(ji, jj) - ht_0(ji, jj)) / (zsshp2_e(ji + 1, &
-&jj) - zsshp2_e(ji, jj)))
+              zcpx(ji, jj) = ABS((zsshp2_e(ji + 1, jj) + ht_0(ji + 1, jj) - zsshp2_e(ji, jj) - ht_0(ji, jj)) / (zsshp2_e(ji + 1, jj) - zsshp2_e(ji, jj)))
             ELSE
               zcpx(ji, jj) = 0._wp
             END IF
-            ll_tmp1 = MIN(zsshp2_e(ji, jj), zsshp2_e(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) .AND. MAX(zsshp2_e(ji, &
-&jj) + ht_0(ji, jj), zsshp2_e(ji, jj + 1) + ht_0(ji, jj + 1)) > rn_wdmin1 + rn_wdmin2
-            ll_tmp2 = (ABS(zsshp2_e(ji, jj) - zsshp2_e(ji, jj + 1)) > 1.E-12) .AND. (MAX(zsshp2_e(ji, jj), zsshp2_e(ji, jj + 1)) > &
-&MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) + rn_wdmin1 + rn_wdmin2)
+            ll_tmp1 = MIN(zsshp2_e(ji, jj), zsshp2_e(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) .AND. MAX(zsshp2_e(ji, jj) + ht_0(ji, jj), zsshp2_e(ji, jj + 1) + ht_0(ji, jj + 1)) > rn_wdmin1 + rn_wdmin2
+            ll_tmp2 = (ABS(zsshp2_e(ji, jj) - zsshp2_e(ji, jj + 1)) > 1.E-12) .AND. (MAX(zsshp2_e(ji, jj), zsshp2_e(ji, jj + 1)) > MAX(- ht_0(ji, jj), - ht_0(ji, jj + 1)) + rn_wdmin1 + rn_wdmin2)
             IF (ll_tmp1) THEN
               zcpy(ji, jj) = 1.0_wp
             ELSE IF (ll_tmp2) THEN
-              zcpy(ji, jj) = ABS((zsshp2_e(ji, jj + 1) + ht_0(ji, jj + 1) - zsshp2_e(ji, jj) - ht_0(ji, jj)) / (zsshp2_e(ji, jj + &
-&1) - zsshp2_e(ji, jj)))
+              zcpy(ji, jj) = ABS((zsshp2_e(ji, jj + 1) + ht_0(ji, jj + 1) - zsshp2_e(ji, jj) - ht_0(ji, jj)) / (zsshp2_e(ji, jj + 1) - zsshp2_e(ji, jj)))
             ELSE
               zcpy(ji, jj) = 0._wp
             END IF
           END DO
         END DO
       END IF
-      CALL profile_psy_data6 % PostEnd
+      CALL profile_psy_data12 % PostEnd
       !$ACC KERNELS
       IF (.NOT. ln_linssh .AND. .NOT. ln_dynadv_vec) THEN
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zx1 = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji + 1, jj) * zsshp2_e(ji &
-&+ 1, jj))
-            zy1 = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji, jj + 1) * zsshp2_e(ji, &
-&jj + 1))
+            zx1 = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji + 1, jj) * zsshp2_e(ji + 1, jj))
+            zy1 = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * zsshp2_e(ji, jj) + e1e2t(ji, jj + 1) * zsshp2_e(ji, jj + 1))
             zhust_e(ji, jj) = hu_0(ji, jj) + zx1
             zhvst_e(ji, jj) = hv_0(ji, jj) + zy1
           END DO
@@ -804,19 +791,17 @@ MODULE dynspg_ts
       END IF
       SELECT CASE (nvor_scheme)
       CASE (np_ENT)
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             z1_hu = ssumask(ji, jj) / (zhup2_e(ji, jj) + 1._wp - ssumask(ji, jj))
             z1_hv = ssvmask(ji, jj) / (zhvp2_e(ji, jj) + 1._wp - ssvmask(ji, jj))
-            zu_trd(ji, jj) = + r1_4 * r1_e1e2u(ji, jj) * z1_hu * (e1e2t(ji + 1, jj) * zhtp2_e(ji + 1, jj) * ff_t(ji + 1, jj) * &
-&(va_e(ji + 1, jj) + va_e(ji + 1, jj - 1)) + e1e2t(ji, jj) * zhtp2_e(ji, jj) * ff_t(ji, jj) * (va_e(ji, jj) + va_e(ji, jj - 1)))
-            zv_trd(ji, jj) = - r1_4 * r1_e1e2v(ji, jj) * z1_hv * (e1e2t(ji, jj + 1) * zhtp2_e(ji, jj + 1) * ff_t(ji, jj + 1) * &
-&(ua_e(ji, jj + 1) + ua_e(ji - 1, jj + 1)) + e1e2t(ji, jj) * zhtp2_e(ji, jj) * ff_t(ji, jj) * (ua_e(ji, jj) + ua_e(ji - 1, jj)))
+            zu_trd(ji, jj) = + r1_4 * r1_e1e2u(ji, jj) * z1_hu * (e1e2t(ji + 1, jj) * zhtp2_e(ji + 1, jj) * ff_t(ji + 1, jj) * (va_e(ji + 1, jj) + va_e(ji + 1, jj - 1)) + e1e2t(ji, jj) * zhtp2_e(ji, jj) * ff_t(ji, jj) * (va_e(ji, jj) + va_e(ji, jj - 1)))
+            zv_trd(ji, jj) = - r1_4 * r1_e1e2v(ji, jj) * z1_hv * (e1e2t(ji, jj + 1) * zhtp2_e(ji, jj + 1) * ff_t(ji, jj + 1) * (ua_e(ji, jj + 1) + ua_e(ji - 1, jj + 1)) + e1e2t(ji, jj) * zhtp2_e(ji, jj) * ff_t(ji, jj) * (ua_e(ji, jj) + ua_e(ji - 1, jj)))
           END DO
         END DO
       CASE (np_ENE, np_MIX)
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zy1 = (zwy(ji, jj - 1) + zwy(ji + 1, jj - 1)) * r1_e1u(ji, jj)
@@ -828,7 +813,7 @@ MODULE dynspg_ts
           END DO
         END DO
       CASE (np_ENS)
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zy1 = r1_8 * (zwy(ji, jj - 1) + zwy(ji + 1, jj - 1) + zwy(ji, jj) + zwy(ji + 1, jj)) * r1_e1u(ji, jj)
@@ -838,18 +823,16 @@ MODULE dynspg_ts
           END DO
         END DO
       CASE (np_EET, np_EEN)
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zu_trd(ji, jj) = + r1_12 * r1_e1u(ji, jj) * (ftne(ji, jj) * zwy(ji, jj) + ftnw(ji + 1, jj) * zwy(ji + 1, jj) + &
-&ftse(ji, jj) * zwy(ji, jj - 1) + ftsw(ji + 1, jj) * zwy(ji + 1, jj - 1))
-            zv_trd(ji, jj) = - r1_12 * r1_e2v(ji, jj) * (ftsw(ji, jj + 1) * zwx(ji - 1, jj + 1) + ftse(ji, jj + 1) * zwx(ji, jj + &
-&1) + ftnw(ji, jj) * zwx(ji - 1, jj) + ftne(ji, jj) * zwx(ji, jj))
+            zu_trd(ji, jj) = + r1_12 * r1_e1u(ji, jj) * (ftne(ji, jj) * zwy(ji, jj) + ftnw(ji + 1, jj) * zwy(ji + 1, jj) + ftse(ji, jj) * zwy(ji, jj - 1) + ftsw(ji + 1, jj) * zwy(ji + 1, jj - 1))
+            zv_trd(ji, jj) = - r1_12 * r1_e2v(ji, jj) * (ftsw(ji, jj + 1) * zwx(ji - 1, jj + 1) + ftse(ji, jj + 1) * zwx(ji, jj + 1) + ftnw(ji, jj) * zwx(ji - 1, jj) + ftne(ji, jj) * zwx(ji, jj))
           END DO
         END DO
       END SELECT
       IF (ln_tide .AND. ln_tide_pot) THEN
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zu_spg = grav * (pot_astro(ji + 1, jj) - pot_astro(ji, jj)) * r1_e1u(ji, jj)
@@ -862,7 +845,7 @@ MODULE dynspg_ts
       !$ACC END KERNELS
       IF (.NOT. ll_wd) THEN
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zu_trd(ji, jj) = zu_trd(ji, jj) + zCdU_u(ji, jj) * un_e(ji, jj) * hur_e(ji, jj)
@@ -873,7 +856,7 @@ MODULE dynspg_ts
       END IF
       IF (ln_wd_il) THEN
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zu_spg = - grav * (zsshp2_e(ji + 1, jj) - zsshp2_e(ji, jj)) * r1_e1u(ji, jj)
@@ -885,7 +868,7 @@ MODULE dynspg_ts
         !$ACC END KERNELS
       ELSE
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zu_spg = - grav * (zsshp2_e(ji + 1, jj) - zsshp2_e(ji, jj)) * r1_e1u(ji, jj)
@@ -898,7 +881,7 @@ MODULE dynspg_ts
       END IF
       !$ACC KERNELS
       IF (ln_dynadv_vec .OR. ln_linssh) THEN
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             ua_e(ji, jj) = (un_e(ji, jj) + rdtbt * (zwx(ji, jj) + zu_trd(ji, jj) + zu_frc(ji, jj))) * ssumask(ji, jj)
@@ -906,24 +889,22 @@ MODULE dynspg_ts
           END DO
         END DO
       ELSE
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zhura = hu_0(ji, jj) + zsshu_a(ji, jj)
             zhvra = hv_0(ji, jj) + zsshv_a(ji, jj)
             zhura = ssumask(ji, jj) / (zhura + 1._wp - ssumask(ji, jj))
             zhvra = ssvmask(ji, jj) / (zhvra + 1._wp - ssvmask(ji, jj))
-            ua_e(ji, jj) = (hu_e(ji, jj) * un_e(ji, jj) + rdtbt * (zhust_e(ji, jj) * zwx(ji, jj) + zhup2_e(ji, jj) * zu_trd(ji, &
-&jj) + hu_n(ji, jj) * zu_frc(ji, jj))) * zhura
-            va_e(ji, jj) = (hv_e(ji, jj) * vn_e(ji, jj) + rdtbt * (zhvst_e(ji, jj) * zwy(ji, jj) + zhvp2_e(ji, jj) * zv_trd(ji, &
-&jj) + hv_n(ji, jj) * zv_frc(ji, jj))) * zhvra
+            ua_e(ji, jj) = (hu_e(ji, jj) * un_e(ji, jj) + rdtbt * (zhust_e(ji, jj) * zwx(ji, jj) + zhup2_e(ji, jj) * zu_trd(ji, jj) + hu_n(ji, jj) * zu_frc(ji, jj))) * zhura
+            va_e(ji, jj) = (hv_e(ji, jj) * vn_e(ji, jj) + rdtbt * (zhvst_e(ji, jj) * zwy(ji, jj) + zhvp2_e(ji, jj) * zv_trd(ji, jj) + hv_n(ji, jj) * zv_frc(ji, jj))) * zhvra
           END DO
         END DO
       END IF
       !$ACC END KERNELS
       IF (ll_wd) THEN
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             ua_e(ji, jj) = ua_e(ji, jj) / (1.0 - rdtbt * zCdU_u(ji, jj) * hur_e(ji, jj))
@@ -940,10 +921,10 @@ MODULE dynspg_ts
         hvr_e(:, :) = ssvmask(:, :) / (hv_e(:, :) + 1._wp - ssvmask(:, :))
         !$ACC END KERNELS
       END IF
-      CALL profile_psy_data7 % PreStart('dyn_spg_ts', 'r7', 0, 0)
+      CALL profile_psy_data13 % PreStart('dyn_spg_ts', 'r13', 0, 0)
       CALL lbc_lnk_multi('dynspg_ts', ua_e, 'U', - 1._wp, va_e, 'V', - 1._wp)
       IF (ln_bdy) CALL bdy_dyn2d(jn, ua_e, va_e, un_e, vn_e, hur_e, hvr_e, ssha_e)
-      CALL profile_psy_data7 % PostEnd
+      CALL profile_psy_data13 % PostEnd
       !$ACC KERNELS
       ubb_e(:, :) = ub_e(:, :)
       ub_e(:, :) = un_e(:, :)
@@ -1002,53 +983,47 @@ MODULE dynspg_ts
       !$ACC END KERNELS
     END IF
     IF (ln_dynadv_vec .OR. ln_linssh) THEN
+      !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC KERNELS
         ua(:, :, jk) = ua(:, :, jk) + (ua_b(:, :) - ub_b(:, :)) * r1_2dt_b
         va(:, :, jk) = va(:, :, jk) + (va_b(:, :) - vb_b(:, :)) * r1_2dt_b
-        !$ACC END KERNELS
       END DO
+      !$ACC END KERNELS
     ELSE
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
-          zsshu_a(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * ssha(ji, jj) + e1e2t(ji + 1, jj) * &
-&ssha(ji + 1, jj))
-          zsshv_a(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * ssha(ji, jj) + e1e2t(ji, jj + 1) * &
-&ssha(ji, jj + 1))
+          zsshu_a(ji, jj) = r1_2 * ssumask(ji, jj) * r1_e1e2u(ji, jj) * (e1e2t(ji, jj) * ssha(ji, jj) + e1e2t(ji + 1, jj) * ssha(ji + 1, jj))
+          zsshv_a(ji, jj) = r1_2 * ssvmask(ji, jj) * r1_e1e2v(ji, jj) * (e1e2t(ji, jj) * ssha(ji, jj) + e1e2t(ji, jj + 1) * ssha(ji, jj + 1))
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data14 % PreStart('dyn_spg_ts', 'r14', 0, 0)
       CALL lbc_lnk_multi('dynspg_ts', zsshu_a, 'U', 1._wp, zsshv_a, 'V', 1._wp)
+      CALL profile_psy_data14 % PostEnd
+      !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC KERNELS
         ua(:, :, jk) = ua(:, :, jk) + r1_hu_n(:, :) * (ua_b(:, :) - ub_b(:, :) * hu_b(:, :)) * r1_2dt_b
         va(:, :, jk) = va(:, :, jk) + r1_hv_n(:, :) * (va_b(:, :) - vb_b(:, :) * hv_b(:, :)) * r1_2dt_b
-        !$ACC END KERNELS
       END DO
-      !$ACC KERNELS
       ua_b(:, :) = ua_b(:, :) / (hu_0(:, :) + zsshu_a(:, :) + 1._wp - ssumask(:, :))
       va_b(:, :) = va_b(:, :) / (hv_0(:, :) + zsshv_a(:, :) + 1._wp - ssvmask(:, :))
       !$ACC END KERNELS
     END IF
+    !$ACC KERNELS
     DO jk = 1, jpkm1
-      !$ACC KERNELS
       un(:, :, jk) = (un(:, :, jk) + un_adv(:, :) * r1_hu_n(:, :) - un_b(:, :)) * umask(:, :, jk)
       vn(:, :, jk) = (vn(:, :, jk) + vn_adv(:, :) * r1_hv_n(:, :) - vn_b(:, :)) * vmask(:, :, jk)
-      !$ACC END KERNELS
     END DO
     IF (ln_wd_dl .AND. ln_wd_dl_bc) THEN
       DO jk = 1, jpkm1
-        !$ACC KERNELS
-        un(:, :, jk) = (un_adv(:, :) * r1_hu_n(:, :) + zuwdav2(:, :) * (un(:, :, jk) - un_adv(:, :) * r1_hu_n(:, :))) * umask(:, &
-&:, jk)
-        vn(:, :, jk) = (vn_adv(:, :) * r1_hv_n(:, :) + zvwdav2(:, :) * (vn(:, :, jk) - vn_adv(:, :) * r1_hv_n(:, :))) * vmask(:, &
-&:, jk)
-        !$ACC END KERNELS
+        un(:, :, jk) = (un_adv(:, :) * r1_hu_n(:, :) + zuwdav2(:, :) * (un(:, :, jk) - un_adv(:, :) * r1_hu_n(:, :))) * umask(:, :, jk)
+        vn(:, :, jk) = (vn_adv(:, :) * r1_hv_n(:, :) + zvwdav2(:, :) * (vn(:, :, jk) - vn_adv(:, :) * r1_hv_n(:, :))) * vmask(:, :, jk)
       END DO
     END IF
-    CALL profile_psy_data8 % PreStart('dyn_spg_ts', 'r8', 0, 0)
+    !$ACC END KERNELS
+    CALL profile_psy_data15 % PreStart('dyn_spg_ts', 'r15', 0, 0)
     CALL iom_put("ubar", un_adv(:, :) * r1_hu_n(:, :))
     CALL iom_put("vbar", vn_adv(:, :) * r1_hv_n(:, :))
     IF (lrst_oce .AND. ln_bt_fw) CALL ts_rst(kt, 'WRITE')
@@ -1058,7 +1033,7 @@ MODULE dynspg_ts
       CALL iom_put("baro_u", un_b * ssumask(:, :) + zmdi * (1. - ssumask(:, :)))
       CALL iom_put("baro_v", vn_b * ssvmask(:, :) + zmdi * (1. - ssvmask(:, :)))
     END IF
-    CALL profile_psy_data8 % PostEnd
+    CALL profile_psy_data15 % PostEnd
   END SUBROUTINE dyn_spg_ts
   SUBROUTINE ts_wgt(ll_av, ll_fw, jpit, zwgt1, zwgt2)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -1140,8 +1115,8 @@ MODULE dynspg_ts
           CALL iom_get(numror, jpdom_autoglo, 'vb_e', vb_e(:, :), ldxios = lrxios)
         END IF
       ELSE
-        IF (lwp) WRITE(numout, FMT = *)
-        IF (lwp) WRITE(numout, FMT = *) '   ==>>>   start from rest: set barotropic values to 0'
+        IF (lwp) WRITE(numout, *)
+        IF (lwp) WRITE(numout, *) '   ==>>>   start from rest: set barotropic values to 0'
         !$ACC KERNELS
         ub2_b(:, :) = 0._wp
         vb2_b(:, :) = 0._wp
@@ -1152,7 +1127,7 @@ MODULE dynspg_ts
         !$ACC END KERNELS
       END IF
     ELSE IF (TRIM(cdrw) == 'WRITE') THEN
-      IF (lwp) WRITE(numout, FMT = *) '---- ts_rst ----'
+      IF (lwp) WRITE(numout, *) '---- ts_rst ----'
       IF (lwxios) CALL iom_swap(cwxios_context)
       CALL iom_rstput(kt, nitrst, numrow, 'ub2_b', ub2_b(:, :), ldxios = lwxios)
       CALL iom_rstput(kt, nitrst, numrow, 'vb2_b', vb2_b(:, :), ldxios = lwxios)
@@ -1174,7 +1149,7 @@ MODULE dynspg_ts
     REAL(KIND = wp) :: zxr2, zyr2, zcmax
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zcu
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zxr2 = r1_e1t(ji, jj) * r1_e1t(ji, jj)
@@ -1188,41 +1163,41 @@ MODULE dynspg_ts
     IF (ln_bt_auto) nn_baro = CEILING(rdt / rn_bt_cmax * zcmax)
     rdtbt = rdt / REAL(nn_baro, wp)
     zcmax = zcmax * rdtbt
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) 'dyn_spg_ts_init : split-explicit free surface'
-    IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~~~~~'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) 'dyn_spg_ts_init : split-explicit free surface'
+    IF (lwp) WRITE(numout, *) '~~~~~~~~~~~~~~~'
     IF (ln_bt_auto) THEN
-      IF (lwp) WRITE(numout, FMT = *) '     ln_ts_auto =.true. Automatically set nn_baro '
-      IF (lwp) WRITE(numout, FMT = *) '     Max. courant number allowed: ', rn_bt_cmax
+      IF (lwp) WRITE(numout, *) '     ln_ts_auto =.true. Automatically set nn_baro '
+      IF (lwp) WRITE(numout, *) '     Max. courant number allowed: ', rn_bt_cmax
     ELSE
-      IF (lwp) WRITE(numout, FMT = *) '     ln_ts_auto=.false.: Use nn_baro in namelist   nn_baro = ', nn_baro
+      IF (lwp) WRITE(numout, *) '     ln_ts_auto=.false.: Use nn_baro in namelist   nn_baro = ', nn_baro
     END IF
     IF (ln_bt_av) THEN
-      IF (lwp) WRITE(numout, FMT = *) '     ln_bt_av =.true.  ==> Time averaging over nn_baro time steps is on '
+      IF (lwp) WRITE(numout, *) '     ln_bt_av =.true.  ==> Time averaging over nn_baro time steps is on '
     ELSE
-      IF (lwp) WRITE(numout, FMT = *) '     ln_bt_av =.false. => No time averaging of barotropic variables '
+      IF (lwp) WRITE(numout, *) '     ln_bt_av =.false. => No time averaging of barotropic variables '
     END IF
     IF (ln_bt_fw) THEN
-      IF (lwp) WRITE(numout, FMT = *) '     ln_bt_fw=.true.  => Forward integration of barotropic variables '
+      IF (lwp) WRITE(numout, *) '     ln_bt_fw=.true.  => Forward integration of barotropic variables '
     ELSE
-      IF (lwp) WRITE(numout, FMT = *) '     ln_bt_fw =.false.=> Centred integration of barotropic variables '
+      IF (lwp) WRITE(numout, *) '     ln_bt_fw =.false.=> Centred integration of barotropic variables '
     END IF
-    IF (lwp) WRITE(numout, FMT = *) '     Time filter choice, nn_bt_flt: ', nn_bt_flt
+    IF (lwp) WRITE(numout, *) '     Time filter choice, nn_bt_flt: ', nn_bt_flt
     SELECT CASE (nn_bt_flt)
     CASE (0)
-      IF (lwp) WRITE(numout, FMT = *) '           Dirac'
+      IF (lwp) WRITE(numout, *) '           Dirac'
     CASE (1)
-      IF (lwp) WRITE(numout, FMT = *) '           Boxcar: width = nn_baro'
+      IF (lwp) WRITE(numout, *) '           Boxcar: width = nn_baro'
     CASE (2)
-      IF (lwp) WRITE(numout, FMT = *) '           Boxcar: width = 2*nn_baro'
+      IF (lwp) WRITE(numout, *) '           Boxcar: width = 2*nn_baro'
     CASE DEFAULT
       CALL ctl_stop('unrecognised value for nn_bt_flt: should 0,1, or 2')
     END SELECT
-    IF (lwp) WRITE(numout, FMT = *) ' '
-    IF (lwp) WRITE(numout, FMT = *) '     nn_baro = ', nn_baro
-    IF (lwp) WRITE(numout, FMT = *) '     Barotropic time step [s] is :', rdtbt
-    IF (lwp) WRITE(numout, FMT = *) '     Maximum Courant number is   :', zcmax
-    IF (lwp) WRITE(numout, FMT = *) '     Time diffusion parameter rn_bt_alpha: ', rn_bt_alpha
+    IF (lwp) WRITE(numout, *) ' '
+    IF (lwp) WRITE(numout, *) '     nn_baro = ', nn_baro
+    IF (lwp) WRITE(numout, *) '     Barotropic time step [s] is :', rdtbt
+    IF (lwp) WRITE(numout, *) '     Maximum Courant number is   :', zcmax
+    IF (lwp) WRITE(numout, *) '     Time diffusion parameter rn_bt_alpha: ', rn_bt_alpha
     IF ((ln_bt_av .AND. nn_bt_flt /= 0) .AND. (rn_bt_alpha > 0._wp)) THEN
       CALL ctl_stop('dynspg_ts ERROR: if rn_bt_alpha > 0, remove temporal averaging')
     END IF

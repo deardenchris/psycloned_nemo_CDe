@@ -46,22 +46,25 @@ MODULE traadv_fct
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
     CALL profile_psy_data0 % PreStart('tra_adv_fct', 'r0', 0, 0)
     IF (kt == kit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'tra_adv_fct : FCT advection scheme on ', cdtype
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'tra_adv_fct : FCT advection scheme on ', cdtype
+      IF (lwp) WRITE(numout, *) '~~~~~~~~~~~'
       ALLOCATE(zbetup(jpi, jpj, jpk), zbetdo(jpi, jpj, jpk), zbup(jpi, jpj, jpk), zbdo(jpi, jpj, jpk))
-      ALLOCATE(zwi(jpi, jpj, jpk), zwx(jpi, jpj, jpk), zwy(jpi, jpj, jpk), zwz(jpi, jpj, jpk), ztu(jpi, jpj, jpk), ztv(jpi, jpj, &
-&jpk), zltu(jpi, jpj, jpk), zltv(jpi, jpj, jpk), ztw(jpi, jpj, jpk))
+      ALLOCATE(zwi(jpi, jpj, jpk), zwx(jpi, jpj, jpk), zwy(jpi, jpj, jpk), zwz(jpi, jpj, jpk), ztu(jpi, jpj, jpk), ztv(jpi, jpj, jpk), zltu(jpi, jpj, jpk), zltv(jpi, jpj, jpk), ztw(jpi, jpj, jpk))
     END IF
     l_trd = .FALSE.
     l_hst = .FALSE.
     l_ptr = .FALSE.
     IF ((cdtype == 'TRA' .AND. l_trdtra) .OR. (cdtype == 'TRC' .AND. l_trdtrc)) l_trd = .TRUE.
     IF (cdtype == 'TRA' .AND. ln_diaptr) l_ptr = .TRUE.
-    IF (cdtype == 'TRA' .AND. (iom_use("uadv_heattr") .OR. iom_use("vadv_heattr") .OR. iom_use("uadv_salttr") .OR. &
-&iom_use("vadv_salttr"))) l_hst = .TRUE.
+    IF (cdtype == 'TRA' .AND. (iom_use("uadv_heattr") .OR. iom_use("vadv_heattr") .OR. iom_use("uadv_salttr") .OR. iom_use("vadv_salttr"))) l_hst = .TRUE.
     CALL profile_psy_data0 % PostEnd
     IF (l_trd .OR. l_hst) THEN
       ALLOCATE(ztrdx(jpi, jpj, jpk), ztrdy(jpi, jpj, jpk), ztrdz(jpi, jpj, jpk))
@@ -87,7 +90,7 @@ MODULE traadv_fct
     DO jn = 1, kjpt
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
             zfp_ui = pun(ji, jj, jk) + ABS(pun(ji, jj, jk))
@@ -100,7 +103,7 @@ MODULE traadv_fct
         END DO
       END DO
       DO jk = 2, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zfp_wk = pwn(ji, jj, jk) + ABS(pwn(ji, jj, jk))
@@ -113,7 +116,7 @@ MODULE traadv_fct
       IF (ln_linssh) THEN
         IF (ln_isfcav) THEN
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               zwz(ji, jj, mikt(ji, jj)) = pwn(ji, jj, mikt(ji, jj)) * ptb(ji, jj, mikt(ji, jj), jn)
@@ -128,11 +131,10 @@ MODULE traadv_fct
       END IF
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            ztra = - (zwx(ji, jj, jk) - zwx(ji - 1, jj, jk) + zwy(ji, jj, jk) - zwy(ji, jj - 1, jk) + zwz(ji, jj, jk) - zwz(ji, &
-&jj, jk + 1)) * r1_e1e2t(ji, jj)
+            ztra = - (zwx(ji, jj, jk) - zwx(ji - 1, jj, jk) + zwy(ji, jj, jk) - zwy(ji, jj - 1, jk) + zwz(ji, jj, jk) - zwz(ji, jj, jk + 1)) * r1_e1e2t(ji, jj)
             pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) + ztra / e3t_n(ji, jj, jk) * tmask(ji, jj, jk)
             zwi(ji, jj, jk) = (e3t_b(ji, jj, jk) * ptb(ji, jj, jk, jn) + p2dt * ztra) / e3t_a(ji, jj, jk) * tmask(ji, jj, jk)
           END DO
@@ -143,13 +145,15 @@ MODULE traadv_fct
         ztrdy(:, :, :) = zwy(:, :, :)
         ztrdz(:, :, :) = zwz(:, :, :)
       END IF
-      IF (l_ptr) zptry(:, :, :) = zwy(:, :, :)
       !$ACC END KERNELS
+      CALL profile_psy_data1 % PreStart('tra_adv_fct', 'r1', 0, 0)
+      IF (l_ptr) zptry(:, :, :) = zwy(:, :, :)
+      CALL profile_psy_data1 % PostEnd
       SELECT CASE (kn_fct_h)
       CASE (2)
         !$ACC KERNELS
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
               zwx(ji, jj, jk) = 0.5_wp * pun(ji, jj, jk) * (ptn(ji, jj, jk, jn) + ptn(ji + 1, jj, jk, jn)) - zwx(ji, jj, jk)
@@ -165,14 +169,14 @@ MODULE traadv_fct
         !$ACC END KERNELS
         DO jk = 1, jpkm1
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
               ztu(ji, jj, jk) = (ptn(ji + 1, jj, jk, jn) - ptn(ji, jj, jk, jn)) * umask(ji, jj, jk)
               ztv(ji, jj, jk) = (ptn(ji, jj + 1, jk, jn) - ptn(ji, jj, jk, jn)) * vmask(ji, jj, jk)
             END DO
           END DO
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               zltu(ji, jj, jk) = (ztu(ji, jj, jk) + ztu(ji - 1, jj, jk)) * r1_6
@@ -181,10 +185,12 @@ MODULE traadv_fct
           END DO
           !$ACC END KERNELS
         END DO
+        CALL profile_psy_data2 % PreStart('tra_adv_fct', 'r2', 0, 0)
         CALL lbc_lnk_multi('traadv_fct', zltu, 'T', 1., zltv, 'T', 1.)
+        CALL profile_psy_data2 % PostEnd
         !$ACC KERNELS
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
               zC2t_u = ptn(ji, jj, jk, jn) + ptn(ji + 1, jj, jk, jn)
@@ -200,7 +206,7 @@ MODULE traadv_fct
         ztu(:, :, jpk) = 0._wp
         ztv(:, :, jpk) = 0._wp
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
               ztu(ji, jj, jk) = (ptn(ji + 1, jj, jk, jn) - ptn(ji, jj, jk, jn)) * umask(ji, jj, jk)
@@ -209,10 +215,12 @@ MODULE traadv_fct
           END DO
         END DO
         !$ACC END KERNELS
+        CALL profile_psy_data3 % PreStart('tra_adv_fct', 'r3', 0, 0)
         CALL lbc_lnk_multi('traadv_fct', ztu, 'U', - 1., ztv, 'V', - 1.)
+        CALL profile_psy_data3 % PostEnd
         !$ACC KERNELS
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               zC2t_u = ptn(ji, jj, jk, jn) + ptn(ji + 1, jj, jk, jn)
@@ -230,20 +238,21 @@ MODULE traadv_fct
       CASE (2)
         !$ACC KERNELS
         DO jk = 2, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
-              zwz(ji, jj, jk) = (pwn(ji, jj, jk) * 0.5_wp * (ptn(ji, jj, jk, jn) + ptn(ji, jj, jk - 1, jn)) - zwz(ji, jj, jk)) * &
-&wmask(ji, jj, jk)
+              zwz(ji, jj, jk) = (pwn(ji, jj, jk) * 0.5_wp * (ptn(ji, jj, jk, jn) + ptn(ji, jj, jk - 1, jn)) - zwz(ji, jj, jk)) * wmask(ji, jj, jk)
             END DO
           END DO
         END DO
         !$ACC END KERNELS
       CASE (4)
+        CALL profile_psy_data4 % PreStart('tra_adv_fct', 'r4', 0, 0)
         CALL interp_4th_cpt(ptn(:, :, :, jn), ztw)
+        CALL profile_psy_data4 % PostEnd
         !$ACC KERNELS
         DO jk = 2, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               zwz(ji, jj, jk) = (pwn(ji, jj, jk) * ztw(ji, jj, jk) - zwz(ji, jj, jk)) * wmask(ji, jj, jk)
@@ -257,17 +266,16 @@ MODULE traadv_fct
         zwz(:, :, 1) = 0._wp
         !$ACC END KERNELS
       END IF
-      CALL profile_psy_data1 % PreStart('tra_adv_fct', 'r1', 0, 0)
+      CALL profile_psy_data5 % PreStart('tra_adv_fct', 'r5', 0, 0)
       CALL lbc_lnk_multi('traadv_fct', zwi, 'T', 1., zwx, 'U', - 1., zwy, 'V', - 1., zwz, 'W', 1.)
       CALL nonosc(ptb(:, :, :, jn), zwx, zwy, zwz, zwi, p2dt)
-      CALL profile_psy_data1 % PostEnd
+      CALL profile_psy_data5 % PostEnd
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (zwx(ji, jj, jk) - zwx(ji - 1, jj, jk) + zwy(ji, jj, jk) - zwy(ji, jj - 1, &
-&jk) + zwz(ji, jj, jk) - zwz(ji, jj, jk + 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
+            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (zwx(ji, jj, jk) - zwx(ji - 1, jj, jk) + zwy(ji, jj, jk) - zwy(ji, jj - 1, jk) + zwz(ji, jj, jk) - zwz(ji, jj, jk + 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
           END DO
         END DO
       END DO
@@ -278,32 +286,35 @@ MODULE traadv_fct
         ztrdy(:, :, :) = ztrdy(:, :, :) + zwy(:, :, :)
         ztrdz(:, :, :) = ztrdz(:, :, :) + zwz(:, :, :)
         !$ACC END KERNELS
-        CALL profile_psy_data2 % PreStart('tra_adv_fct', 'r2', 0, 0)
+        CALL profile_psy_data6 % PreStart('tra_adv_fct', 'r6', 0, 0)
         IF (l_trd) THEN
           CALL trd_tra(kt, cdtype, jn, jptra_xad, ztrdx, pun, ptn(:, :, :, jn))
           CALL trd_tra(kt, cdtype, jn, jptra_yad, ztrdy, pvn, ptn(:, :, :, jn))
           CALL trd_tra(kt, cdtype, jn, jptra_zad, ztrdz, pwn, ptn(:, :, :, jn))
         END IF
         IF (l_hst) CALL dia_ar5_hst(jn, 'adv', ztrdx(:, :, :), ztrdy(:, :, :))
-        CALL profile_psy_data2 % PostEnd
+        CALL profile_psy_data6 % PostEnd
       END IF
       IF (l_ptr) THEN
         !$ACC KERNELS
         zptry(:, :, :) = zptry(:, :, :) + zwy(:, :, :)
         !$ACC END KERNELS
+        CALL profile_psy_data7 % PreStart('tra_adv_fct', 'r7', 0, 0)
         CALL dia_ptr_hst(jn, 'adv', zptry(:, :, :))
+        CALL profile_psy_data7 % PostEnd
       END IF
     END DO
-    CALL profile_psy_data3 % PreStart('tra_adv_fct', 'r3', 0, 0)
+    CALL profile_psy_data8 % PreStart('tra_adv_fct', 'r8', 0, 0)
     IF (l_trd .OR. l_hst) THEN
       DEALLOCATE(ztrdx, ztrdy, ztrdz)
     END IF
     IF (l_ptr) THEN
       DEALLOCATE(zptry)
     END IF
-    CALL profile_psy_data3 % PostEnd
+    CALL profile_psy_data8 % PostEnd
   END SUBROUTINE tra_adv_fct
   SUBROUTINE nonosc(pbef, paa, pbb, pcc, paft, p2dt)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), INTENT(IN) :: p2dt
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk), INTENT(IN) :: pbef, paft
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk), INTENT(INOUT) :: paa, pbb, pcc
@@ -311,6 +322,8 @@ MODULE traadv_fct
     INTEGER :: ikm1
     REAL(KIND = wp) :: zpos, zneg, zbt, za, zb, zc, zbig, zrtrn
     REAL(KIND = wp) :: zau, zbu, zcu, zav, zbv, zcv, zup, zdo
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     !$ACC KERNELS
     zbig = 1.E+40_wp
     zrtrn = 1.E-15_wp
@@ -320,17 +333,13 @@ MODULE traadv_fct
     zbdo = MIN(pbef * tmask + zbig * (1._wp - tmask), paft * tmask + zbig * (1._wp - tmask))
     DO jk = 1, jpkm1
       ikm1 = MAX(jk - 1, 1)
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          zup = MAX(zbup(ji, jj, jk), zbup(ji - 1, jj, jk), zbup(ji + 1, jj, jk), zbup(ji, jj - 1, jk), zbup(ji, jj + 1, jk), &
-&zbup(ji, jj, ikm1), zbup(ji, jj, jk + 1))
-          zdo = MIN(zbdo(ji, jj, jk), zbdo(ji - 1, jj, jk), zbdo(ji + 1, jj, jk), zbdo(ji, jj - 1, jk), zbdo(ji, jj + 1, jk), &
-&zbdo(ji, jj, ikm1), zbdo(ji, jj, jk + 1))
-          zpos = MAX(0., paa(ji - 1, jj, jk)) - MIN(0., paa(ji, jj, jk)) + MAX(0., pbb(ji, jj - 1, jk)) - MIN(0., pbb(ji, jj, jk)) &
-&+ MAX(0., pcc(ji, jj, jk + 1)) - MIN(0., pcc(ji, jj, jk))
-          zneg = MAX(0., paa(ji, jj, jk)) - MIN(0., paa(ji - 1, jj, jk)) + MAX(0., pbb(ji, jj, jk)) - MIN(0., pbb(ji, jj - 1, jk)) &
-&+ MAX(0., pcc(ji, jj, jk)) - MIN(0., pcc(ji, jj, jk + 1))
+          zup = MAX(zbup(ji, jj, jk), zbup(ji - 1, jj, jk), zbup(ji + 1, jj, jk), zbup(ji, jj - 1, jk), zbup(ji, jj + 1, jk), zbup(ji, jj, ikm1), zbup(ji, jj, jk + 1))
+          zdo = MIN(zbdo(ji, jj, jk), zbdo(ji - 1, jj, jk), zbdo(ji + 1, jj, jk), zbdo(ji, jj - 1, jk), zbdo(ji, jj + 1, jk), zbdo(ji, jj, ikm1), zbdo(ji, jj, jk + 1))
+          zpos = MAX(0., paa(ji - 1, jj, jk)) - MIN(0., paa(ji, jj, jk)) + MAX(0., pbb(ji, jj - 1, jk)) - MIN(0., pbb(ji, jj, jk)) + MAX(0., pcc(ji, jj, jk + 1)) - MIN(0., pcc(ji, jj, jk))
+          zneg = MAX(0., paa(ji, jj, jk)) - MIN(0., paa(ji - 1, jj, jk)) + MAX(0., pbb(ji, jj, jk)) - MIN(0., pbb(ji, jj - 1, jk)) + MAX(0., pcc(ji, jj, jk)) - MIN(0., pcc(ji, jj, jk + 1))
           zbt = e1e2t(ji, jj) * e3t_n(ji, jj, jk) / p2dt
           zbetup(ji, jj, jk) = (zup - paft(ji, jj, jk)) / (zpos + zrtrn) * zbt
           zbetdo(ji, jj, jk) = (paft(ji, jj, jk) - zdo) / (zneg + zrtrn) * zbt
@@ -338,10 +347,12 @@ MODULE traadv_fct
       END DO
     END DO
     !$ACC END KERNELS
+    CALL profile_psy_data0 % PreStart('nonosc', 'r0', 0, 0)
     CALL lbc_lnk_multi('traadv_fct', zbetup, 'T', 1., zbetdo, 'T', 1.)
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     DO jk = 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zau = MIN(1._wp, zbetdo(ji, jj, jk), zbetup(ji + 1, jj, jk))
@@ -360,7 +371,9 @@ MODULE traadv_fct
       END DO
     END DO
     !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('nonosc', 'r1', 0, 0)
     CALL lbc_lnk_multi('traadv_fct', paa, 'U', - 1., pbb, 'V', - 1.)
+    CALL profile_psy_data1 % PostEnd
   END SUBROUTINE nonosc
   SUBROUTINE interp_4th_cpt_org(pt_in, pt_out)
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk), INTENT(IN) :: pt_in
@@ -369,7 +382,7 @@ MODULE traadv_fct
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zwd, zwi, zws, zwrm, zwt
     !$ACC KERNELS
     DO jk = 3, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           zwd(ji, jj, jk) = 4._wp
@@ -386,7 +399,7 @@ MODULE traadv_fct
       END DO
     END DO
     jk = 2
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zwd(ji, jj, jk) = 1._wp
@@ -395,42 +408,42 @@ MODULE traadv_fct
         zwrm(ji, jj, jk) = 0.5 * (pt_in(ji, jj, jk - 1) + pt_in(ji, jj, jk))
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zwt(ji, jj, 2) = zwd(ji, jj, 2)
       END DO
     END DO
     DO jk = 3, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           zwt(ji, jj, jk) = zwd(ji, jj, jk) - zwi(ji, jj, jk) * zws(ji, jj, jk - 1) / zwt(ji, jj, jk - 1)
         END DO
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         pt_out(ji, jj, 2) = zwrm(ji, jj, 2)
       END DO
     END DO
     DO jk = 3, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           pt_out(ji, jj, jk) = zwrm(ji, jj, jk) - zwi(ji, jj, jk) / zwt(ji, jj, jk - 1) * pt_out(ji, jj, jk - 1)
         END DO
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         pt_out(ji, jj, jpkm1) = pt_out(ji, jj, jpkm1) / zwt(ji, jj, jpkm1)
       END DO
     END DO
     DO jk = jpk - 2, 2, - 1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           pt_out(ji, jj, jk) = (pt_out(ji, jj, jk) - zws(ji, jj, jk) * pt_out(ji, jj, jk + 1)) / zwt(ji, jj, jk)
@@ -447,7 +460,7 @@ MODULE traadv_fct
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zwd, zwi, zws, zwrm, zwt
     !$ACC KERNELS
     DO jk = 3, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zwd(ji, jj, jk) = 3._wp * wmask(ji, jj, jk) + 1._wp
@@ -467,7 +480,7 @@ MODULE traadv_fct
       !$ACC END KERNELS
     END IF
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         ikt = mikt(ji, jj) + 1
@@ -482,42 +495,42 @@ MODULE traadv_fct
         zwrm(ji, jj, ikb) = 0.5_wp * (pt_in(ji, jj, ikb - 1) + pt_in(ji, jj, ikb))
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         zwt(ji, jj, 2) = zwd(ji, jj, 2)
       END DO
     END DO
     DO jk = 3, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zwt(ji, jj, jk) = zwd(ji, jj, jk) - zwi(ji, jj, jk) * zws(ji, jj, jk - 1) / zwt(ji, jj, jk - 1)
         END DO
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         pt_out(ji, jj, 2) = zwrm(ji, jj, 2)
       END DO
     END DO
     DO jk = 3, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           pt_out(ji, jj, jk) = zwrm(ji, jj, jk) - zwi(ji, jj, jk) / zwt(ji, jj, jk - 1) * pt_out(ji, jj, jk - 1)
         END DO
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         pt_out(ji, jj, jpkm1) = pt_out(ji, jj, jpkm1) / zwt(ji, jj, jpkm1)
       END DO
     END DO
     DO jk = jpk - 2, 2, - 1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           pt_out(ji, jj, jk) = (pt_out(ji, jj, jk) - zws(ji, jj, jk) * pt_out(ji, jj, jk + 1)) / zwt(ji, jj, jk)
@@ -536,42 +549,42 @@ MODULE traadv_fct
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zwt
     !$ACC KERNELS
     kstart = 1 + klev
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         zwt(ji, jj, kstart) = pD(ji, jj, kstart)
       END DO
     END DO
     DO jk = kstart + 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zwt(ji, jj, jk) = pD(ji, jj, jk) - pL(ji, jj, jk) * pU(ji, jj, jk - 1) / zwt(ji, jj, jk - 1)
         END DO
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         pt_out(ji, jj, kstart) = pRHS(ji, jj, kstart)
       END DO
     END DO
     DO jk = kstart + 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           pt_out(ji, jj, jk) = pRHS(ji, jj, jk) - pL(ji, jj, jk) / zwt(ji, jj, jk - 1) * pt_out(ji, jj, jk - 1)
         END DO
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         pt_out(ji, jj, jpkm1) = pt_out(ji, jj, jpkm1) / zwt(ji, jj, jpkm1)
       END DO
     END DO
     DO jk = jpk - 2, kstart, - 1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           pt_out(ji, jj, jk) = (pt_out(ji, jj, jk) - pU(ji, jj, jk) * pt_out(ji, jj, jk + 1)) / zwt(ji, jj, jk)

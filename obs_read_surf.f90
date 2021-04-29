@@ -74,10 +74,10 @@ MODULE obs_read_surf
     surf_files:DO jj = 1, inobf
       CALL profile_psy_data1 % PreStart('obs_rea_surf', 'r1', 0, 0)
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) ' obs_rea_surf : Reading from file = ', TRIM(TRIM(cdfilenames(jj)))
-        WRITE(numout, FMT = *) ' ~~~~~~~~~~~'
-        WRITE(numout, FMT = *)
+        WRITE(numout, *)
+        WRITE(numout, *) ' obs_rea_surf : Reading from file = ', TRIM(TRIM(cdfilenames(jj)))
+        WRITE(numout, *) ' ~~~~~~~~~~~'
+        WRITE(numout, *)
       END IF
       iflag = nf90_open(TRIM(TRIM(cdfilenames(jj))), nf90_nowrite, i_file_id)
       CALL profile_psy_data1 % PostEnd
@@ -97,10 +97,12 @@ MODULE obs_read_surf
         CALL read_obfbdata(TRIM(cdfilenames(jj)), inpfiles(jj), ldgrid = .TRUE.)
         CALL profile_psy_data3 % PostEnd
         IF (ldmod .AND. (inpfiles(jj) % nadd == 0)) THEN
+          CALL profile_psy_data4 % PreStart('obs_rea_surf', 'r4', 0, 0)
           CALL ctl_stop('Model not in input data')
+          CALL profile_psy_data4 % PostEnd
           RETURN
         END IF
-        CALL profile_psy_data4 % PreStart('obs_rea_surf', 'r4', 0, 0)
+        CALL profile_psy_data5 % PreStart('obs_rea_surf', 'r5', 0, 0)
         IF (jj == 1) THEN
           ALLOCATE(clvars(inpfiles(jj) % nvar))
           DO ji = 1, inpfiles(jj) % nvar
@@ -113,20 +115,20 @@ MODULE obs_read_surf
             END IF
           END DO
         END IF
-        IF (lwp) WRITE(numout, FMT = *) 'Observation file contains ', inpfiles(jj) % nobs, ' observations'
+        IF (lwp) WRITE(numout, *) 'Observation file contains ', inpfiles(jj) % nobs, ' observations'
         DO ji = 1, inpfiles(jj) % nobs
           IF (inpfiles(jj) % plam(ji) < - 180.) inpfiles(jj) % plam(ji) = inpfiles(jj) % plam(ji) + 360.
           IF (inpfiles(jj) % plam(ji) > 180.) inpfiles(jj) % plam(ji) = inpfiles(jj) % plam(ji) - 360.
         END DO
         clrefdate = inpfiles(jj) % cdjuldref(1 : 8)
-        READ(clrefdate, FMT = '(I8)') irefdate(jj)
+        READ(clrefdate, '(I8)') irefdate(jj)
         CALL ddatetoymdhms(ddobsini, iyea, imon, iday, ihou, imin, isec)
         CALL greg2jul(isec, imin, ihou, iday, imon, iyea, djulini(jj), krefdate = irefdate(jj))
         CALL ddatetoymdhms(ddobsend, iyea, imon, iday, ihou, imin, isec)
         CALL greg2jul(isec, imin, ihou, iday, imon, iyea, djulend(jj), krefdate = irefdate(jj))
         IF (ldnightav) THEN
           IF (lwp) THEN
-            WRITE(numout, FMT = *) 'Resetting time of night-time averaged observations', ' to the end of the day'
+            WRITE(numout, *) 'Resetting time of night-time averaged observations', ' to the end of the day'
           END IF
           DO ji = 1, inpfiles(jj) % nobs
             IF (inpfiles(jj) % ptim(ji) >= 0.) THEN
@@ -184,10 +186,10 @@ MODULE obs_read_surf
             END IF
           END IF
         END DO
-        CALL profile_psy_data4 % PostEnd
+        CALL profile_psy_data5 % PostEnd
       END IF
     END DO surf_files
-    CALL profile_psy_data5 % PreStart('obs_rea_surf', 'r5', 0, 0)
+    CALL profile_psy_data6 % PreStart('obs_rea_surf', 'r6', 0, 0)
     iobstot = 0
     DO jj = 1, inobf
       DO ji = 1, inpfiles(jj) % nobs
@@ -212,13 +214,9 @@ MODULE obs_read_surf
     CALL obs_surf_alloc(surfdata, iobs, kvars, kextr, kstp, jpi, jpj)
     iobs = 0
     surfdata % cvars(:) = clvars(:)
-    CALL profile_psy_data5 % PostEnd
-    !$ACC KERNELS
     ityp(:) = 0
     itypmpp(:) = 0
     ioserrcount = 0
-    !$ACC END KERNELS
-    CALL profile_psy_data6 % PreStart('obs_rea_surf', 'r6', 0, 0)
     DO jk = 1, iobstot
       jj = ifileidx(iindx(jk))
       ji = isurfidx(iindx(jk))
@@ -241,7 +239,7 @@ MODULE obs_read_surf
           surfdata % mi(iobs) = inpfiles(jj) % iobsi(ji, 1)
           surfdata % mj(iobs) = inpfiles(jj) % iobsj(ji, 1)
           surfdata % cwmo(iobs) = inpfiles(jj) % cdwmo(ji)
-          READ(inpfiles(jj) % cdtyp(ji), FMT = '(I4)', IOSTAT = ios, ERR = 901) itype
+          READ(inpfiles(jj) % cdtyp(ji), '(I4)', IOSTAT = ios, ERR = 901) itype
 901       IF (ios /= 0) THEN
             IF (ioserrcount == 0) THEN
               CALL ctl_warn('Problem converting an instrument type ', 'to integer. Setting type to zero')
@@ -253,7 +251,7 @@ MODULE obs_read_surf
           IF (itype < jpsurfmaxtype + 1) THEN
             ityp(itype + 1) = ityp(itype + 1) + 1
           ELSE
-            IF (lwp) WRITE(numout, FMT = *) 'WARNING:Increase jpsurfmaxtype in ', cpname
+            IF (lwp) WRITE(numout, *) 'WARNING:Increase jpsurfmaxtype in ', cpname
           END IF
           surfdata % nsidx(iobs) = iobs
           surfdata % nsfil(iobs) = iindx(jk)
@@ -275,18 +273,18 @@ MODULE obs_read_surf
     CALL obs_mpp_sum_integer(iobs, iobsmpp)
     CALL obs_mpp_sum_integers(ityp, itypmpp, jpsurfmaxtype + 1)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = '(1X,A)') TRIM(surfdata % cvars(1)) // ' data'
-      WRITE(numout, FMT = '(1X,A)') '--------------'
+      WRITE(numout, *)
+      WRITE(numout, '(1X,A)') TRIM(surfdata % cvars(1)) // ' data'
+      WRITE(numout, '(1X,A)') '--------------'
       DO jj = 1, 8
         IF (itypmpp(jj) > 0) THEN
-          WRITE(numout, FMT = '(1X,A4,I4,A3,I10)') 'Type ', jj, ' = ', itypmpp(jj)
+          WRITE(numout, '(1X,A4,I4,A3,I10)') 'Type ', jj, ' = ', itypmpp(jj)
         END IF
       END DO
-      WRITE(numout, FMT = '(1X,A)') '---------------------------------------------------------------'
-      WRITE(numout, FMT = '(1X,A,I8)') 'Total data for variable ' // TRIM(surfdata % cvars(1)) // '           = ', iobsmpp
-      WRITE(numout, FMT = '(1X,A)') '---------------------------------------------------------------'
-      WRITE(numout, FMT = *)
+      WRITE(numout, '(1X,A)') '---------------------------------------------------------------'
+      WRITE(numout, '(1X,A,I8)') 'Total data for variable ' // TRIM(surfdata % cvars(1)) // '           = ', iobsmpp
+      WRITE(numout, '(1X,A)') '---------------------------------------------------------------'
+      WRITE(numout, *)
     END IF
     DEALLOCATE(ifileidx, isurfidx, zdat, clvars)
     DO jj = 1, inobf

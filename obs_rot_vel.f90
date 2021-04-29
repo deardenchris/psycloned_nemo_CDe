@@ -20,8 +20,7 @@ MODULE obs_rot_vel
     INTEGER, INTENT(IN) :: k2dint
     REAL(KIND = wp), DIMENSION(*) :: pu, pv
     REAL(KIND = wp), DIMENSION(2, 2, 1) :: zweig
-    REAL(KIND = wp), DIMENSION(:, :, :), ALLOCATABLE :: zmasku, zmaskv, zcoslu, zsinlu, zcoslv, zsinlv, zglamu, zgphiu, zglamv, &
-&zgphiv
+    REAL(KIND = wp), DIMENSION(:, :, :), ALLOCATABLE :: zmasku, zmaskv, zcoslu, zsinlu, zcoslv, zsinlv, zglamu, zgphiu, zglamv, zgphiv
     REAL(KIND = wp), DIMENSION(1) :: zsinu, zcosu, zsinv, zcosv
     REAL(KIND = wp) :: zsin
     REAL(KIND = wp) :: zcos
@@ -31,12 +30,13 @@ MODULE obs_rot_vel
     INTEGER :: ji
     INTEGER :: jk
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     CALL profile_psy_data0 % PreStart('obs_rotvel', 'r0', 0, 0)
-    ALLOCATE(igrdiu(2, 2, profdata % nprof), igrdju(2, 2, profdata % nprof), zglamu(2, 2, profdata % nprof), zgphiu(2, 2, profdata &
-&% nprof), zmasku(2, 2, profdata % nprof), zcoslu(2, 2, profdata % nprof), zsinlu(2, 2, profdata % nprof), igrdiv(2, 2, profdata % &
-&nprof), igrdjv(2, 2, profdata % nprof), zglamv(2, 2, profdata % nprof), zgphiv(2, 2, profdata % nprof), zmaskv(2, 2, profdata % &
-&nprof), zcoslv(2, 2, profdata % nprof), zsinlv(2, 2, profdata % nprof))
+    ALLOCATE(igrdiu(2, 2, profdata % nprof), igrdju(2, 2, profdata % nprof), zglamu(2, 2, profdata % nprof), zgphiu(2, 2, profdata % nprof), zmasku(2, 2, profdata % nprof), zcoslu(2, 2, profdata % nprof), zsinlu(2, 2, profdata % nprof), igrdiv(2, 2, profdata % nprof), igrdjv(2, 2, profdata % nprof), zglamv(2, 2, profdata % nprof), zgphiv(2, 2, profdata % nprof), zmaskv(2, 2, profdata % nprof), zcoslv(2, 2, profdata % nprof), zsinlv(2, 2, profdata % nprof))
     CALL obs_rot(zsingu, zcosgu, zsingv, zcosgv)
+    CALL profile_psy_data0 % PostEnd
+    !$ACC KERNELS
     DO ji = 1, profdata % nprof
       igrdiu(1, 1, ji) = profdata % mi(ji, 1) - 1
       igrdju(1, 1, ji) = profdata % mj(ji, 1) - 1
@@ -55,6 +55,8 @@ MODULE obs_rot_vel
       igrdiv(2, 2, ji) = profdata % mi(ji, 2)
       igrdjv(2, 2, ji) = profdata % mj(ji, 2)
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('obs_rotvel', 'r1', 0, 0)
     CALL obs_int_comm_2d(2, 2, profdata % nprof, jpi, jpj, igrdiu, igrdju, glamu, zglamu)
     CALL obs_int_comm_2d(2, 2, profdata % nprof, jpi, jpj, igrdiu, igrdju, gphiu, zgphiu)
     CALL obs_int_comm_2d(2, 2, profdata % nprof, jpi, jpj, igrdiu, igrdju, umask(:, :, 1), zmasku)
@@ -65,13 +67,13 @@ MODULE obs_rot_vel
     CALL obs_int_comm_2d(2, 2, profdata % nprof, jpi, jpj, igrdiv, igrdjv, vmask(:, :, 1), zmaskv)
     CALL obs_int_comm_2d(2, 2, profdata % nprof, jpi, jpj, igrdiv, igrdjv, zsingv, zsinlv)
     CALL obs_int_comm_2d(2, 2, profdata % nprof, jpi, jpj, igrdiv, igrdjv, zcosgv, zcoslv)
+    CALL profile_psy_data1 % PostEnd
     DO ji = 1, profdata % nprof
-      CALL obs_int_h2d_init(1, 1, k2dint, profdata % rlam(ji), profdata % rphi(ji), zglamu(:, :, ji), zgphiu(:, :, ji), zmasku(:, &
-&:, ji), zweig, zobsmask)
+      CALL profile_psy_data2 % PreStart('obs_rotvel', 'r2', 0, 0)
+      CALL obs_int_h2d_init(1, 1, k2dint, profdata % rlam(ji), profdata % rphi(ji), zglamu(:, :, ji), zgphiu(:, :, ji), zmasku(:, :, ji), zweig, zobsmask)
       CALL obs_int_h2d(1, 1, zweig, zsinlu(:, :, ji), zsinu)
       CALL obs_int_h2d(1, 1, zweig, zcoslu(:, :, ji), zcosu)
-      CALL obs_int_h2d_init(1, 1, k2dint, profdata % rlam(ji), profdata % rphi(ji), zglamv(:, :, ji), zgphiv(:, :, ji), zmaskv(:, &
-&:, ji), zweig, zobsmask)
+      CALL obs_int_h2d_init(1, 1, k2dint, profdata % rlam(ji), profdata % rphi(ji), zglamv(:, :, ji), zgphiv(:, :, ji), zmaskv(:, :, ji), zweig, zobsmask)
       CALL obs_int_h2d(1, 1, zweig, zsinlv(:, :, ji), zsinv)
       CALL obs_int_h2d(1, 1, zweig, zcoslv(:, :, ji), zcosv)
       zcos = 0.5_wp * (zcosu(1) + zcosv(1))
@@ -79,6 +81,8 @@ MODULE obs_rot_vel
       IF ((profdata % npvsta(ji, 1) /= profdata % npvsta(ji, 2)) .OR. (profdata % npvend(ji, 1) /= profdata % npvend(ji, 2))) THEN
         CALL fatal_error('Different number of U and V observations ' // 'in a profile in obs_rotvel', 190)
       END IF
+      CALL profile_psy_data2 % PostEnd
+      !$ACC KERNELS
       DO jk = profdata % npvsta(ji, 1), profdata % npvend(ji, 1)
         IF ((profdata % var(1) % vmod(jk) /= fbrmdi) .AND. (profdata % var(2) % vmod(jk) /= fbrmdi)) THEN
           pu(jk) = profdata % var(1) % vmod(jk) * zcos - profdata % var(2) % vmod(jk) * zsin
@@ -88,8 +92,8 @@ MODULE obs_rot_vel
           pv(jk) = fbrmdi
         END IF
       END DO
+      !$ACC END KERNELS
     END DO
     DEALLOCATE(igrdiu, igrdju, zglamu, zgphiu, zmasku, zcoslu, zsinlu, igrdiv, igrdjv, zglamv, zgphiv, zmaskv, zcoslv, zsinlv)
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE obs_rotvel
 END MODULE obs_rot_vel

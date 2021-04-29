@@ -55,30 +55,55 @@ MODULE icbdia
   SUBROUTINE icb_dia_init
     IF (.NOT. ln_bergdia) RETURN
     ALLOCATE(berg_melt(jpi, jpj))
+    !$ACC KERNELS
     berg_melt(:, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(berg_melt_hcflx(jpi, jpj))
+    !$ACC KERNELS
     berg_melt_hcflx(:, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(berg_melt_qlat(jpi, jpj))
+    !$ACC KERNELS
     berg_melt_qlat(:, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(buoy_melt(jpi, jpj))
+    !$ACC KERNELS
     buoy_melt(:, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(eros_melt(jpi, jpj))
+    !$ACC KERNELS
     eros_melt(:, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(conv_melt(jpi, jpj))
+    !$ACC KERNELS
     conv_melt(:, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(bits_src(jpi, jpj))
+    !$ACC KERNELS
     bits_src(:, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(bits_melt(jpi, jpj))
+    !$ACC KERNELS
     bits_melt(:, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(bits_mass(jpi, jpj))
+    !$ACC KERNELS
     bits_mass(:, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(virtual_area(jpi, jpj))
+    !$ACC KERNELS
     virtual_area(:, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(berg_mass(jpi, jpj))
+    !$ACC KERNELS
     berg_mass(:, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(real_calving(jpi, jpj, nclasses))
+    !$ACC KERNELS
     real_calving(:, :, :) = 0._wp
+    !$ACC END KERNELS
     ALLOCATE(tmpc(jpi, jpj))
+    !$ACC KERNELS
     tmpc(:, :) = 0._wp
     nbergs_start = 0
     nbergs_end = 0
@@ -116,16 +141,21 @@ MODULE icbdia
     bits_melt_net = 0._wp
     bits_src_net = 0._wp
     floating_mass_start = icb_utl_mass(first_berg)
+    !$ACC END KERNELS
     bergs_mass_start = icb_utl_mass(first_berg, justbergs = .TRUE.)
     bits_mass_start = icb_utl_mass(first_berg, justbits = .TRUE.)
     IF (lk_mpp) THEN
       ALLOCATE(rsumbuf(23))
+      !$ACC KERNELS
       rsumbuf(:) = 0._wp
+      !$ACC END KERNELS
       ALLOCATE(nsumbuf(4 + nclasses))
+      !$ACC KERNELS
       nsumbuf(:) = 0
       rsumbuf(1) = floating_mass_start
       rsumbuf(2) = bergs_mass_start
       rsumbuf(3) = bits_mass_start
+      !$ACC END KERNELS
       CALL mpp_sum('icbdia', rsumbuf(1 : 3), 3)
       floating_mass_start = rsumbuf(1)
       bergs_mass_start = rsumbuf(2)
@@ -138,6 +168,10 @@ MODULE icbdia
     INTEGER :: ik
     REAL(KIND = wp) :: zunused_calving, ztmpsum, zgrdd_berg_mass, zgrdd_bits_mass
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     IF (.NOT. ln_bergdia) RETURN
     CALL profile_psy_data0 % PreStart('icb_dia', 'r0', 0, 0)
     zunused_calving = SUM(berg_grid % calving(:, :))
@@ -154,7 +188,9 @@ MODULE icbdia
     calving_ret_net = calving_ret_net + ztmpsum * berg_dt
     ztmpsum = SUM(berg_grid % calving_hflx(:, :) * e1e2t(:, :) * tmask_i(:, :))
     calving_out_heat_net = calving_out_heat_net + ztmpsum * berg_dt
+    CALL profile_psy_data0 % PostEnd
     IF (ld_budge) THEN
+      CALL profile_psy_data1 % PreStart('icb_dia', 'r1', 0, 0)
       stored_end = SUM(berg_grid % stored_ice(:, :, :))
       stored_heat_end = SUM(berg_grid % stored_heat(:, :))
       floating_mass_end = icb_utl_mass(first_berg)
@@ -164,7 +200,9 @@ MODULE icbdia
       nbergs_end = icb_utl_count()
       zgrdd_berg_mass = SUM(berg_mass(:, :) * e1e2t(:, :) * tmask_i(:, :))
       zgrdd_bits_mass = SUM(bits_mass(:, :) * e1e2t(:, :) * tmask_i(:, :))
+      CALL profile_psy_data1 % PostEnd
       IF (lk_mpp) THEN
+        CALL profile_psy_data2 % PreStart('icb_dia', 'r2', 0, 0)
         rsumbuf(1) = stored_end
         rsumbuf(2) = stored_heat_end
         rsumbuf(3) = floating_mass_end
@@ -189,6 +227,8 @@ MODULE icbdia
         rsumbuf(22) = zgrdd_berg_mass
         rsumbuf(23) = zgrdd_bits_mass
         CALL mpp_sum('icbdia', rsumbuf(1 : 23), 23)
+        CALL profile_psy_data2 % PostEnd
+        !$ACC KERNELS
         stored_end = rsumbuf(1)
         stored_heat_end = rsumbuf(2)
         floating_mass_end = rsumbuf(3)
@@ -219,7 +259,11 @@ MODULE icbdia
         DO ik = 1, nclasses
           nsumbuf(4 + ik) = nbergs_calved_by_class(ik)
         END DO
+        !$ACC END KERNELS
+        CALL profile_psy_data3 % PreStart('icb_dia', 'r3', 0, 0)
         CALL mpp_sum('icbdia', nsumbuf(1 : nclasses + 4), nclasses + 4)
+        CALL profile_psy_data3 % PostEnd
+        !$ACC KERNELS
         nbergs_end = nsumbuf(1)
         nbergs_calved = nsumbuf(2)
         nbergs_melted = nsumbuf(3)
@@ -227,34 +271,28 @@ MODULE icbdia
         DO ik = 1, nclasses
           nbergs_calved_by_class(ik) = nsumbuf(4 + ik)
         END DO
+        !$ACC END KERNELS
       END IF
+      CALL profile_psy_data4 % PreStart('icb_dia', 'r4', 0, 0)
       CALL report_state('stored ice', 'kg', '', stored_start, '', stored_end, '')
       CALL report_state('floating', 'kg', '', floating_mass_start, '', floating_mass_end, '', nbergs_end)
       CALL report_state('icebergs', 'kg', '', bergs_mass_start, '', bergs_mass_end, '')
       CALL report_state('bits', 'kg', '', bits_mass_start, '', bits_mass_end, '')
       CALL report_istate('berg #', '', nbergs_start, '', nbergs_end, '')
       CALL report_ibudget('berg #', 'calved', nbergs_calved, 'melted', nbergs_melted, '#', nbergs_start, nbergs_end)
-      CALL report_budget('stored mass', 'kg', 'calving used', calving_used_net, 'bergs', calving_to_bergs_net, 'stored mass', &
-&stored_start, stored_end)
-      CALL report_budget('floating mass', 'kg', 'calving used', calving_to_bergs_net, 'bergs', melt_net, 'stored mass', &
-&floating_mass_start, floating_mass_end)
-      CALL report_budget('berg mass', 'kg', 'calving', calving_to_bergs_net, 'melt+eros', berg_melt_net, 'berg mass', &
-&bergs_mass_start, bergs_mass_end)
-      CALL report_budget('bits mass', 'kg', 'eros used', bits_src_net, 'bergs', bits_melt_net, 'stored mass', bits_mass_start, &
-&bits_mass_end)
-      CALL report_budget('net mass', 'kg', 'recvd', calving_rcv_net, 'rtrnd', calving_ret_net, 'net mass', &
-&stored_start + floating_mass_start, stored_end + floating_mass_end)
+      CALL report_budget('stored mass', 'kg', 'calving used', calving_used_net, 'bergs', calving_to_bergs_net, 'stored mass', stored_start, stored_end)
+      CALL report_budget('floating mass', 'kg', 'calving used', calving_to_bergs_net, 'bergs', melt_net, 'stored mass', floating_mass_start, floating_mass_end)
+      CALL report_budget('berg mass', 'kg', 'calving', calving_to_bergs_net, 'melt+eros', berg_melt_net, 'berg mass', bergs_mass_start, bergs_mass_end)
+      CALL report_budget('bits mass', 'kg', 'eros used', bits_src_net, 'bergs', bits_melt_net, 'stored mass', bits_mass_start, bits_mass_end)
+      CALL report_budget('net mass', 'kg', 'recvd', calving_rcv_net, 'rtrnd', calving_ret_net, 'net mass', stored_start + floating_mass_start, stored_end + floating_mass_end)
       CALL report_consistant('iceberg mass', 'kg', 'gridded', zgrdd_berg_mass, 'bergs', bergs_mass_end)
       CALL report_consistant('bits mass', 'kg', 'gridded', zgrdd_bits_mass, 'bits', bits_mass_end)
       CALL report_state('net heat', 'J', '', stored_heat_start + floating_heat_start, '', stored_heat_end + floating_heat_end, '')
       CALL report_state('stored heat', 'J', '', stored_heat_start, '', stored_heat_end, '')
       CALL report_state('floating heat', 'J', '', floating_heat_start, '', floating_heat_end, '')
-      CALL report_budget('net heat', 'J', 'net heat', calving_src_heat_net, 'net heat', calving_out_heat_net, 'net heat', &
-&stored_heat_start + floating_heat_start, stored_heat_end + floating_heat_end)
-      CALL report_budget('stored heat', 'J', 'calving used', calving_src_heat_used_net, 'bergs', heat_to_bergs_net, 'net heat', &
-&stored_heat_start, stored_heat_end)
-      CALL report_budget('flting heat', 'J', 'calved', heat_to_bergs_net, 'melt', heat_to_ocean_net, 'net heat', &
-&floating_heat_start, floating_heat_end)
+      CALL report_budget('net heat', 'J', 'net heat', calving_src_heat_net, 'net heat', calving_out_heat_net, 'net heat', stored_heat_start + floating_heat_start, stored_heat_end + floating_heat_end)
+      CALL report_budget('stored heat', 'J', 'calving used', calving_src_heat_used_net, 'bergs', heat_to_bergs_net, 'net heat', stored_heat_start, stored_heat_end)
+      CALL report_budget('flting heat', 'J', 'calved', heat_to_bergs_net, 'melt', heat_to_ocean_net, 'net heat', floating_heat_start, floating_heat_end)
       IF (nn_verbose_level >= 1) THEN
         CALL report_consistant('top interface', 'kg', 'from SIS', calving_src_net, 'received', calving_rcv_net)
         CALL report_consistant('bot interface', 'kg', 'sent', calving_out_net, 'returned', calving_ret_net)
@@ -263,6 +301,8 @@ MODULE icbdia
         WRITE(numicb, '("calved by class = ",i6,20(",",i6))') (nbergs_calved_by_class(ik), ik = 1, nclasses)
         IF (nspeeding_tickets > 0) WRITE(numicb, '("speeding tickets issued = ",i6)') nspeeding_tickets
       END IF
+      CALL profile_psy_data4 % PostEnd
+      !$ACC KERNELS
       nbergs_start = nbergs_end
       stored_start = stored_end
       nbergs_melted = 0
@@ -289,11 +329,12 @@ MODULE icbdia
       berg_melt_net = 0._wp
       bits_melt_net = 0._wp
       bits_src_net = 0._wp
+      !$ACC END KERNELS
     END IF
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_dia
   SUBROUTINE icb_dia_step
     IF (.NOT. ln_bergdia) RETURN
+    !$ACC KERNELS
     berg_melt(:, :) = 0._wp
     berg_melt_hcflx(:, :) = 0._wp
     berg_melt_qlat(:, :) = 0._wp
@@ -306,6 +347,7 @@ MODULE icbdia
     berg_mass(:, :) = 0._wp
     virtual_area(:, :) = 0._wp
     real_calving(:, :, :) = 0._wp
+    !$ACC END KERNELS
   END SUBROUTINE icb_dia_step
   SUBROUTINE icb_dia_put
     IF (.NOT. ln_bergdia) RETURN
@@ -351,8 +393,8 @@ MODULE icbdia
       stored_heat_start = SUM(berg_grid % stored_heat(:, :))
       CALL mpp_sum('icbdia', stored_heat_start)
       IF (nn_verbose_level > 0) THEN
-        WRITE(numicb, FMT = '(a,es13.6,a)') 'icb_dia_income: initial stored mass=', stored_start, ' kg'
-        WRITE(numicb, FMT = '(a,es13.6,a)') 'icb_dia_income: initial stored heat=', stored_heat_start, ' J'
+        WRITE(numicb, '(a,es13.6,a)') 'icb_dia_income: initial stored mass=', stored_start, ' kg'
+        WRITE(numicb, '(a,es13.6,a)') 'icb_dia_income: initial stored heat=', stored_heat_start, ' J'
       END IF
     END IF
     calving_rcv_net = calving_rcv_net + SUM(berg_grid % calving(:, :)) * berg_dt
@@ -378,8 +420,7 @@ MODULE icbdia
     IF (.NOT. ln_bergdia) RETURN
     nspeeding_tickets = nspeeding_tickets + 1
   END SUBROUTINE icb_dia_speed
-  SUBROUTINE icb_dia_melt(ki, kj, pmnew, pheat_hcflux, pheat_latent, pmass_scale, pdM, pdMbitsE, pdMbitsM, pdMb, pdMe, pdMv, &
-&pz1_dt_e1e2)
+  SUBROUTINE icb_dia_melt(ki, kj, pmnew, pheat_hcflux, pheat_latent, pmass_scale, pdM, pdMbitsE, pdMbitsM, pdMb, pdMe, pdMv, pz1_dt_e1e2)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     INTEGER, INTENT(IN) :: ki, kj
     REAL(KIND = wp), INTENT(IN) :: pmnew, pheat_hcflux, pheat_latent, pmass_scale
@@ -408,11 +449,9 @@ MODULE icbdia
     IF (nn_verbose_level == 0) RETURN
     CALL profile_psy_data0 % PreStart('report_state', 'r0', 0, 0)
     IF (PRESENT(kbergs)) THEN
-      WRITE(numicb, 100) cd_budgetstr // ' state:', cd_startstr // ' start', pstartval, cd_budgetunits, cd_endstr // ' end', &
-&pendval, cd_budgetunits, 'Delta ' // cd_delstr, pendval - pstartval, cd_budgetunits, '# of bergs', kbergs
+      WRITE(numicb, 100) cd_budgetstr // ' state:', cd_startstr // ' start', pstartval, cd_budgetunits, cd_endstr // ' end', pendval, cd_budgetunits, 'Delta ' // cd_delstr, pendval - pstartval, cd_budgetunits, '# of bergs', kbergs
     ELSE
-      WRITE(numicb, 100) cd_budgetstr // ' state:', cd_startstr // ' start', pstartval, cd_budgetunits, cd_endstr // ' end', &
-&pendval, cd_budgetunits, cd_delstr // 'Delta', pendval - pstartval, cd_budgetunits
+      WRITE(numicb, 100) cd_budgetstr // ' state:', cd_startstr // ' start', pstartval, cd_budgetunits, cd_endstr // ' end', pendval, cd_budgetunits, cd_delstr // 'Delta', pendval - pstartval, cd_budgetunits
     END IF
 100 FORMAT(A19, 3(A18, "=", ES14.7, X, A2, :, ","), A12, I8)
     CALL profile_psy_data0 % PostEnd
@@ -424,8 +463,7 @@ MODULE icbdia
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     IF (nn_verbose_level == 0) RETURN
     CALL profile_psy_data0 % PreStart('report_consistant', 'r0', 0, 0)
-    WRITE(numicb, 200) cd_budgetstr // ' check:', cd_startstr, pstartval, cd_budgetunits, cd_endstr, pendval, cd_budgetunits, &
-&'error', (pendval - pstartval) / ((pendval + pstartval) + 1E-30), 'nd'
+    WRITE(numicb, 200) cd_budgetstr // ' check:', cd_startstr, pstartval, cd_budgetunits, cd_endstr, pendval, cd_budgetunits, 'error', (pendval - pstartval) / ((pendval + pstartval) + 1E-30), 'nd'
 200 FORMAT(A19, 10(A18, "=", ES14.7, X, A2, :, ","))
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE report_consistant
@@ -438,8 +476,7 @@ MODULE icbdia
     IF (nn_verbose_level == 0) RETURN
     CALL profile_psy_data0 % PreStart('report_budget', 'r0', 0, 0)
     zval = ((pendval - pstartval) - (pinval - poutval)) / MAX(1.E-30, MAX(ABS(pendval - pstartval), ABS(pinval - poutval)))
-    WRITE(numicb, 200) cd_budgetstr // ' budget:', cd_instr // ' in', pinval, cd_budgetunits, cd_outstr // ' out', poutval, &
-&cd_budgetunits, 'Delta ' // cd_delstr, pinval - poutval, cd_budgetunits, 'error', zval, 'nd'
+    WRITE(numicb, 200) cd_budgetstr // ' budget:', cd_instr // ' in', pinval, cd_budgetunits, cd_outstr // ' out', poutval, cd_budgetunits, 'Delta ' // cd_delstr, pinval - poutval, cd_budgetunits, 'error', zval, 'nd'
 200 FORMAT(A19, 3(A18, "=", ES14.7, X, A2, :, ","), A8, "=", ES10.3, X, A2)
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE report_budget
@@ -450,8 +487,7 @@ MODULE icbdia
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     IF (nn_verbose_level == 0) RETURN
     CALL profile_psy_data0 % PreStart('report_istate', 'r0', 0, 0)
-    WRITE(numicb, 100) cd_budgetstr // ' state:', cd_startstr // ' start', pstartval, cd_endstr // ' end', pendval, cd_delstr // &
-&'Delta', pendval - pstartval
+    WRITE(numicb, 100) cd_budgetstr // ' state:', cd_startstr // ' start', pstartval, cd_endstr // ' end', pendval, cd_delstr // 'Delta', pendval - pstartval
 100 FORMAT(A19, 3(A18, "=", I14, X, :, ","))
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE report_istate
@@ -462,8 +498,7 @@ MODULE icbdia
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     IF (nn_verbose_level == 0) RETURN
     CALL profile_psy_data0 % PreStart('report_ibudget', 'r0', 0, 0)
-    WRITE(numicb, 200) cd_budgetstr // ' budget:', cd_instr // ' in', pinval, cd_outstr // ' out', poutval, 'Delta ' // cd_delstr, &
-&pinval - poutval, 'error', ((pendval - pstartval) - (pinval - poutval))
+    WRITE(numicb, 200) cd_budgetstr // ' budget:', cd_instr // ' in', pinval, cd_outstr // ' out', poutval, 'Delta ' // cd_delstr, pinval - poutval, 'error', ((pendval - pstartval) - (pinval - poutval))
 200 FORMAT(A19, 10(A18, "=", I14, X, :, ","))
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE report_ibudget

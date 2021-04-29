@@ -25,7 +25,10 @@ MODULE diacfl
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zCu_cfl, zCv_cfl, zCw_cfl
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    CALL profile_psy_data0 % PreStart('dia_cfl', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('dia_cfl')
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     IF (neuler == 0 .AND. kt == nit000) THEN
       z2dt = rdt
@@ -33,7 +36,7 @@ MODULE diacfl
       z2dt = rdt * 2._wp
     END IF
     DO jk = 1, jpk
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           zCu_cfl(ji, jj, jk) = ABS(un(ji, jj, jk)) * z2dt / e1u(ji, jj)
@@ -43,7 +46,7 @@ MODULE diacfl
       END DO
     END DO
     !$ACC END KERNELS
-    CALL profile_psy_data0 % PreStart('dia_cfl', 'r0', 0, 0)
+    CALL profile_psy_data1 % PreStart('dia_cfl', 'r1', 0, 0)
     IF (iom_use('cfl_cu')) CALL iom_put('cfl_cu', MAXVAL(zCu_cfl, dim = 3))
     IF (iom_use('cfl_cv')) CALL iom_put('cfl_cv', MAXVAL(zCv_cfl, dim = 3))
     IF (iom_use('cfl_cw')) CALL iom_put('cfl_cw', MAXVAL(zCw_cfl, dim = 3))
@@ -73,7 +76,7 @@ MODULE diacfl
       WRITE(numcfl, FMT = '(11x,     a6,4x,f7.4,1x,i4,1x,i4,1x,i4)') 'Max Cv', zCv_max, iloc_v(1), iloc_v(2), iloc_v(3)
       WRITE(numcfl, FMT = '(11x,     a6,4x,f7.4,1x,i4,1x,i4,1x,i4)') 'Max Cw', zCw_max, iloc_w(1), iloc_w(2), iloc_w(3)
     END IF
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     IF (zcu_max > rcu_max) THEN
       rcu_max = zcu_max
@@ -88,40 +91,37 @@ MODULE diacfl
       ncw_loc(:) = iloc_w(:)
     END IF
     !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('dia_cfl', 'r1', 0, 0)
+    CALL profile_psy_data2 % PreStart('dia_cfl', 'r2', 0, 0)
     IF (kt == nitend .AND. lwp) THEN
-      WRITE(numcfl, FMT = *) '******************************************'
+      WRITE(numcfl, *) '******************************************'
       WRITE(numcfl, FMT = '(3x,a12,6x,f7.4,1x,i4,1x,i4,1x,i4)') 'Run Max Cu', rCu_max, nCu_loc(1), nCu_loc(2), nCu_loc(3)
       WRITE(numcfl, FMT = '(3x,a8,11x,f15.1)') ' => dt/C', z2dt / rCu_max
-      WRITE(numcfl, FMT = *) '******************************************'
+      WRITE(numcfl, *) '******************************************'
       WRITE(numcfl, FMT = '(3x,a12,6x,f7.4,1x,i4,1x,i4,1x,i4)') 'Run Max Cv', rCv_max, nCv_loc(1), nCv_loc(2), nCv_loc(3)
       WRITE(numcfl, FMT = '(3x,a8,11x,f15.1)') ' => dt/C', z2dt / rCv_max
-      WRITE(numcfl, FMT = *) '******************************************'
+      WRITE(numcfl, *) '******************************************'
       WRITE(numcfl, FMT = '(3x,a12,6x,f7.4,1x,i4,1x,i4,1x,i4)') 'Run Max Cw', rCw_max, nCw_loc(1), nCw_loc(2), nCw_loc(3)
       WRITE(numcfl, FMT = '(3x,a8,11x,f15.1)') ' => dt/C', z2dt / rCw_max
       CLOSE(UNIT = numcfl)
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dia_cfl : Maximum Courant number information for the run '
-      WRITE(numout, FMT = *) '~~~~~~~'
-      WRITE(numout, FMT = *) '   Max Cu = ', rCu_max, ' at (i,j,k) = (', nCu_loc(1), nCu_loc(2), nCu_loc(3), ') => dt/C = ', z2dt &
-&/ rCu_max
-      WRITE(numout, FMT = *) '   Max Cv = ', rCv_max, ' at (i,j,k) = (', nCv_loc(1), nCv_loc(2), nCv_loc(3), ') => dt/C = ', z2dt &
-&/ rCv_max
-      WRITE(numout, FMT = *) '   Max Cw = ', rCw_max, ' at (i,j,k) = (', nCw_loc(1), nCw_loc(2), nCw_loc(3), ') => dt/C = ', z2dt &
-&/ rCw_max
+      WRITE(numout, *)
+      WRITE(numout, *) 'dia_cfl : Maximum Courant number information for the run '
+      WRITE(numout, *) '~~~~~~~'
+      WRITE(numout, *) '   Max Cu = ', rCu_max, ' at (i,j,k) = (', nCu_loc(1), nCu_loc(2), nCu_loc(3), ') => dt/C = ', z2dt / rCu_max
+      WRITE(numout, *) '   Max Cv = ', rCv_max, ' at (i,j,k) = (', nCv_loc(1), nCv_loc(2), nCv_loc(3), ') => dt/C = ', z2dt / rCv_max
+      WRITE(numout, *) '   Max Cw = ', rCw_max, ' at (i,j,k) = (', nCw_loc(1), nCw_loc(2), nCw_loc(3), ') => dt/C = ', z2dt / rCw_max
     END IF
     IF (ln_timing) CALL timing_stop('dia_cfl')
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE dia_cfl
   SUBROUTINE dia_cfl_init
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dia_cfl : Outputting CFL diagnostics to ', TRIM(clname), ' file'
-      WRITE(numout, FMT = *) '~~~~~~~'
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
+      WRITE(numout, *) 'dia_cfl : Outputting CFL diagnostics to ', TRIM(clname), ' file'
+      WRITE(numout, *) '~~~~~~~'
+      WRITE(numout, *)
       CALL ctl_opn(numcfl, clname, 'UNKNOWN', 'FORMATTED', 'SEQUENTIAL', 1, numout, lwp, 1)
-      WRITE(numcfl, FMT = *) 'Timestep  Direction  Max C     i    j    k'
-      WRITE(numcfl, FMT = *) '******************************************'
+      WRITE(numcfl, *) 'Timestep  Direction  Max C     i    j    k'
+      WRITE(numcfl, *) '******************************************'
     END IF
     rCu_max = 0._wp
     rCv_max = 0._wp

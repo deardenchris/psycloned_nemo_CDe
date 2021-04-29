@@ -31,9 +31,7 @@ MODULE obs_conv
     REAL(KIND = wp) :: pfp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('wp', 'r0', 0, 0)
-    fspott = pft - pfp * ((3.6504E-4 + pft * (8.3198E-5 + pft * (- 5.4065E-7 + pft * 4.0274E-9))) + (pfs - 35.0) * (1.7439E-5 - &
-&pft * 2.9778E-7) + pfp * (8.9309E-7 + pft * (- 3.1628E-8 + pft * 2.1987E-10) - (pfs - 35.0) * 4.1057E-9 + pfp * (- 1.6056E-10 + &
-&pft * 5.0484E-12)))
+    fspott = pft - pfp * ((3.6504E-4 + pft * (8.3198E-5 + pft * (- 5.4065E-7 + pft * 4.0274E-9))) + (pfs - 35.0) * (1.7439E-5 - pft * 2.9778E-7) + pfp * (8.9309E-7 + pft * (- 3.1628E-8 + pft * 2.1987E-10) - (pfs - 35.0) * 4.1057E-9 + pfp * (- 1.6056E-10 + pft * 5.0484E-12)))
     CALL profile_psy_data0 % PostEnd
   END FUNCTION fspott
   REAL(KIND = wp) FUNCTION atg(p_s, p_t, p_p)
@@ -45,9 +43,7 @@ MODULE obs_conv
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('wp', 'r0', 0, 0)
     z_ds = p_s - 35.0
-    atg = (((- 2.1687E-16 * p_t + 1.8676E-14) * p_t - 4.6206E-13) * p_p + ((2.7759E-12 * p_t - 1.1351E-10) * z_ds + ((- 5.4481E-14 &
-&* p_t + 8.733E-12) * p_t - 6.7795E-10) * p_t + 1.8741E-8)) * p_p + (- 4.2393E-8 * p_t + 1.8932E-6) * z_ds + ((6.6228E-10 * p_t - &
-&6.836E-8) * p_t + 8.5258E-6) * p_t + 3.5803E-5
+    atg = (((- 2.1687E-16 * p_t + 1.8676E-14) * p_t - 4.6206E-13) * p_p + ((2.7759E-12 * p_t - 1.1351E-10) * z_ds + ((- 5.4481E-14 * p_t + 8.733E-12) * p_t - 6.7795E-10) * p_t + 1.8741E-8)) * p_p + (- 4.2393E-8 * p_t + 1.8932E-6) * z_ds + ((6.6228E-10 * p_t - 6.836E-8) * p_t + 8.5258E-6) * p_t + 3.5803E-5
     CALL profile_psy_data0 % PostEnd
   END FUNCTION atg
   REAL(KIND = wp) FUNCTION theta(p_s, p_t0, p_p0, p_pr)

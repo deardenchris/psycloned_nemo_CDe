@@ -35,14 +35,10 @@ MODULE depth_e3
     INTEGER :: jk
     !$ACC KERNELS
     pe3w_3d(:, :, 1) = 2._wp * (pdept_3d(:, :, 1) - pdepw_3d(:, :, 1))
-    !$ACC END KERNELS
     DO jk = 1, jpkm1
-      !$ACC KERNELS
       pe3w_3d(:, :, jk + 1) = pdept_3d(:, :, jk + 1) - pdept_3d(:, :, jk)
       pe3t_3d(:, :, jk) = pdepw_3d(:, :, jk + 1) - pdepw_3d(:, :, jk)
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
     pe3t_3d(:, :, jpk) = 2._wp * (pdept_3d(:, :, jpk) - pdepw_3d(:, :, jpk))
     !$ACC END KERNELS
   END SUBROUTINE depth_to_e3_3d
@@ -66,12 +62,10 @@ MODULE depth_e3
     !$ACC KERNELS
     pdepw_3d(:, :, 1) = 0.0_wp
     pdept_3d(:, :, 1) = 0.5_wp * pe3w_3d(:, :, 1)
-    !$ACC END KERNELS
     DO jk = 2, jpk
-      !$ACC KERNELS
       pdepw_3d(:, :, jk) = pdepw_3d(:, :, jk - 1) + pe3t_3d(:, :, jk - 1)
       pdept_3d(:, :, jk) = pdept_3d(:, :, jk - 1) + pe3w_3d(:, :, jk)
-      !$ACC END KERNELS
     END DO
+    !$ACC END KERNELS
   END SUBROUTINE e3_to_depth_3d
 END MODULE depth_e3

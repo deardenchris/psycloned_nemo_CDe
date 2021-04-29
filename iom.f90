@@ -345,7 +345,7 @@ MODULE iom
     fields(i) % vname = "wn"
     fields(i) % grid = "grid_N_3D"
     IF (i - 1 > max_rst_fields) THEN
-      WRITE(ctmp1, FMT = *) 'E R R O R : iom_set_rst_vars SIZE of RST_FIELD array is too small'
+      WRITE(ctmp1, *) 'E R R O R : iom_set_rst_vars SIZE of RST_FIELD array is too small'
       CALL ctl_stop('iom_set_rst_vars:', ctmp1)
     END IF
   END SUBROUTINE iom_set_rst_vars
@@ -423,7 +423,7 @@ MODULE iom
     cltmpn = clname
     INQUIRE(FILE = clname, EXIST = llok)
     IF (.NOT. llok) THEN
-      WRITE(clcpu, FMT = *) narea - 1
+      WRITE(clcpu, *) narea - 1
       clcpu = TRIM(ADJUSTL(clcpu))
       iln = INDEX(clname, TRIM(clsuffix), back = .TRUE.)
       clname = clname(1 : iln - 1) // '_' // TRIM(clcpu) // TRIM(clsuffix)
@@ -468,8 +468,7 @@ MODULE iom
         CALL ctl_stop(TRIM(clinfo), 'wrong value of kdom, only jpdom_local* cases are accepted')
       END SELECT
     END IF
-    IF (MINVAL(iom_file(:) % nfid) /= 0) CALL ctl_stop(TRIM(clinfo), 'No more free file identifier', 'increase jpmax_files in &
-&iom_def')
+    IF (MINVAL(iom_file(:) % nfid) /= 0) CALL ctl_stop(TRIM(clinfo), 'No more free file identifier', 'increase jpmax_files in iom_def')
     IF (.NOT. llok) THEN
       IF (.NOT. llwrt) THEN
         IF (llstop) THEN
@@ -515,9 +514,9 @@ MODULE iom
           CALL iom_nf90_close(jf)
           iom_file(jf) % nfid = 0
           IF (PRESENT(kiomid)) kiomid = 0
-          IF (lwp) WRITE(numout, FMT = *) TRIM(clinfo) // ' close file: ' // TRIM(iom_file(jf) % name) // ' ok'
+          IF (lwp) WRITE(numout, *) TRIM(clinfo) // ' close file: ' // TRIM(iom_file(jf) % name) // ' ok'
         ELSE IF (PRESENT(kiomid)) THEN
-          WRITE(ctmp1, FMT = *) '--->', kiomid
+          WRITE(ctmp1, *) '--->', kiomid
           CALL ctl_stop(TRIM(clinfo) // ' Invalid file identifier', ctmp1)
         END IF
       END DO
@@ -559,8 +558,7 @@ MODULE iom
           IF (iiv <= jpmax_vars) THEN
             iom_varid = iom_nf90_varid(kiomid, cdvar, iiv, kdimsz, kndims)
           ELSE
-            CALL ctl_stop(TRIM(clinfo), 'Too many variables in the file ' // iom_file(kiomid) % name, &
-&'increase the parameter jpmax_vars')
+            CALL ctl_stop(TRIM(clinfo), 'Too many variables in the file ' // iom_file(kiomid) % name, 'increase the parameter jpmax_vars')
           END IF
           IF (llstop .AND. iom_varid == - 1) CALL ctl_stop(TRIM(clinfo) // ' not found')
         ELSE
@@ -570,7 +568,7 @@ MODULE iom
             IF (i_nvd <= SIZE(kdimsz)) THEN
               kdimsz(1 : i_nvd) = iom_file(kiomid) % dimsz(1 : i_nvd, iiv)
             ELSE
-              WRITE(ctmp1, FMT = *) i_nvd, SIZE(kdimsz)
+              WRITE(ctmp1, *) i_nvd, SIZE(kdimsz)
               CALL ctl_stop(TRIM(clinfo), 'error in kdimsz size' // TRIM(ctmp1))
             END IF
           END IF
@@ -609,13 +607,12 @@ MODULE iom
           idmspc = iom_file(kiomid) % ndims(idvar)
           IF (iom_file(kiomid) % luld(idvar)) idmspc = idmspc - 1
           WRITE(cldmspc, FMT = '(i1)') idmspc
-          IF (idmspc > 0) CALL ctl_stop(TRIM(clinfo), 'When reading to a 0D array, we do not accept data', 'with 1 or more spatial &
-&dimensions: ' // cldmspc // ' were found.', 'Use ncwa -a to suppress the unnecessary dimensions')
+          IF (idmspc > 0) CALL ctl_stop(TRIM(clinfo), 'When reading to a 0D array, we do not accept data', 'with 1 or more spatial dimensions: ' // cldmspc // ' were found.', 'Use ncwa -a to suppress the unnecessary dimensions')
           CALL iom_nf90_get(kiomid, idvar, pvar, itime)
         END IF
       END IF
     ELSE
-      WRITE(ctmp1, FMT = *) 'Can not use XIOS in iom_g0d, file: ' // TRIM(clname) // ', var:' // TRIM(cdvar)
+      WRITE(ctmp1, *) 'Can not use XIOS in iom_g0d, file: ' // TRIM(clname) // ', var:' // TRIM(cdvar)
       CALL ctl_stop('iom_g0d', ctmp1)
     END IF
     CALL profile_psy_data0 % PostEnd
@@ -633,8 +630,7 @@ MODULE iom
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('iom_g1d', 'r0', 0, 0)
     IF (kiomid > 0) THEN
-      IF (iom_file(kiomid) % nfid > 0) CALL iom_get_123d(kiomid, kdom, cdvar, pv_r1d = pvar, ktime = ktime, kstart = kstart, &
-&kcount = kcount, ldxios = ldxios)
+      IF (iom_file(kiomid) % nfid > 0) CALL iom_get_123d(kiomid, kdom, cdvar, pv_r1d = pvar, ktime = ktime, kstart = kstart, kcount = kcount, ldxios = ldxios)
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE iom_g1d
@@ -652,8 +648,7 @@ MODULE iom
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('iom_g2d', 'r0', 0, 0)
     IF (kiomid > 0) THEN
-      IF (iom_file(kiomid) % nfid > 0) CALL iom_get_123d(kiomid, kdom, cdvar, pv_r2d = pvar, ktime = ktime, kstart = kstart, &
-&kcount = kcount, lrowattr = lrowattr, ldxios = ldxios)
+      IF (iom_file(kiomid) % nfid > 0) CALL iom_get_123d(kiomid, kdom, cdvar, pv_r2d = pvar, ktime = ktime, kstart = kstart, kcount = kcount, lrowattr = lrowattr, ldxios = ldxios)
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE iom_g2d
@@ -671,8 +666,7 @@ MODULE iom
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('iom_g3d', 'r0', 0, 0)
     IF (kiomid > 0) THEN
-      IF (iom_file(kiomid) % nfid > 0) CALL iom_get_123d(kiomid, kdom, cdvar, pv_r3d = pvar, ktime = ktime, kstart = kstart, &
-&kcount = kcount, lrowattr = lrowattr, ldxios = ldxios)
+      IF (iom_file(kiomid) % nfid > 0) CALL iom_get_123d(kiomid, kdom, cdvar, pv_r3d = pvar, ktime = ktime, kstart = kstart, kcount = kcount, lrowattr = lrowattr, ldxios = ldxios)
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE iom_g3d
@@ -737,8 +731,7 @@ MODULE iom
       llnoov = (jpni * jpnj) == jpnij .AND. .NOT. lk_agrif
       IF (PRESENT(kcount) .AND. (.NOT. PRESENT(kstart))) CALL ctl_stop(TRIM(clinfo), 'kcount present needs kstart present')
       IF (PRESENT(kstart) .AND. (.NOT. PRESENT(kcount))) CALL ctl_stop(TRIM(clinfo), 'kstart present needs kcount present')
-      IF (PRESENT(kstart) .AND. idom /= jpdom_unknown .AND. idom /= jpdom_autoglo_xy) CALL ctl_stop(TRIM(clinfo), 'kstart present &
-&needs kdom = jpdom_unknown or kdom = jpdom_autoglo_xy')
+      IF (PRESENT(kstart) .AND. idom /= jpdom_unknown .AND. idom /= jpdom_autoglo_xy) CALL ctl_stop(TRIM(clinfo), 'kstart present needs kdom = jpdom_unknown or kdom = jpdom_autoglo_xy')
       luse_jattr = .FALSE.
       IF (PRESENT(lrowattr)) THEN
         IF (lrowattr .AND. idom /= jpdom_data) CALL ctl_stop(TRIM(clinfo), 'lrowattr present and true needs kdom = jpdom_data')
@@ -786,20 +779,15 @@ MODULE iom
         WRITE(clrankpv, FMT = '(i1)') irankpv
         WRITE(cldmspc, FMT = '(i1)') idmspc
         IF (idmspc < irankpv) THEN
-          CALL ctl_stop(TRIM(clinfo), 'The file has only ' // cldmspc // ' spatial dimension', &
-&'it is impossible to read a ' // clrankpv // 'D array from this file...')
+          CALL ctl_stop(TRIM(clinfo), 'The file has only ' // cldmspc // ' spatial dimension', 'it is impossible to read a ' // clrankpv // 'D array from this file...')
         ELSE IF (idmspc == irankpv) THEN
-          IF (PRESENT(pv_r1d) .AND. idom /= jpdom_unknown) CALL ctl_stop(TRIM(clinfo), 'case not coded...You must use &
-&jpdom_unknown')
+          IF (PRESENT(pv_r1d) .AND. idom /= jpdom_unknown) CALL ctl_stop(TRIM(clinfo), 'case not coded...You must use jpdom_unknown')
         ELSE IF (idmspc > irankpv) THEN
           IF (PRESENT(pv_r2d) .AND. itime == 1 .AND. idimsz(3) == 1 .AND. idmspc == 3) THEN
-            CALL ctl_warn(TRIM(clinfo), '2D array but 3 spatial dimensions for the data...', &
-&'As the size of the z dimension is 1 and as we try to read the first record, ', 'we accept this case, &
-&even if there is a possible mix-up between z and time dimension')
+            CALL ctl_warn(TRIM(clinfo), '2D array but 3 spatial dimensions for the data...', 'As the size of the z dimension is 1 and as we try to read the first record, ', 'we accept this case, even if there is a possible mix-up between z and time dimension')
             idmspc = idmspc - 1
           ELSE
-            CALL ctl_stop(TRIM(clinfo), 'To keep iom lisibility, when reading a ' // clrankpv // 'D array,', &
-&'we do not accept data with ' // cldmspc // ' spatial dimensions', 'Use ncwa -a to suppress the unnecessary dimensions')
+            CALL ctl_stop(TRIM(clinfo), 'To keep iom lisibility, when reading a ' // clrankpv // 'D array,', 'we do not accept data with ' // cldmspc // ' spatial dimensions', 'Use ncwa -a to suppress the unnecessary dimensions')
           END IF
         END IF
         icnt(:) = 1
@@ -912,8 +900,7 @@ MODULE iom
         CALL profile_psy_data2 % PostEnd
         IF (istop == nstop) THEN
           CALL profile_psy_data3 % PreStart('iom_get_123d', 'r3', 0, 0)
-          IF (lwp) WRITE(numout, FMT = "(10x,' read ',a,' (rec: ',i6,') in ',a,' ok')") TRIM(cdvar), itime, TRIM(iom_file(kiomid) &
-&% name)
+          IF (lwp) WRITE(numout, "(10x,' read ',a,' (rec: ',i6,') in ',a,' ok')") TRIM(cdvar), itime, TRIM(iom_file(kiomid) % name)
           IF (PRESENT(pv_r2d) .AND. idom /= jpdom_unknown) THEN
             CALL lbc_lnk('iom', pv_r2d, 'Z', - 999., 'no0')
           ELSE IF (PRESENT(pv_r3d) .AND. idom /= jpdom_unknown) THEN
@@ -1256,31 +1243,31 @@ MODULE iom
     CHARACTER(LEN = *), INTENT(IN) :: cdname
     REAL(KIND = wp), INTENT(IN) :: pfield0d
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zz
-    IF (.FALSE.) WRITE(numout, FMT = *) cdname, pfield0d
+    IF (.FALSE.) WRITE(numout, *) cdname, pfield0d
   END SUBROUTINE iom_p0d
   SUBROUTINE iom_p1d(cdname, pfield1d)
     CHARACTER(LEN = *), INTENT(IN) :: cdname
     REAL(KIND = wp), DIMENSION(:), INTENT(IN) :: pfield1d
-    IF (.FALSE.) WRITE(numout, FMT = *) cdname, pfield1d
+    IF (.FALSE.) WRITE(numout, *) cdname, pfield1d
   END SUBROUTINE iom_p1d
   SUBROUTINE iom_p2d(cdname, pfield2d)
     CHARACTER(LEN = *), INTENT(IN) :: cdname
     REAL(KIND = wp), DIMENSION(:, :), INTENT(IN) :: pfield2d
-    IF (.FALSE.) WRITE(numout, FMT = *) cdname, pfield2d
+    IF (.FALSE.) WRITE(numout, *) cdname, pfield2d
   END SUBROUTINE iom_p2d
   SUBROUTINE iom_p3d(cdname, pfield3d)
     CHARACTER(LEN = *), INTENT(IN) :: cdname
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(IN) :: pfield3d
-    IF (.FALSE.) WRITE(numout, FMT = *) cdname, pfield3d
+    IF (.FALSE.) WRITE(numout, *) cdname, pfield3d
   END SUBROUTINE iom_p3d
   SUBROUTINE iom_setkt(kt, cdname)
     INTEGER, INTENT(IN) :: kt
     CHARACTER(LEN = *), INTENT(IN) :: cdname
-    IF (.FALSE.) WRITE(numout, FMT = *) kt, cdname
+    IF (.FALSE.) WRITE(numout, *) kt, cdname
   END SUBROUTINE iom_setkt
   SUBROUTINE iom_context_finalize(cdname)
     CHARACTER(LEN = *), INTENT(IN) :: cdname
-    IF (.FALSE.) WRITE(numout, FMT = *) cdname
+    IF (.FALSE.) WRITE(numout, *) cdname
   END SUBROUTINE iom_context_finalize
   LOGICAL FUNCTION iom_use(cdname)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType

@@ -39,15 +39,14 @@ MODULE traldf_lap_blp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('tra_ldf_lap', 'r0', 0, 0)
     IF (kt == nit000 .AND. lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'tra_ldf_lap : iso-level laplacian diffusion on ', cdtype, ', pass=', kpass
-      WRITE(numout, FMT = *) '~~~~~~~~~~~ '
+      WRITE(numout, *)
+      WRITE(numout, *) 'tra_ldf_lap : iso-level laplacian diffusion on ', cdtype, ', pass=', kpass
+      WRITE(numout, *) '~~~~~~~~~~~ '
     END IF
     l_hst = .FALSE.
     l_ptr = .FALSE.
     IF (cdtype == 'TRA' .AND. ln_diaptr) l_ptr = .TRUE.
-    IF (cdtype == 'TRA' .AND. (iom_use("uadv_heattr") .OR. iom_use("vadv_heattr") .OR. iom_use("uadv_salttr") .OR. &
-&iom_use("vadv_salttr"))) l_hst = .TRUE.
+    IF (cdtype == 'TRA' .AND. (iom_use("uadv_heattr") .OR. iom_use("vadv_heattr") .OR. iom_use("uadv_salttr") .OR. iom_use("vadv_salttr"))) l_hst = .TRUE.
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     IF (kpass == 1) THEN
@@ -56,7 +55,7 @@ MODULE traldf_lap_blp
       zsign = - 1._wp
     END IF
     DO jk = 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           zaheeu(ji, jj, jk) = zsign * pahu(ji, jj, jk) * e2_e1u(ji, jj) * e3u_n(ji, jj, jk)
@@ -68,7 +67,7 @@ MODULE traldf_lap_blp
     DO jn = 1, kjpt
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
             ztu(ji, jj, jk) = zaheeu(ji, jj, jk) * (ptb(ji + 1, jj, jk, jn) - ptb(ji, jj, jk, jn))
@@ -79,7 +78,7 @@ MODULE traldf_lap_blp
       !$ACC END KERNELS
       IF (ln_zps) THEN
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
             ztu(ji, jj, mbku(ji, jj)) = zaheeu(ji, jj, mbku(ji, jj)) * pgu(ji, jj, jn)
@@ -89,7 +88,7 @@ MODULE traldf_lap_blp
         !$ACC END KERNELS
         IF (ln_isfcav) THEN
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
               IF (miku(ji, jj) > 1) ztu(ji, jj, miku(ji, jj)) = zaheeu(ji, jj, miku(ji, jj)) * pgui(ji, jj, jn)
@@ -101,11 +100,10 @@ MODULE traldf_lap_blp
       END IF
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) + (ztu(ji, jj, jk) - ztu(ji - 1, jj, jk) + ztv(ji, jj, jk) - ztv(ji, jj - 1, &
-&jk)) / (e1e2t(ji, jj) * e3t_n(ji, jj, jk))
+            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) + (ztu(ji, jj, jk) - ztu(ji - 1, jj, jk) + ztv(ji, jj, jk) - ztv(ji, jj - 1, jk)) / (e1e2t(ji, jj) * e3t_n(ji, jj, jk))
           END DO
         END DO
       END DO
@@ -138,16 +136,16 @@ MODULE traldf_lap_blp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('tra_ldf_blp', 'r0', 0, 0)
     IF (kt == kit000 .AND. lwp) THEN
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
       SELECT CASE (kldf)
       CASE (np_blp)
-        WRITE(numout, FMT = *) 'tra_ldf_blp : iso-level   bilaplacian operator on ', cdtype
+        WRITE(numout, *) 'tra_ldf_blp : iso-level   bilaplacian operator on ', cdtype
       CASE (np_blp_i)
-        WRITE(numout, FMT = *) 'tra_ldf_blp : iso-neutral bilaplacian operator on ', cdtype, ' (Standard)'
+        WRITE(numout, *) 'tra_ldf_blp : iso-neutral bilaplacian operator on ', cdtype, ' (Standard)'
       CASE (np_blp_it)
-        WRITE(numout, FMT = *) 'tra_ldf_blp : iso-neutral bilaplacian operator on ', cdtype, ' (triad)'
+        WRITE(numout, *) 'tra_ldf_blp : iso-neutral bilaplacian operator on ', cdtype, ' (triad)'
       END SELECT
-      WRITE(numout, FMT = *) '~~~~~~~~~~~'
+      WRITE(numout, *) '~~~~~~~~~~~'
     END IF
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS

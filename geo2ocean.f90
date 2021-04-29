@@ -25,11 +25,16 @@ MODULE geo2ocean
     CHARACTER(LEN = 5), INTENT(IN) :: cdtodo
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(OUT) :: prot
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
     CALL profile_psy_data0 % PreStart('rot_rep', 'r0', 0, 0)
     IF (lmust_init) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) ' rot_rep: coordinate transformation : geographic <==> model (i,j)-components'
-      IF (lwp) WRITE(numout, FMT = *) ' ~~~~~~~~    '
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) ' rot_rep: coordinate transformation : geographic <==> model (i,j)-components'
+      IF (lwp) WRITE(numout, *) ' ~~~~~~~~    '
       CALL angle(glamt, gphit, glamu, gphiu, glamv, gphiv, glamf, gphif)
       lmust_init = .FALSE.
     END IF
@@ -54,7 +59,9 @@ MODULE geo2ocean
         prot(:, :) = pxin(:, :) * gcosf(:, :) + pyin(:, :) * gsinf(:, :)
         !$ACC END KERNELS
       CASE DEFAULT
+        CALL profile_psy_data1 % PreStart('rot_rep', 'r1', 0, 0)
         CALL ctl_stop('Only T, U, V and F grid points are coded')
+        CALL profile_psy_data1 % PostEnd
       END SELECT
     CASE ('en->j')
       SELECT CASE (cd_type)
@@ -75,7 +82,9 @@ MODULE geo2ocean
         prot(:, :) = pyin(:, :) * gcosf(:, :) - pxin(:, :) * gsinf(:, :)
         !$ACC END KERNELS
       CASE DEFAULT
+        CALL profile_psy_data2 % PreStart('rot_rep', 'r2', 0, 0)
         CALL ctl_stop('Only T, U, V and F grid points are coded')
+        CALL profile_psy_data2 % PostEnd
       END SELECT
     CASE ('ij->e')
       SELECT CASE (cd_type)
@@ -96,7 +105,9 @@ MODULE geo2ocean
         prot(:, :) = pxin(:, :) * gcosf(:, :) - pyin(:, :) * gsinf(:, :)
         !$ACC END KERNELS
       CASE DEFAULT
+        CALL profile_psy_data3 % PreStart('rot_rep', 'r3', 0, 0)
         CALL ctl_stop('Only T, U, V and F grid points are coded')
+        CALL profile_psy_data3 % PostEnd
       END SELECT
     CASE ('ij->n')
       SELECT CASE (cd_type)
@@ -117,10 +128,14 @@ MODULE geo2ocean
         prot(:, :) = pyin(:, :) * gcosf(:, :) + pxin(:, :) * gsinf(:, :)
         !$ACC END KERNELS
       CASE DEFAULT
+        CALL profile_psy_data4 % PreStart('rot_rep', 'r4', 0, 0)
         CALL ctl_stop('Only T, U, V and F grid points are coded')
+        CALL profile_psy_data4 % PostEnd
       END SELECT
     CASE DEFAULT
+      CALL profile_psy_data5 % PreStart('rot_rep', 'r5', 0, 0)
       CALL ctl_stop('rot_rep: Syntax Error in the definition of cdtodo')
+      CALL profile_psy_data5 % PostEnd
     END SELECT
   END SUBROUTINE rot_rep
   SUBROUTINE angle(plamt, pphit, plamu, pphiu, plamv, pphiv, plamf, pphif)
@@ -139,14 +154,14 @@ MODULE geo2ocean
     REAL(KIND = wp) :: zxffv, zyffv, znffv
     REAL(KIND = wp) :: zxuuf, zyuuf, znuuf
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('angle', 'r0', 0, 0)
-    ALLOCATE(gsint(jpi, jpj), gcost(jpi, jpj), gsinu(jpi, jpj), gcosu(jpi, jpj), gsinv(jpi, jpj), gcosv(jpi, jpj), gsinf(jpi, &
-&jpj), gcosf(jpi, jpj), STAT = ierr)
+    ALLOCATE(gsint(jpi, jpj), gcost(jpi, jpj), gsinu(jpi, jpj), gcosu(jpi, jpj), gsinv(jpi, jpj), gcosv(jpi, jpj), gsinf(jpi, jpj), gcosf(jpi, jpj), STAT = ierr)
     CALL mpp_sum('geo2ocean', ierr)
     IF (ierr /= 0) CALL ctl_stop('angle: unable to allocate arrays')
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpi
         zlam = plamt(ji, jj)
@@ -211,7 +226,7 @@ MODULE geo2ocean
         gcosv(ji, jj) = - (zxnpv * zyffv - zynpv * zxffv) / znffv
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 2, jpjm1
       DO ji = 2, jpi
         IF (MOD(ABS(plamv(ji, jj) - plamv(ji, jj - 1)), 360.) < 1.E-8) THEN
@@ -233,8 +248,9 @@ MODULE geo2ocean
       END DO
     END DO
     !$ACC END KERNELS
-    CALL lbc_lnk_multi('geo2ocean', gcost, 'T', - 1., gsint, 'T', - 1., gcosu, 'U', - 1., gsinu, 'U', - 1., gcosv, 'V', - 1., &
-&gsinv, 'V', - 1., gcosf, 'F', - 1., gsinf, 'F', - 1.)
+    CALL profile_psy_data1 % PreStart('angle', 'r1', 0, 0)
+    CALL lbc_lnk_multi('geo2ocean', gcost, 'T', - 1., gsint, 'T', - 1., gcosu, 'U', - 1., gsinu, 'U', - 1., gcosv, 'V', - 1., gsinv, 'V', - 1., gcosf, 'F', - 1., gsinf, 'F', - 1.)
+    CALL profile_psy_data1 % PostEnd
   END SUBROUTINE angle
   SUBROUTINE geo2oce(pxx, pyy, pzz, cgrid, pte, ptn)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -314,7 +330,7 @@ MODULE geo2ocean
       END IF
     CASE DEFAULT
       CALL profile_psy_data5 % PreStart('geo2oce', 'r5', 0, 0)
-      WRITE(ctmp1, FMT = *) 'geo2oce : bad grid argument : ', cgrid
+      WRITE(ctmp1, *) 'geo2oce : bad grid argument : ', cgrid
       CALL ctl_stop(ctmp1)
       CALL profile_psy_data5 % PostEnd
     END SELECT
@@ -401,7 +417,7 @@ MODULE geo2ocean
       END IF
     CASE DEFAULT
       CALL profile_psy_data5 % PreStart('oce2geo', 'r5', 0, 0)
-      WRITE(ctmp1, FMT = *) 'geo2oce : bad grid argument : ', cgrid
+      WRITE(ctmp1, *) 'geo2oce : bad grid argument : ', cgrid
       CALL ctl_stop(ctmp1)
       CALL profile_psy_data5 % PostEnd
     END SELECT
@@ -417,9 +433,9 @@ MODULE geo2ocean
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('obs_rot', 'r0', 0, 0)
     IF (lmust_init) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) ' obs_rot : geographic <--> stretched'
-      IF (lwp) WRITE(numout, FMT = *) ' ~~~~~~~   coordinate transformation'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) ' obs_rot : geographic <--> stretched'
+      IF (lwp) WRITE(numout, *) ' ~~~~~~~   coordinate transformation'
       CALL angle(glamt, gphit, glamu, gphiu, glamv, gphiv, glamf, gphif)
       lmust_init = .FALSE.
     END IF

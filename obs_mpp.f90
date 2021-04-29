@@ -4,8 +4,7 @@ MODULE obs_mpp
   USE in_out_manager
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: obs_mpp_bcast_integer, obs_mpp_max_integer, obs_mpp_find_obs_proc, obs_mpp_sum_integers, obs_mpp_sum_integer, &
-&mpp_alltoall_int, mpp_alltoallv_int, mpp_alltoallv_real, mpp_global_max
+  PUBLIC :: obs_mpp_bcast_integer, obs_mpp_max_integer, obs_mpp_find_obs_proc, obs_mpp_sum_integers, obs_mpp_sum_integer, mpp_alltoall_int, mpp_alltoallv_int, mpp_alltoallv_real, mpp_global_max
   CONTAINS
   SUBROUTINE obs_mpp_bcast_integer(kvals, kno, kroot)
     INTEGER, INTENT(IN) :: kno

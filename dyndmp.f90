@@ -37,28 +37,28 @@ MODULE dyndmp
 902 IF (ios > 0) CALL ctl_nam(ios, 'namc1d_dyndmp in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namc1d_dyndmp)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dyn_dmp_init : U and V current Newtonian damping'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namc1d_dyndmp : Set damping flag'
-      WRITE(numout, FMT = *) '      add a damping term or not       ln_dyndmp = ', ln_dyndmp
-      WRITE(numout, FMT = *) '   Namelist namtra_dmp    : Set damping parameters'
-      WRITE(numout, FMT = *) '      Apply relaxation   or not       ln_tradmp = ', ln_tradmp
-      WRITE(numout, FMT = *) '      mixed layer damping option      nn_zdmp   = ', nn_zdmp
-      WRITE(numout, FMT = *) '      Damping file name               cn_resto  = ', cn_resto
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
+      WRITE(numout, *) 'dyn_dmp_init : U and V current Newtonian damping'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist namc1d_dyndmp : Set damping flag'
+      WRITE(numout, *) '      add a damping term or not       ln_dyndmp = ', ln_dyndmp
+      WRITE(numout, *) '   Namelist namtra_dmp    : Set damping parameters'
+      WRITE(numout, *) '      Apply relaxation   or not       ln_tradmp = ', ln_tradmp
+      WRITE(numout, *) '      mixed layer damping option      nn_zdmp   = ', nn_zdmp
+      WRITE(numout, *) '      Damping file name               cn_resto  = ', cn_resto
+      WRITE(numout, *)
     END IF
     IF (ln_dyndmp) THEN
       IF (dyn_dmp_alloc() /= 0) CALL ctl_stop('STOP', 'dyn_dmp_init: unable to allocate arrays')
       SELECT CASE (nn_zdmp)
       CASE (0)
-        IF (lwp) WRITE(numout, FMT = *) '   momentum damping throughout the water column'
+        IF (lwp) WRITE(numout, *) '   momentum damping throughout the water column'
       CASE (1)
-        IF (lwp) WRITE(numout, FMT = *) '   no momentum damping in the turbocline (avt > 5 cm2/s)'
+        IF (lwp) WRITE(numout, *) '   no momentum damping in the turbocline (avt > 5 cm2/s)'
       CASE (2)
-        IF (lwp) WRITE(numout, FMT = *) '   no momentum damping in the mixed layer'
+        IF (lwp) WRITE(numout, *) '   no momentum damping in the mixed layer'
       CASE DEFAULT
-        WRITE(ctmp1, FMT = *) '          bad flag value for nn_zdmp = ', nn_zdmp
+        WRITE(ctmp1, *) '          bad flag value for nn_zdmp = ', nn_zdmp
         CALL ctl_stop(ctmp1)
       END SELECT
       IF (.NOT. ln_uvd_dyndmp) THEN
@@ -90,7 +90,7 @@ MODULE dyndmp
     SELECT CASE (nn_zdmp)
     CASE (0)
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             zua = resto_uv(ji, jj, jk) * (zuv_dta(ji, jj, jk, 1) - ub(ji, jj, jk))
@@ -104,7 +104,7 @@ MODULE dyndmp
       END DO
     CASE (1)
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             IF (avt(ji, jj, jk) <= avt_c) THEN
@@ -123,7 +123,7 @@ MODULE dyndmp
       END DO
     CASE (2)
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             IF (gdept_n(ji, jj, jk) >= hmlp(ji, jj)) THEN
@@ -143,8 +143,7 @@ MODULE dyndmp
     END SELECT
     !$ACC END KERNELS
     CALL profile_psy_data1 % PreStart('dyn_dmp', 'r1', 0, 0)
-    IF (ln_ctl) CALL prt_ctl(tab3d_1 = ua(:, :, :), clinfo1 = ' dmp  - Ua: ', mask1 = umask, tab3d_2 = va(:, :, :), clinfo2 = ' &
-&Va: ', mask2 = vmask, clinfo3 = 'dyn')
+    IF (ln_ctl) CALL prt_ctl(tab3d_1 = ua(:, :, :), clinfo1 = ' dmp  - Ua: ', mask1 = umask, tab3d_2 = va(:, :, :), clinfo2 = ' Va: ', mask2 = vmask, clinfo3 = 'dyn')
     IF (ln_timing) CALL timing_stop('dyn_dmp')
     CALL profile_psy_data1 % PostEnd
   END SUBROUTINE dyn_dmp

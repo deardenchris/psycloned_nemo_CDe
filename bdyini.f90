@@ -22,9 +22,7 @@ MODULE bdyini
   INTEGER, DIMENSION(jp_nseg) :: jpjsob, jpisdt, jpisft, npckgs
   CONTAINS
   SUBROUTINE bdy_init
-    NAMELIST /nambdy/ ln_bdy, nb_bdy, ln_coords_file, cn_coords_file, ln_mask_file, cn_mask_file, cn_dyn2d, nn_dyn2d_dta, &
-&cn_dyn3d, nn_dyn3d_dta, cn_tra, nn_tra_dta, ln_tra_dmp, ln_dyn3d_dmp, rn_time_dmp, rn_time_dmp_out, cn_ice, nn_ice_dta, &
-&rn_ice_tem, rn_ice_sal, rn_ice_age, ln_vol, nn_volctl, nn_rimwidth, nb_jpk_bdy
+    NAMELIST /nambdy/ ln_bdy, nb_bdy, ln_coords_file, cn_coords_file, ln_mask_file, cn_mask_file, cn_dyn2d, nn_dyn2d_dta, cn_dyn3d, nn_dyn3d_dta, cn_tra, nn_tra_dta, ln_tra_dmp, ln_dyn3d_dmp, rn_time_dmp, rn_time_dmp_out, cn_ice, nn_ice_dta, rn_ice_tem, rn_ice_sal, rn_ice_age, ln_vol, nn_volctl, nn_rimwidth, nb_jpk_bdy
     INTEGER :: ios
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, nambdy, IOSTAT = ios, ERR = 901)
@@ -35,16 +33,16 @@ MODULE bdyini
     IF (lwm) WRITE(numond, nambdy)
     IF (.NOT. Agrif_Root()) ln_bdy = .FALSE.
     IF (ln_bdy) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'bdy_init : initialization of open boundaries'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'bdy_init : initialization of open boundaries'
+      IF (lwp) WRITE(numout, *) '~~~~~~~~'
       CALL bdy_segs
       CALL bdy_dta_init
       IF (ln_tide) CALL bdytide_init
     ELSE
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'bdy_init : open boundaries not used (ln_bdy = F)'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'bdy_init : open boundaries not used (ln_bdy = F)'
+      IF (lwp) WRITE(numout, *) '~~~~~~~~'
     END IF
   END SUBROUTINE bdy_init
   SUBROUTINE bdy_segs
@@ -77,43 +75,43 @@ MODULE bdyini
     cgrid = (/'t', 'u', 'v'/)
     IF (jperio /= 0) CALL ctl_stop('bdy_segs: Cyclic or symmetric,', ' and general open boundary condition are not compatible')
     IF (nb_bdy == 0) THEN
-      IF (lwp) WRITE(numout, FMT = *) 'nb_bdy = 0, NO OPEN BOUNDARIES APPLIED.'
+      IF (lwp) WRITE(numout, *) 'nb_bdy = 0, NO OPEN BOUNDARIES APPLIED.'
     ELSE
-      IF (lwp) WRITE(numout, FMT = *) 'Number of open boundary sets : ', nb_bdy
+      IF (lwp) WRITE(numout, *) 'Number of open boundary sets : ', nb_bdy
     END IF
     DO ib_bdy = 1, nb_bdy
-      IF (lwp) WRITE(numout, FMT = *) ' '
-      IF (lwp) WRITE(numout, FMT = *) '------ Open boundary data set ', ib_bdy, '------'
+      IF (lwp) WRITE(numout, *) ' '
+      IF (lwp) WRITE(numout, *) '------ Open boundary data set ', ib_bdy, '------'
       IF (ln_coords_file(ib_bdy)) THEN
-        IF (lwp) WRITE(numout, FMT = *) 'Boundary definition read from file ' // TRIM(cn_coords_file(ib_bdy))
+        IF (lwp) WRITE(numout, *) 'Boundary definition read from file ' // TRIM(cn_coords_file(ib_bdy))
       ELSE
-        IF (lwp) WRITE(numout, FMT = *) 'Boundary defined in namelist.'
+        IF (lwp) WRITE(numout, *) 'Boundary defined in namelist.'
       END IF
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'Boundary conditions for barotropic solution:  '
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'Boundary conditions for barotropic solution:  '
       SELECT CASE (cn_dyn2d(ib_bdy))
       CASE ('none')
-        IF (lwp) WRITE(numout, FMT = *) '      no open boundary condition'
+        IF (lwp) WRITE(numout, *) '      no open boundary condition'
         dta_bdy(ib_bdy) % ll_ssh = .FALSE.
         dta_bdy(ib_bdy) % ll_u2d = .FALSE.
         dta_bdy(ib_bdy) % ll_v2d = .FALSE.
       CASE ('frs')
-        IF (lwp) WRITE(numout, FMT = *) '      Flow Relaxation Scheme'
+        IF (lwp) WRITE(numout, *) '      Flow Relaxation Scheme'
         dta_bdy(ib_bdy) % ll_ssh = .FALSE.
         dta_bdy(ib_bdy) % ll_u2d = .TRUE.
         dta_bdy(ib_bdy) % ll_v2d = .TRUE.
       CASE ('flather')
-        IF (lwp) WRITE(numout, FMT = *) '      Flather radiation condition'
+        IF (lwp) WRITE(numout, *) '      Flather radiation condition'
         dta_bdy(ib_bdy) % ll_ssh = .TRUE.
         dta_bdy(ib_bdy) % ll_u2d = .TRUE.
         dta_bdy(ib_bdy) % ll_v2d = .TRUE.
       CASE ('orlanski')
-        IF (lwp) WRITE(numout, FMT = *) '      Orlanski (fully oblique) radiation condition with adaptive nudging'
+        IF (lwp) WRITE(numout, *) '      Orlanski (fully oblique) radiation condition with adaptive nudging'
         dta_bdy(ib_bdy) % ll_ssh = .FALSE.
         dta_bdy(ib_bdy) % ll_u2d = .TRUE.
         dta_bdy(ib_bdy) % ll_v2d = .TRUE.
       CASE ('orlanski_npo')
-        IF (lwp) WRITE(numout, FMT = *) '      Orlanski (NPO) radiation condition with adaptive nudging'
+        IF (lwp) WRITE(numout, *) '      Orlanski (NPO) radiation condition with adaptive nudging'
         dta_bdy(ib_bdy) % ll_ssh = .FALSE.
         dta_bdy(ib_bdy) % ll_u2d = .TRUE.
         dta_bdy(ib_bdy) % ll_v2d = .TRUE.
@@ -123,13 +121,13 @@ MODULE bdyini
       IF (cn_dyn2d(ib_bdy) /= 'none') THEN
         SELECT CASE (nn_dyn2d_dta(ib_bdy))
         CASE (0)
-          IF (lwp) WRITE(numout, FMT = *) '      initial state used for bdy data'
+          IF (lwp) WRITE(numout, *) '      initial state used for bdy data'
         CASE (1)
-          IF (lwp) WRITE(numout, FMT = *) '      boundary data taken from file'
+          IF (lwp) WRITE(numout, *) '      boundary data taken from file'
         CASE (2)
-          IF (lwp) WRITE(numout, FMT = *) '      tidal harmonic forcing taken from file'
+          IF (lwp) WRITE(numout, *) '      tidal harmonic forcing taken from file'
         CASE (3)
-          IF (lwp) WRITE(numout, FMT = *) '      boundary data AND tidal harmonic forcing taken from files'
+          IF (lwp) WRITE(numout, *) '      boundary data AND tidal harmonic forcing taken from files'
         CASE DEFAULT
           CALL ctl_stop('nn_dyn2d_dta must be between 0 and 3')
         END SELECT
@@ -137,39 +135,39 @@ MODULE bdyini
           CALL ctl_stop('You must activate with ln_tide to add tidal forcing at open boundaries')
         END IF
       END IF
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'Boundary conditions for baroclinic velocities:  '
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'Boundary conditions for baroclinic velocities:  '
       SELECT CASE (cn_dyn3d(ib_bdy))
       CASE ('none')
-        IF (lwp) WRITE(numout, FMT = *) '      no open boundary condition'
+        IF (lwp) WRITE(numout, *) '      no open boundary condition'
         dta_bdy(ib_bdy) % ll_u3d = .FALSE.
         dta_bdy(ib_bdy) % ll_v3d = .FALSE.
       CASE ('frs')
-        IF (lwp) WRITE(numout, FMT = *) '      Flow Relaxation Scheme'
+        IF (lwp) WRITE(numout, *) '      Flow Relaxation Scheme'
         dta_bdy(ib_bdy) % ll_u3d = .TRUE.
         dta_bdy(ib_bdy) % ll_v3d = .TRUE.
       CASE ('specified')
-        IF (lwp) WRITE(numout, FMT = *) '      Specified value'
+        IF (lwp) WRITE(numout, *) '      Specified value'
         dta_bdy(ib_bdy) % ll_u3d = .TRUE.
         dta_bdy(ib_bdy) % ll_v3d = .TRUE.
       CASE ('neumann')
-        IF (lwp) WRITE(numout, FMT = *) '      Neumann conditions'
+        IF (lwp) WRITE(numout, *) '      Neumann conditions'
         dta_bdy(ib_bdy) % ll_u3d = .FALSE.
         dta_bdy(ib_bdy) % ll_v3d = .FALSE.
       CASE ('zerograd')
-        IF (lwp) WRITE(numout, FMT = *) '      Zero gradient for baroclinic velocities'
+        IF (lwp) WRITE(numout, *) '      Zero gradient for baroclinic velocities'
         dta_bdy(ib_bdy) % ll_u3d = .FALSE.
         dta_bdy(ib_bdy) % ll_v3d = .FALSE.
       CASE ('zero')
-        IF (lwp) WRITE(numout, FMT = *) '      Zero baroclinic velocities (runoff case)'
+        IF (lwp) WRITE(numout, *) '      Zero baroclinic velocities (runoff case)'
         dta_bdy(ib_bdy) % ll_u3d = .FALSE.
         dta_bdy(ib_bdy) % ll_v3d = .FALSE.
       CASE ('orlanski')
-        IF (lwp) WRITE(numout, FMT = *) '      Orlanski (fully oblique) radiation condition with adaptive nudging'
+        IF (lwp) WRITE(numout, *) '      Orlanski (fully oblique) radiation condition with adaptive nudging'
         dta_bdy(ib_bdy) % ll_u3d = .TRUE.
         dta_bdy(ib_bdy) % ll_v3d = .TRUE.
       CASE ('orlanski_npo')
-        IF (lwp) WRITE(numout, FMT = *) '      Orlanski (NPO) radiation condition with adaptive nudging'
+        IF (lwp) WRITE(numout, *) '      Orlanski (NPO) radiation condition with adaptive nudging'
         dta_bdy(ib_bdy) % ll_u3d = .TRUE.
         dta_bdy(ib_bdy) % ll_v3d = .TRUE.
       CASE DEFAULT
@@ -178,58 +176,58 @@ MODULE bdyini
       IF (cn_dyn3d(ib_bdy) /= 'none') THEN
         SELECT CASE (nn_dyn3d_dta(ib_bdy))
         CASE (0)
-          IF (lwp) WRITE(numout, FMT = *) '      initial state used for bdy data'
+          IF (lwp) WRITE(numout, *) '      initial state used for bdy data'
         CASE (1)
-          IF (lwp) WRITE(numout, FMT = *) '      boundary data taken from file'
+          IF (lwp) WRITE(numout, *) '      boundary data taken from file'
         CASE DEFAULT
           CALL ctl_stop('nn_dyn3d_dta must be 0 or 1')
         END SELECT
       END IF
       IF (ln_dyn3d_dmp(ib_bdy)) THEN
         IF (cn_dyn3d(ib_bdy) == 'none') THEN
-          IF (lwp) WRITE(numout, FMT = *) 'No open boundary condition for baroclinic velocities: ln_dyn3d_dmp is set to .false.'
+          IF (lwp) WRITE(numout, *) 'No open boundary condition for baroclinic velocities: ln_dyn3d_dmp is set to .false.'
           ln_dyn3d_dmp(ib_bdy) = .FALSE.
         ELSE IF (cn_dyn3d(ib_bdy) == 'frs') THEN
           CALL ctl_stop('Use FRS OR relaxation')
         ELSE
-          IF (lwp) WRITE(numout, FMT = *) '      + baroclinic velocities relaxation zone'
-          IF (lwp) WRITE(numout, FMT = *) '      Damping time scale: ', rn_time_dmp(ib_bdy), ' days'
+          IF (lwp) WRITE(numout, *) '      + baroclinic velocities relaxation zone'
+          IF (lwp) WRITE(numout, *) '      Damping time scale: ', rn_time_dmp(ib_bdy), ' days'
           IF ((lwp) .AND. rn_time_dmp(ib_bdy) < 0) CALL ctl_stop('Time scale must be positive')
           dta_bdy(ib_bdy) % ll_u3d = .TRUE.
           dta_bdy(ib_bdy) % ll_v3d = .TRUE.
         END IF
       ELSE
-        IF (lwp) WRITE(numout, FMT = *) '      NO relaxation on baroclinic velocities'
+        IF (lwp) WRITE(numout, *) '      NO relaxation on baroclinic velocities'
       END IF
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'Boundary conditions for temperature and salinity:  '
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'Boundary conditions for temperature and salinity:  '
       SELECT CASE (cn_tra(ib_bdy))
       CASE ('none')
-        IF (lwp) WRITE(numout, FMT = *) '      no open boundary condition'
+        IF (lwp) WRITE(numout, *) '      no open boundary condition'
         dta_bdy(ib_bdy) % ll_tem = .FALSE.
         dta_bdy(ib_bdy) % ll_sal = .FALSE.
       CASE ('frs')
-        IF (lwp) WRITE(numout, FMT = *) '      Flow Relaxation Scheme'
+        IF (lwp) WRITE(numout, *) '      Flow Relaxation Scheme'
         dta_bdy(ib_bdy) % ll_tem = .TRUE.
         dta_bdy(ib_bdy) % ll_sal = .TRUE.
       CASE ('specified')
-        IF (lwp) WRITE(numout, FMT = *) '      Specified value'
+        IF (lwp) WRITE(numout, *) '      Specified value'
         dta_bdy(ib_bdy) % ll_tem = .TRUE.
         dta_bdy(ib_bdy) % ll_sal = .TRUE.
       CASE ('neumann')
-        IF (lwp) WRITE(numout, FMT = *) '      Neumann conditions'
+        IF (lwp) WRITE(numout, *) '      Neumann conditions'
         dta_bdy(ib_bdy) % ll_tem = .FALSE.
         dta_bdy(ib_bdy) % ll_sal = .FALSE.
       CASE ('runoff')
-        IF (lwp) WRITE(numout, FMT = *) '      Runoff conditions : Neumann for T and specified to 0.1 for salinity'
+        IF (lwp) WRITE(numout, *) '      Runoff conditions : Neumann for T and specified to 0.1 for salinity'
         dta_bdy(ib_bdy) % ll_tem = .FALSE.
         dta_bdy(ib_bdy) % ll_sal = .FALSE.
       CASE ('orlanski')
-        IF (lwp) WRITE(numout, FMT = *) '      Orlanski (fully oblique) radiation condition with adaptive nudging'
+        IF (lwp) WRITE(numout, *) '      Orlanski (fully oblique) radiation condition with adaptive nudging'
         dta_bdy(ib_bdy) % ll_tem = .TRUE.
         dta_bdy(ib_bdy) % ll_sal = .TRUE.
       CASE ('orlanski_npo')
-        IF (lwp) WRITE(numout, FMT = *) '      Orlanski (NPO) radiation condition with adaptive nudging'
+        IF (lwp) WRITE(numout, *) '      Orlanski (NPO) radiation condition with adaptive nudging'
         dta_bdy(ib_bdy) % ll_tem = .TRUE.
         dta_bdy(ib_bdy) % ll_sal = .TRUE.
       CASE DEFAULT
@@ -238,63 +236,62 @@ MODULE bdyini
       IF (cn_tra(ib_bdy) /= 'none') THEN
         SELECT CASE (nn_tra_dta(ib_bdy))
         CASE (0)
-          IF (lwp) WRITE(numout, FMT = *) '      initial state used for bdy data'
+          IF (lwp) WRITE(numout, *) '      initial state used for bdy data'
         CASE (1)
-          IF (lwp) WRITE(numout, FMT = *) '      boundary data taken from file'
+          IF (lwp) WRITE(numout, *) '      boundary data taken from file'
         CASE DEFAULT
           CALL ctl_stop('nn_tra_dta must be 0 or 1')
         END SELECT
       END IF
       IF (ln_tra_dmp(ib_bdy)) THEN
         IF (cn_tra(ib_bdy) == 'none') THEN
-          IF (lwp) WRITE(numout, FMT = *) 'No open boundary condition for tracers: ln_tra_dmp is set to .false.'
+          IF (lwp) WRITE(numout, *) 'No open boundary condition for tracers: ln_tra_dmp is set to .false.'
           ln_tra_dmp(ib_bdy) = .FALSE.
         ELSE IF (cn_tra(ib_bdy) == 'frs') THEN
           CALL ctl_stop('Use FRS OR relaxation')
         ELSE
-          IF (lwp) WRITE(numout, FMT = *) '      + T/S relaxation zone'
-          IF (lwp) WRITE(numout, FMT = *) '      Damping time scale: ', rn_time_dmp(ib_bdy), ' days'
-          IF (lwp) WRITE(numout, FMT = *) '      Outflow damping time scale: ', rn_time_dmp_out(ib_bdy), ' days'
+          IF (lwp) WRITE(numout, *) '      + T/S relaxation zone'
+          IF (lwp) WRITE(numout, *) '      Damping time scale: ', rn_time_dmp(ib_bdy), ' days'
+          IF (lwp) WRITE(numout, *) '      Outflow damping time scale: ', rn_time_dmp_out(ib_bdy), ' days'
           IF ((lwp) .AND. rn_time_dmp(ib_bdy) < 0) CALL ctl_stop('Time scale must be positive')
           dta_bdy(ib_bdy) % ll_tem = .TRUE.
           dta_bdy(ib_bdy) % ll_sal = .TRUE.
         END IF
       ELSE
-        IF (lwp) WRITE(numout, FMT = *) '      NO T/S relaxation'
+        IF (lwp) WRITE(numout, *) '      NO T/S relaxation'
       END IF
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '      Width of relaxation zone = ', nn_rimwidth(ib_bdy)
-      IF (lwp) WRITE(numout, FMT = *)
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '      Width of relaxation zone = ', nn_rimwidth(ib_bdy)
+      IF (lwp) WRITE(numout, *)
     END DO
     IF (nb_bdy > 0) THEN
       IF (ln_vol) THEN
-        IF (lwp) WRITE(numout, FMT = *) 'Volume correction applied at open boundaries'
-        IF (lwp) WRITE(numout, FMT = *)
+        IF (lwp) WRITE(numout, *) 'Volume correction applied at open boundaries'
+        IF (lwp) WRITE(numout, *)
         SELECT CASE (nn_volctl)
         CASE (1)
-          IF (lwp) WRITE(numout, FMT = *) '      The total volume will be constant'
+          IF (lwp) WRITE(numout, *) '      The total volume will be constant'
         CASE (0)
-          IF (lwp) WRITE(numout, FMT = *) '      The total volume will vary according to the surface E-P flux'
+          IF (lwp) WRITE(numout, *) '      The total volume will vary according to the surface E-P flux'
         CASE DEFAULT
           CALL ctl_stop('nn_volctl must be 0 or 1')
         END SELECT
-        IF (lwp) WRITE(numout, FMT = *)
+        IF (lwp) WRITE(numout, *)
         IF (ln_tide) THEN
-          IF (lwp) WRITE(numout, FMT = *) ' The total volume correction is not working with tides. '
-          IF (lwp) WRITE(numout, FMT = *) ' Set ln_vol to .FALSE. '
-          IF (lwp) WRITE(numout, FMT = *) ' or '
-          IF (lwp) WRITE(numout, FMT = *) ' equilibriate your bdy input files '
+          IF (lwp) WRITE(numout, *) ' The total volume correction is not working with tides. '
+          IF (lwp) WRITE(numout, *) ' Set ln_vol to .FALSE. '
+          IF (lwp) WRITE(numout, *) ' or '
+          IF (lwp) WRITE(numout, *) ' equilibriate your bdy input files '
           CALL ctl_stop('The total volume correction is not working with tides.')
         END IF
       ELSE
-        IF (lwp) WRITE(numout, FMT = *) 'No volume correction applied at open boundaries'
-        IF (lwp) WRITE(numout, FMT = *)
+        IF (lwp) WRITE(numout, *) 'No volume correction applied at open boundaries'
+        IF (lwp) WRITE(numout, *)
       END IF
       IF (nb_jpk_bdy(ib_bdy) > 0) THEN
-        IF (lwp) WRITE(numout, FMT = *) '*** open boundary will be interpolate in the vertical onto the native grid ***'
+        IF (lwp) WRITE(numout, *) '*** open boundary will be interpolate in the vertical onto the native grid ***'
       ELSE
-        IF (lwp) WRITE(numout, FMT = *) '*** open boundary will be read straight onto the native grid without vertical &
-&interpolation ***'
+        IF (lwp) WRITE(numout, *) '*** open boundary will be read straight onto the native grid without vertical interpolation ***'
       END IF
     END IF
     REWIND(UNIT = numnam_cfg)
@@ -405,11 +402,10 @@ MODULE bdyini
             nbrdta(ii, igrd, ib_bdy) = INT(dta_global(ii, 1, 1))
           END DO
           ibr_max = MAXVAL(nbrdta(:, igrd, ib_bdy))
-          IF (lwp) WRITE(numout, FMT = *)
-          IF (lwp) WRITE(numout, FMT = *) ' Maximum rimwidth in file is ', ibr_max
-          IF (lwp) WRITE(numout, FMT = *) ' nn_rimwidth from namelist is ', nn_rimwidth(ib_bdy)
-          IF (ibr_max < nn_rimwidth(ib_bdy)) CALL ctl_stop('nn_rimwidth is larger than maximum rimwidth in file', &
-&cn_coords_file(ib_bdy))
+          IF (lwp) WRITE(numout, *)
+          IF (lwp) WRITE(numout, *) ' Maximum rimwidth in file is ', ibr_max
+          IF (lwp) WRITE(numout, *) ' nn_rimwidth from namelist is ', nn_rimwidth(ib_bdy)
+          IF (ibr_max < nn_rimwidth(ib_bdy)) CALL ctl_stop('nn_rimwidth is larger than maximum rimwidth in file', cn_coords_file(ib_bdy))
         END DO
         CALL iom_close(inum)
       END IF
@@ -560,8 +556,7 @@ MODULE bdyini
           IF (ib_bdy1 /= ib_bdy2) THEN
             DO ib1 = 1, nblendta(igrd, ib_bdy1)
               DO ib2 = 1, nblendta(igrd, ib_bdy2)
-                IF ((nbidta(ib1, igrd, ib_bdy1) == nbidta(ib2, igrd, ib_bdy2)) .AND. (nbjdta(ib1, igrd, ib_bdy1) == nbjdta(ib2, &
-&igrd, ib_bdy2))) THEN
+                IF ((nbidta(ib1, igrd, ib_bdy1) == nbidta(ib2, igrd, ib_bdy2)) .AND. (nbjdta(ib1, igrd, ib_bdy1) == nbjdta(ib2, igrd, ib_bdy2))) THEN
                   IF (nbrdta(ib1, igrd, ib_bdy1) < nbrdta(ib2, igrd, ib_bdy2)) THEN
                     nbidta(ib2, igrd, ib_bdy2) = - ib_bdy2
                     nbjdta(ib2, igrd, ib_bdy2) = - ib_bdy2
@@ -641,13 +636,10 @@ MODULE bdyini
           ibm1 = MAX(1, ib - 1)
           IF (lwp) THEN
             IF (nbrdta(ib, igrd, ib_bdy) < nbrdta(ibm1, igrd, ib_bdy)) THEN
-              CALL ctl_stop('bdy_segs : ERROR : boundary data in file must be defined ', &
-&' in order of distance from edge nbr A utility for re-ordering ', &
-&' boundary coordinates and data files exists in the TOOLS/OBC directory')
+              CALL ctl_stop('bdy_segs : ERROR : boundary data in file must be defined ', ' in order of distance from edge nbr A utility for re-ordering ', ' boundary coordinates and data files exists in the TOOLS/OBC directory')
             END IF
           END IF
-          IF (nbidta(ib, igrd, ib_bdy) >= iwe .AND. nbidta(ib, igrd, ib_bdy) <= ies .AND. nbjdta(ib, igrd, ib_bdy) >= iso .AND. &
-&nbjdta(ib, igrd, ib_bdy) <= ino) THEN
+          IF (nbidta(ib, igrd, ib_bdy) >= iwe .AND. nbidta(ib, igrd, ib_bdy) <= ies .AND. nbjdta(ib, igrd, ib_bdy) >= iso .AND. nbjdta(ib, igrd, ib_bdy) <= ino) THEN
             icount = icount + 1
             IF (nbrdta(ib, igrd, ib_bdy) == 1) icountr = icountr + 1
           END IF
@@ -656,9 +648,7 @@ MODULE bdyini
         idx_bdy(ib_bdy) % nblen(igrd) = icount
       END DO
       ilen1 = MAXVAL(idx_bdy(ib_bdy) % nblen(:))
-      ALLOCATE(idx_bdy(ib_bdy) % nbi(ilen1, jpbgrd), idx_bdy(ib_bdy) % nbj(ilen1, jpbgrd), idx_bdy(ib_bdy) % nbr(ilen1, jpbgrd), &
-&idx_bdy(ib_bdy) % nbd(ilen1, jpbgrd), idx_bdy(ib_bdy) % nbdout(ilen1, jpbgrd), idx_bdy(ib_bdy) % nbmap(ilen1, jpbgrd), &
-&idx_bdy(ib_bdy) % nbw(ilen1, jpbgrd), idx_bdy(ib_bdy) % flagu(ilen1, jpbgrd), idx_bdy(ib_bdy) % flagv(ilen1, jpbgrd))
+      ALLOCATE(idx_bdy(ib_bdy) % nbi(ilen1, jpbgrd), idx_bdy(ib_bdy) % nbj(ilen1, jpbgrd), idx_bdy(ib_bdy) % nbr(ilen1, jpbgrd), idx_bdy(ib_bdy) % nbd(ilen1, jpbgrd), idx_bdy(ib_bdy) % nbdout(ilen1, jpbgrd), idx_bdy(ib_bdy) % nbmap(ilen1, jpbgrd), idx_bdy(ib_bdy) % nbw(ilen1, jpbgrd), idx_bdy(ib_bdy) % flagu(ilen1, jpbgrd), idx_bdy(ib_bdy) % flagv(ilen1, jpbgrd))
       com_east = 0
       com_west = 0
       com_south = 0
@@ -671,8 +661,7 @@ MODULE bdyini
         icount = 0
         DO ir = 1, nn_rimwidth(ib_bdy)
           DO ib = 1, nblendta(igrd, ib_bdy)
-            IF (nbidta(ib, igrd, ib_bdy) >= iwe .AND. nbidta(ib, igrd, ib_bdy) <= ies .AND. nbjdta(ib, igrd, ib_bdy) >= iso .AND. &
-&nbjdta(ib, igrd, ib_bdy) <= ino .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+            IF (nbidta(ib, igrd, ib_bdy) >= iwe .AND. nbidta(ib, igrd, ib_bdy) <= ies .AND. nbjdta(ib, igrd, ib_bdy) >= iso .AND. nbjdta(ib, igrd, ib_bdy) <= ino .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
               icount = icount + 1
               idx_bdy(ib_bdy) % nbi(icount, igrd) = nbidta(ib, igrd, ib_bdy) - mig(1) + 1
               idx_bdy(ib_bdy) % nbj(icount, igrd) = nbjdta(ib, igrd, ib_bdy) - mjg(1) + 1
@@ -692,8 +681,7 @@ MODULE bdyini
               idx_bdy(ib_bdy) % nbmap(icount, igrd) = ib
             END IF
             IF (nbondi == 0) THEN
-              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(1) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(1) .AND. nbjdta(ib, igrd, ib_bdy) >= &
-&is_b(1) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(1) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(1) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(1) .AND. nbjdta(ib, igrd, ib_bdy) >= is_b(1) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(1) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 ii = nbidta(ib, igrd, ib_bdy) - iw_b(1) + 2
                 IF (ii == (nlcit(nowe + 1) - 1)) THEN
                   ij = nbjdta(ib, igrd, ib_bdy) - is_b(1) + 2
@@ -705,8 +693,7 @@ MODULE bdyini
                   com_west_b = 1
                 END IF
               END IF
-              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(2) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(2) .AND. nbjdta(ib, igrd, ib_bdy) >= &
-&is_b(2) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(2) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(2) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(2) .AND. nbjdta(ib, igrd, ib_bdy) >= is_b(2) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(2) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 ii = nbidta(ib, igrd, ib_bdy) - iw_b(2) + 2
                 IF (ii == 2) THEN
                   ij = nbjdta(ib, igrd, ib_bdy) - is_b(2) + 2
@@ -719,8 +706,7 @@ MODULE bdyini
                 END IF
               END IF
             ELSE IF (nbondi == 1) THEN
-              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(1) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(1) .AND. nbjdta(ib, igrd, ib_bdy) >= &
-&is_b(1) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(1) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(1) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(1) .AND. nbjdta(ib, igrd, ib_bdy) >= is_b(1) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(1) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 ii = nbidta(ib, igrd, ib_bdy) - iw_b(1) + 2
                 IF (ii == (nlcit(nowe + 1) - 1)) THEN
                   ij = nbjdta(ib, igrd, ib_bdy) - is_b(1) + 2
@@ -733,8 +719,7 @@ MODULE bdyini
                 END IF
               END IF
             ELSE IF (nbondi == - 1) THEN
-              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(2) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(2) .AND. nbjdta(ib, igrd, ib_bdy) >= &
-&is_b(2) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(2) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(2) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(2) .AND. nbjdta(ib, igrd, ib_bdy) >= is_b(2) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(2) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 ii = nbidta(ib, igrd, ib_bdy) - iw_b(2) + 2
                 IF (ii == 2) THEN
                   ij = nbjdta(ib, igrd, ib_bdy) - is_b(2) + 2
@@ -748,47 +733,39 @@ MODULE bdyini
               END IF
             END IF
             IF (nbondj == 0) THEN
-              IF (com_north_b .NE. 1 .AND. (nbidta(ib, igrd, ib_bdy) == iw_b(4) - 1 .OR. nbidta(ib, igrd, ib_bdy) == ie_b(4) + 1) &
-&.AND. nbjdta(ib, igrd, ib_bdy) == is_b(4) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (com_north_b .NE. 1 .AND. (nbidta(ib, igrd, ib_bdy) == iw_b(4) - 1 .OR. nbidta(ib, igrd, ib_bdy) == ie_b(4) + 1) .AND. nbjdta(ib, igrd, ib_bdy) == is_b(4) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 com_north_b = 1
               END IF
-              IF (com_south_b .NE. 1 .AND. (nbidta(ib, igrd, ib_bdy) == iw_b(3) - 1 .OR. nbidta(ib, igrd, ib_bdy) == ie_b(3) + 1) &
-&.AND. nbjdta(ib, igrd, ib_bdy) == in_b(3) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (com_south_b .NE. 1 .AND. (nbidta(ib, igrd, ib_bdy) == iw_b(3) - 1 .OR. nbidta(ib, igrd, ib_bdy) == ie_b(3) + 1) .AND. nbjdta(ib, igrd, ib_bdy) == in_b(3) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 com_south_b = 1
               END IF
-              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(3) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(3) .AND. nbjdta(ib, igrd, ib_bdy) >= &
-&is_b(3) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(3) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(3) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(3) .AND. nbjdta(ib, igrd, ib_bdy) >= is_b(3) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(3) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 ij = nbjdta(ib, igrd, ib_bdy) - is_b(3) + 2
                 IF ((com_south_b .NE. 1) .AND. (ij == (nlcjt(noso + 1) - 1))) THEN
                   com_south_b = 1
                 END IF
               END IF
-              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(4) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(4) .AND. nbjdta(ib, igrd, ib_bdy) >= &
-&is_b(4) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(4) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(4) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(4) .AND. nbjdta(ib, igrd, ib_bdy) >= is_b(4) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(4) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 ij = nbjdta(ib, igrd, ib_bdy) - is_b(4) + 2
                 IF ((com_north_b .NE. 1) .AND. (ij == 2)) THEN
                   com_north_b = 1
                 END IF
               END IF
             ELSE IF (nbondj == 1) THEN
-              IF (com_south_b .NE. 1 .AND. (nbidta(ib, igrd, ib_bdy) == iw_b(3) - 1 .OR. nbidta(ib, igrd, ib_bdy) == ie_b(3) + 1) &
-&.AND. nbjdta(ib, igrd, ib_bdy) == in_b(3) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (com_south_b .NE. 1 .AND. (nbidta(ib, igrd, ib_bdy) == iw_b(3) - 1 .OR. nbidta(ib, igrd, ib_bdy) == ie_b(3) + 1) .AND. nbjdta(ib, igrd, ib_bdy) == in_b(3) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 com_south_b = 1
               END IF
-              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(3) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(3) .AND. nbjdta(ib, igrd, ib_bdy) >= &
-&is_b(3) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(3) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(3) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(3) .AND. nbjdta(ib, igrd, ib_bdy) >= is_b(3) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(3) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 ij = nbjdta(ib, igrd, ib_bdy) - is_b(3) + 2
                 IF ((com_south_b .NE. 1) .AND. (ij == (nlcjt(noso + 1) - 1))) THEN
                   com_south_b = 1
                 END IF
               END IF
             ELSE IF (nbondj == - 1) THEN
-              IF (com_north_b .NE. 1 .AND. (nbidta(ib, igrd, ib_bdy) == iw_b(4) - 1 .OR. nbidta(ib, igrd, ib_bdy) == ie_b(4) + 1) &
-&.AND. nbjdta(ib, igrd, ib_bdy) == is_b(4) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (com_north_b .NE. 1 .AND. (nbidta(ib, igrd, ib_bdy) == iw_b(4) - 1 .OR. nbidta(ib, igrd, ib_bdy) == ie_b(4) + 1) .AND. nbjdta(ib, igrd, ib_bdy) == is_b(4) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 com_north_b = 1
               END IF
-              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(4) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(4) .AND. nbjdta(ib, igrd, ib_bdy) >= &
-&is_b(4) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(4) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
+              IF (nbidta(ib, igrd, ib_bdy) >= iw_b(4) .AND. nbidta(ib, igrd, ib_bdy) <= ie_b(4) .AND. nbjdta(ib, igrd, ib_bdy) >= is_b(4) .AND. nbjdta(ib, igrd, ib_bdy) <= in_b(4) .AND. nbrdta(ib, igrd, ib_bdy) == ir) THEN
                 ij = nbjdta(ib, igrd, ib_bdy) - is_b(4) + 2
                 IF ((com_north_b .NE. 1) .AND. (ij == 2)) THEN
                   com_north_b = 1
@@ -835,10 +812,8 @@ MODULE bdyini
       DO igrd = 1, jpbgrd
         DO ib = 1, idx_bdy(ib_bdy) % nblen(igrd)
           nbr => idx_bdy(ib_bdy) % nbr(ib, igrd)
-          idx_bdy(ib_bdy) % nbd(ib, igrd) = 1. / (rn_time_dmp(ib_bdy) * rday) * (REAL(nn_rimwidth(ib_bdy) + 1 - nbr) / &
-&REAL(nn_rimwidth(ib_bdy))) ** 2.
-          idx_bdy(ib_bdy) % nbdout(ib, igrd) = 1. / (rn_time_dmp_out(ib_bdy) * rday) * (REAL(nn_rimwidth(ib_bdy) + 1 - nbr) / &
-&REAL(nn_rimwidth(ib_bdy))) ** 2.
+          idx_bdy(ib_bdy) % nbd(ib, igrd) = 1. / (rn_time_dmp(ib_bdy) * rday) * (REAL(nn_rimwidth(ib_bdy) + 1 - nbr) / REAL(nn_rimwidth(ib_bdy))) ** 2.
+          idx_bdy(ib_bdy) % nbdout(ib, igrd) = 1. / (rn_time_dmp_out(ib_bdy) * rday) * (REAL(nn_rimwidth(ib_bdy) + 1 - nbr) / REAL(nn_rimwidth(ib_bdy))) ** 2.
         END DO
       END DO
     END DO
@@ -902,15 +877,14 @@ MODULE bdyini
           zwfl = pmask(nbi + i_offset, nbj)
           IF (i_offset == 1 .AND. zefl + zwfl == 2) THEN
             icount = icount + 1
-            IF (lwp) WRITE(numout, FMT = *) 'Problem with igrd = ', igrd, ' at (global) nbi, nbj : ', mig(nbi), mjg(nbj)
+            IF (lwp) WRITE(numout, *) 'Problem with igrd = ', igrd, ' at (global) nbi, nbj : ', mig(nbi), mjg(nbj)
           ELSE
             idx_bdy(ib_bdy) % flagu(ib, igrd) = - zefl + zwfl
           END IF
         END DO
         IF (icount /= 0) THEN
-          WRITE(ctmp1, FMT = *) ' E R R O R : Some ', cgrid(igrd), ' grid points,', ' are not boundary points (flagu calculation). &
-&Check nbi, nbj, indices for boundary set ', ib_bdy
-          WRITE(ctmp2, FMT = *) ' ========== '
+          WRITE(ctmp1, *) ' E R R O R : Some ', cgrid(igrd), ' grid points,', ' are not boundary points (flagu calculation). Check nbi, nbj, indices for boundary set ', ib_bdy
+          WRITE(ctmp2, *) ' ========== '
           CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
         END IF
       END DO
@@ -933,16 +907,15 @@ MODULE bdyini
           znfl = pmask(nbi, nbj + j_offset - 1)
           zsfl = pmask(nbi, nbj + j_offset)
           IF (j_offset == 1 .AND. znfl + zsfl == 2) THEN
-            IF (lwp) WRITE(numout, FMT = *) 'Problem with igrd = ', igrd, ' at (global) nbi, nbj : ', mig(nbi), mjg(nbj)
+            IF (lwp) WRITE(numout, *) 'Problem with igrd = ', igrd, ' at (global) nbi, nbj : ', mig(nbi), mjg(nbj)
             icount = icount + 1
           ELSE
             idx_bdy(ib_bdy) % flagv(ib, igrd) = - znfl + zsfl
           END IF
         END DO
         IF (icount /= 0) THEN
-          WRITE(ctmp1, FMT = *) ' E R R O R : Some ', cgrid(igrd), ' grid points,', ' are not boundary points (flagv calculation). &
-&Check nbi, nbj, indices for boundary set ', ib_bdy
-          WRITE(ctmp2, FMT = *) ' ========== '
+          WRITE(ctmp1, *) ' E R R O R : Some ', cgrid(igrd), ' grid points,', ' are not boundary points (flagv calculation). Check nbi, nbj, indices for boundary set ', ib_bdy
+          WRITE(ctmp2, *) ' ========== '
           CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
         END IF
       END DO
@@ -957,42 +930,42 @@ MODULE bdyini
     REAL(KIND = wp), DIMENSION(2) :: ztestmask
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('bdy_ctl_seg', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *) ' '
-    IF (lwp) WRITE(numout, FMT = *) 'bdy_ctl_seg: Check analytical segments'
-    IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-    IF (lwp) WRITE(numout, FMT = *) 'Number of east  segments     : ', nbdysege
-    IF (lwp) WRITE(numout, FMT = *) 'Number of west  segments     : ', nbdysegw
-    IF (lwp) WRITE(numout, FMT = *) 'Number of north segments     : ', nbdysegn
-    IF (lwp) WRITE(numout, FMT = *) 'Number of south segments     : ', nbdysegs
+    IF (lwp) WRITE(numout, *) ' '
+    IF (lwp) WRITE(numout, *) 'bdy_ctl_seg: Check analytical segments'
+    IF (lwp) WRITE(numout, *) '~~~~~~~~~~~~'
+    IF (lwp) WRITE(numout, *) 'Number of east  segments     : ', nbdysege
+    IF (lwp) WRITE(numout, *) 'Number of west  segments     : ', nbdysegw
+    IF (lwp) WRITE(numout, *) 'Number of north segments     : ', nbdysegn
+    IF (lwp) WRITE(numout, *) 'Number of south segments     : ', nbdysegs
     DO ib = 1, nbdysegn
-      IF (lwp) WRITE(numout, FMT = *) '**check north seg bounds pckg: ', npckgn(ib)
+      IF (lwp) WRITE(numout, *) '**check north seg bounds pckg: ', npckgn(ib)
       IF ((jpjnob(ib) .GE. jpjglo - 1) .OR. (jpjnob(ib) .LE. 1)) CALL ctl_stop('nbdyind out of domain')
       IF (jpindt(ib) .GE. jpinft(ib)) CALL ctl_stop('Bdy start index is greater than end index')
       IF (jpindt(ib) .LE. 1) CALL ctl_stop('Start index out of domain')
       IF (jpinft(ib) .GE. jpiglo) CALL ctl_stop('End index out of domain')
     END DO
     DO ib = 1, nbdysegs
-      IF (lwp) WRITE(numout, FMT = *) '**check south seg bounds pckg: ', npckgs(ib)
+      IF (lwp) WRITE(numout, *) '**check south seg bounds pckg: ', npckgs(ib)
       IF ((jpjsob(ib) .GE. jpjglo - 1) .OR. (jpjsob(ib) .LE. 1)) CALL ctl_stop('nbdyind out of domain')
       IF (jpisdt(ib) .GE. jpisft(ib)) CALL ctl_stop('Bdy start index is greater than end index')
       IF (jpisdt(ib) .LE. 1) CALL ctl_stop('Start index out of domain')
       IF (jpisft(ib) .GE. jpiglo) CALL ctl_stop('End index out of domain')
     END DO
     DO ib = 1, nbdysege
-      IF (lwp) WRITE(numout, FMT = *) '**check east  seg bounds pckg: ', npckge(ib)
+      IF (lwp) WRITE(numout, *) '**check east  seg bounds pckg: ', npckge(ib)
       IF ((jpieob(ib) .GE. jpiglo - 1) .OR. (jpieob(ib) .LE. 1)) CALL ctl_stop('nbdyind out of domain')
       IF (jpjedt(ib) .GE. jpjeft(ib)) CALL ctl_stop('Bdy start index is greater than end index')
       IF (jpjedt(ib) .LE. 1) CALL ctl_stop('Start index out of domain')
       IF (jpjeft(ib) .GE. jpjglo) CALL ctl_stop('End index out of domain')
     END DO
     DO ib = 1, nbdysegw
-      IF (lwp) WRITE(numout, FMT = *) '**check west  seg bounds pckg: ', npckgw(ib)
+      IF (lwp) WRITE(numout, *) '**check west  seg bounds pckg: ', npckgw(ib)
       IF ((jpiwob(ib) .GE. jpiglo - 1) .OR. (jpiwob(ib) .LE. 1)) CALL ctl_stop('nbdyind out of domain')
       IF (jpjwdt(ib) .GE. jpjwft(ib)) CALL ctl_stop('Bdy start index is greater than end index')
       IF (jpjwdt(ib) .LE. 1) CALL ctl_stop('Start index out of domain')
       IF (jpjwft(ib) .GE. jpjglo) CALL ctl_stop('End index out of domain')
     END DO
-    IF (lwp) WRITE(numout, FMT = *) '**Look for segments corners  :'
+    IF (lwp) WRITE(numout, *) '**Look for segments corners  :'
     itest = 0
     icorne(:, :) = 0.
     icornw(:, :) = 0.
@@ -1001,21 +974,18 @@ MODULE bdyini
     IF ((nbdysegw > 0) .AND. (nbdysegs > 0)) THEN
       DO ib1 = 1, nbdysegw
         DO ib2 = 1, nbdysegs
-          IF ((jpisdt(ib2) <= jpiwob(ib1)) .AND. (jpisft(ib2) >= jpiwob(ib1)) .AND. (jpjwdt(ib1) <= jpjsob(ib2)) .AND. &
-&(jpjwft(ib1) >= jpjsob(ib2))) THEN
+          IF ((jpisdt(ib2) <= jpiwob(ib1)) .AND. (jpisft(ib2) >= jpiwob(ib1)) .AND. (jpjwdt(ib1) <= jpjsob(ib2)) .AND. (jpjwft(ib1) >= jpjsob(ib2))) THEN
             IF ((jpjwdt(ib1) == jpjsob(ib2)) .AND. (jpisdt(ib2) == jpiwob(ib1))) THEN
               icornw(ib1, 1) = npckgs(ib2)
               icorns(ib2, 1) = npckgw(ib1)
             ELSE IF ((jpisft(ib2) == jpiwob(ib1)) .AND. (jpjwft(ib1) == jpjsob(ib2))) THEN
-              WRITE(ctmp1, FMT = *) ' E R R O R : Found an acute open boundary corner at point (i,j)= ', jpisft(ib2), jpjwft(ib1)
-              WRITE(ctmp2, FMT = *) ' ==========  Not allowed yet'
-              WRITE(ctmp3, FMT = *) '             Crossing problem with West segment: ', npckgw(ib1), ' and South segment: ', &
-&npckgs(ib2)
+              WRITE(ctmp1, *) ' E R R O R : Found an acute open boundary corner at point (i,j)= ', jpisft(ib2), jpjwft(ib1)
+              WRITE(ctmp2, *) ' ==========  Not allowed yet'
+              WRITE(ctmp3, *) '             Crossing problem with West segment: ', npckgw(ib1), ' and South segment: ', npckgs(ib2)
               CALL ctl_stop(' ', ctmp1, ctmp2, ctmp3, ' ')
             ELSE
-              WRITE(ctmp1, FMT = *) ' E R R O R : Check South and West Open boundary indices'
-              WRITE(ctmp2, FMT = *) ' ==========  Crossing problem with West segment: ', npckgw(ib1), ' and South segment: ', &
-&npckgs(ib2)
+              WRITE(ctmp1, *) ' E R R O R : Check South and West Open boundary indices'
+              WRITE(ctmp2, *) ' ==========  Crossing problem with West segment: ', npckgw(ib1), ' and South segment: ', npckgs(ib2)
               CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
             END IF
           END IF
@@ -1025,21 +995,18 @@ MODULE bdyini
     IF ((nbdysege > 0) .AND. (nbdysegs > 0)) THEN
       DO ib1 = 1, nbdysege
         DO ib2 = 1, nbdysegs
-          IF ((jpisdt(ib2) <= jpieob(ib1) + 1) .AND. (jpisft(ib2) >= jpieob(ib1) + 1) .AND. (jpjedt(ib1) <= jpjsob(ib2)) .AND. &
-&(jpjeft(ib1) >= jpjsob(ib2))) THEN
+          IF ((jpisdt(ib2) <= jpieob(ib1) + 1) .AND. (jpisft(ib2) >= jpieob(ib1) + 1) .AND. (jpjedt(ib1) <= jpjsob(ib2)) .AND. (jpjeft(ib1) >= jpjsob(ib2))) THEN
             IF ((jpjedt(ib1) == jpjsob(ib2)) .AND. (jpisft(ib2) == jpieob(ib1) + 1)) THEN
               icorne(ib1, 1) = npckgs(ib2)
               icorns(ib2, 2) = npckge(ib1)
             ELSE IF ((jpjeft(ib1) == jpjsob(ib2)) .AND. (jpisdt(ib2) == jpieob(ib1) + 1)) THEN
-              WRITE(ctmp1, FMT = *) ' E R R O R : Found an acute open boundary corner at point (i,j)= ', jpisdt(ib2), jpjeft(ib1)
-              WRITE(ctmp2, FMT = *) ' ==========  Not allowed yet'
-              WRITE(ctmp3, FMT = *) '             Crossing problem with East segment: ', npckge(ib1), ' and South segment: ', &
-&npckgs(ib2)
+              WRITE(ctmp1, *) ' E R R O R : Found an acute open boundary corner at point (i,j)= ', jpisdt(ib2), jpjeft(ib1)
+              WRITE(ctmp2, *) ' ==========  Not allowed yet'
+              WRITE(ctmp3, *) '             Crossing problem with East segment: ', npckge(ib1), ' and South segment: ', npckgs(ib2)
               CALL ctl_stop(' ', ctmp1, ctmp2, ctmp3, ' ')
             ELSE
-              WRITE(ctmp1, FMT = *) ' E R R O R : Check South and East Open boundary indices'
-              WRITE(ctmp2, FMT = *) ' ==========  Crossing problem with East segment: ', npckge(ib1), ' and South segment: ', &
-&npckgs(ib2)
+              WRITE(ctmp1, *) ' E R R O R : Check South and East Open boundary indices'
+              WRITE(ctmp2, *) ' ==========  Crossing problem with East segment: ', npckge(ib1), ' and South segment: ', npckgs(ib2)
               CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
             END IF
           END IF
@@ -1049,21 +1016,18 @@ MODULE bdyini
     IF ((nbdysegn > 0) .AND. (nbdysegw > 0)) THEN
       DO ib1 = 1, nbdysegw
         DO ib2 = 1, nbdysegn
-          IF ((jpindt(ib2) <= jpiwob(ib1)) .AND. (jpinft(ib2) >= jpiwob(ib1)) .AND. (jpjwdt(ib1) <= jpjnob(ib2) + 1) .AND. &
-&(jpjwft(ib1) >= jpjnob(ib2) + 1)) THEN
+          IF ((jpindt(ib2) <= jpiwob(ib1)) .AND. (jpinft(ib2) >= jpiwob(ib1)) .AND. (jpjwdt(ib1) <= jpjnob(ib2) + 1) .AND. (jpjwft(ib1) >= jpjnob(ib2) + 1)) THEN
             IF ((jpjwft(ib1) == jpjnob(ib2) + 1) .AND. (jpindt(ib2) == jpiwob(ib1))) THEN
               icornw(ib1, 2) = npckgn(ib2)
               icornn(ib2, 1) = npckgw(ib1)
             ELSE IF ((jpjwdt(ib1) == jpjnob(ib2) + 1) .AND. (jpinft(ib2) == jpiwob(ib1))) THEN
-              WRITE(ctmp1, FMT = *) ' E R R O R : Found an acute open boundary corner at point (i,j)= ', jpinft(ib2), jpjwdt(ib1)
-              WRITE(ctmp2, FMT = *) ' ==========  Not allowed yet'
-              WRITE(ctmp3, FMT = *) '             Crossing problem with West segment: ', npckgw(ib1), ' and North segment: ', &
-&npckgn(ib2)
+              WRITE(ctmp1, *) ' E R R O R : Found an acute open boundary corner at point (i,j)= ', jpinft(ib2), jpjwdt(ib1)
+              WRITE(ctmp2, *) ' ==========  Not allowed yet'
+              WRITE(ctmp3, *) '             Crossing problem with West segment: ', npckgw(ib1), ' and North segment: ', npckgn(ib2)
               CALL ctl_stop(' ', ctmp1, ctmp2, ctmp3, ' ')
             ELSE
-              WRITE(ctmp1, FMT = *) ' E R R O R : Check North and West Open boundary indices'
-              WRITE(ctmp2, FMT = *) ' ==========  Crossing problem with West segment: ', npckgw(ib1), ' and North segment: ', &
-&npckgn(ib2)
+              WRITE(ctmp1, *) ' E R R O R : Check North and West Open boundary indices'
+              WRITE(ctmp2, *) ' ==========  Crossing problem with West segment: ', npckgw(ib1), ' and North segment: ', npckgn(ib2)
               CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
             END IF
           END IF
@@ -1073,21 +1037,18 @@ MODULE bdyini
     IF ((nbdysegn > 0) .AND. (nbdysege > 0)) THEN
       DO ib1 = 1, nbdysege
         DO ib2 = 1, nbdysegn
-          IF ((jpindt(ib2) <= jpieob(ib1) + 1) .AND. (jpinft(ib2) >= jpieob(ib1) + 1) .AND. (jpjedt(ib1) <= jpjnob(ib2) + 1) .AND. &
-&(jpjeft(ib1) >= jpjnob(ib2) + 1)) THEN
+          IF ((jpindt(ib2) <= jpieob(ib1) + 1) .AND. (jpinft(ib2) >= jpieob(ib1) + 1) .AND. (jpjedt(ib1) <= jpjnob(ib2) + 1) .AND. (jpjeft(ib1) >= jpjnob(ib2) + 1)) THEN
             IF ((jpjeft(ib1) == jpjnob(ib2) + 1) .AND. (jpinft(ib2) == jpieob(ib1) + 1)) THEN
               icorne(ib1, 2) = npckgn(ib2)
               icornn(ib2, 2) = npckge(ib1)
             ELSE IF ((jpjedt(ib1) == jpjnob(ib2) + 1) .AND. (jpindt(ib2) == jpieob(ib1) + 1)) THEN
-              WRITE(ctmp1, FMT = *) ' E R R O R : Found an acute open boundary corner at point (i,j)= ', jpindt(ib2), jpjedt(ib1)
-              WRITE(ctmp2, FMT = *) ' ==========  Not allowed yet'
-              WRITE(ctmp3, FMT = *) '             Crossing problem with East segment: ', npckge(ib1), ' and North segment: ', &
-&npckgn(ib2)
+              WRITE(ctmp1, *) ' E R R O R : Found an acute open boundary corner at point (i,j)= ', jpindt(ib2), jpjedt(ib1)
+              WRITE(ctmp2, *) ' ==========  Not allowed yet'
+              WRITE(ctmp3, *) '             Crossing problem with East segment: ', npckge(ib1), ' and North segment: ', npckgn(ib2)
               CALL ctl_stop(' ', ctmp1, ctmp2, ctmp3, ' ')
             ELSE
-              WRITE(ctmp1, FMT = *) ' E R R O R : Check North and East Open boundary indices'
-              WRITE(ctmp2, FMT = *) ' ==========  Crossing problem with East segment: ', npckge(ib1), ' and North segment: ', &
-&npckgn(ib2)
+              WRITE(ctmp1, *) ' E R R O R : Check North and East Open boundary indices'
+              WRITE(ctmp2, *) ' ==========  Crossing problem with East segment: ', npckge(ib1), ' and North segment: ', npckgn(ib2)
               CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
             END IF
           END IF
@@ -1105,22 +1066,22 @@ MODULE bdyini
       CALL mpp_sum('bdyini', ztestmask, 2)
       IF (ztestmask(1) == 1) THEN
         IF (icornw(ib, 1) == 0) THEN
-          WRITE(ctmp1, FMT = *) ' E R R O R : Open boundary segment ', npckgw(ib)
-          WRITE(ctmp2, FMT = *) ' ==========  does not start on land or on a corner'
+          WRITE(ctmp1, *) ' E R R O R : Open boundary segment ', npckgw(ib)
+          WRITE(ctmp2, *) ' ==========  does not start on land or on a corner'
           CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
         ELSE
-          IF (lwp) WRITE(numout, FMT = *) 'Found a South-West corner at (i,j): ', jpiwob(ib), jpjwdt(ib)
+          IF (lwp) WRITE(numout, *) 'Found a South-West corner at (i,j): ', jpiwob(ib), jpjwdt(ib)
           CALL bdy_ctl_corn(npckgw(ib), icornw(ib, 1))
           itest = itest + 1
         END IF
       END IF
       IF (ztestmask(2) == 1) THEN
         IF (icornw(ib, 2) == 0) THEN
-          WRITE(ctmp1, FMT = *) ' E R R O R : Open boundary segment ', npckgw(ib)
-          WRITE(ctmp2, FMT = *) ' ==========  does not end on land or on a corner'
+          WRITE(ctmp1, *) ' E R R O R : Open boundary segment ', npckgw(ib)
+          WRITE(ctmp2, *) ' ==========  does not end on land or on a corner'
           CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
         ELSE
-          IF (lwp) WRITE(numout, FMT = *) 'Found a North-West corner at (i,j): ', jpiwob(ib), jpjwft(ib)
+          IF (lwp) WRITE(numout, *) 'Found a North-West corner at (i,j): ', jpiwob(ib), jpjwft(ib)
           CALL bdy_ctl_corn(npckgw(ib), icornw(ib, 2))
           itest = itest + 1
         END IF
@@ -1137,22 +1098,22 @@ MODULE bdyini
       CALL mpp_sum('bdyini', ztestmask, 2)
       IF (ztestmask(1) == 1) THEN
         IF (icorne(ib, 1) == 0) THEN
-          WRITE(ctmp1, FMT = *) ' E R R O R : Open boundary segment ', npckge(ib)
-          WRITE(ctmp2, FMT = *) ' ==========  does not start on land or on a corner'
+          WRITE(ctmp1, *) ' E R R O R : Open boundary segment ', npckge(ib)
+          WRITE(ctmp2, *) ' ==========  does not start on land or on a corner'
           CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
         ELSE
-          IF (lwp) WRITE(numout, FMT = *) 'Found a South-East corner at (i,j): ', jpieob(ib) + 1, jpjedt(ib)
+          IF (lwp) WRITE(numout, *) 'Found a South-East corner at (i,j): ', jpieob(ib) + 1, jpjedt(ib)
           CALL bdy_ctl_corn(npckge(ib), icorne(ib, 1))
           itest = itest + 1
         END IF
       END IF
       IF (ztestmask(2) == 1) THEN
         IF (icorne(ib, 2) == 0) THEN
-          WRITE(ctmp1, FMT = *) ' E R R O R : Open boundary segment ', npckge(ib)
-          WRITE(ctmp2, FMT = *) ' ==========  does not end on land or on a corner'
+          WRITE(ctmp1, *) ' E R R O R : Open boundary segment ', npckge(ib)
+          WRITE(ctmp2, *) ' ==========  does not end on land or on a corner'
           CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
         ELSE
-          IF (lwp) WRITE(numout, FMT = *) 'Found a North-East corner at (i,j): ', jpieob(ib) + 1, jpjeft(ib)
+          IF (lwp) WRITE(numout, *) 'Found a North-East corner at (i,j): ', jpieob(ib) + 1, jpjeft(ib)
           CALL bdy_ctl_corn(npckge(ib), icorne(ib, 2))
           itest = itest + 1
         END IF
@@ -1168,13 +1129,13 @@ MODULE bdyini
       END DO
       CALL mpp_sum('bdyini', ztestmask, 2)
       IF ((ztestmask(1) == 1) .AND. (icorns(ib, 1) == 0)) THEN
-        WRITE(ctmp1, FMT = *) ' E R R O R : Open boundary segment ', npckgs(ib)
-        WRITE(ctmp2, FMT = *) ' ==========  does not start on land or on a corner'
+        WRITE(ctmp1, *) ' E R R O R : Open boundary segment ', npckgs(ib)
+        WRITE(ctmp2, *) ' ==========  does not start on land or on a corner'
         CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
       END IF
       IF ((ztestmask(2) == 1) .AND. (icorns(ib, 2) == 0)) THEN
-        WRITE(ctmp1, FMT = *) ' E R R O R : Open boundary segment ', npckgs(ib)
-        WRITE(ctmp2, FMT = *) ' ==========  does not end on land or on a corner'
+        WRITE(ctmp1, *) ' E R R O R : Open boundary segment ', npckgs(ib)
+        WRITE(ctmp2, *) ' ==========  does not end on land or on a corner'
         CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
       END IF
     END DO
@@ -1188,17 +1149,17 @@ MODULE bdyini
       END DO
       CALL mpp_sum('bdyini', ztestmask, 2)
       IF ((ztestmask(1) == 1) .AND. (icornn(ib, 1) == 0)) THEN
-        WRITE(ctmp1, FMT = *) ' E R R O R : Open boundary segment ', npckgn(ib)
-        WRITE(ctmp2, FMT = *) ' ==========  does not start on land'
+        WRITE(ctmp1, *) ' E R R O R : Open boundary segment ', npckgn(ib)
+        WRITE(ctmp2, *) ' ==========  does not start on land'
         CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
       END IF
       IF ((ztestmask(2) == 1) .AND. (icornn(ib, 2) == 0)) THEN
-        WRITE(ctmp1, FMT = *) ' E R R O R : Open boundary segment ', npckgn(ib)
-        WRITE(ctmp2, FMT = *) ' ==========  does not end on land'
+        WRITE(ctmp1, *) ' E R R O R : Open boundary segment ', npckgn(ib)
+        WRITE(ctmp2, *) ' ==========  does not end on land'
         CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
       END IF
     END DO
-    IF ((itest == 0) .AND. (lwp)) WRITE(numout, FMT = *) 'NO open boundary corner found'
+    IF ((itest == 0) .AND. (lwp)) WRITE(numout, *) 'NO open boundary corner found'
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE bdy_ctl_seg
   SUBROUTINE bdy_ctl_corn(ib1, ib2)
@@ -1216,8 +1177,8 @@ MODULE bdyini
     IF (nn_tra_dta(ib1) /= nn_tra_dta(ib2)) itest = itest + 1
     IF (nn_rimwidth(ib1) /= nn_rimwidth(ib2)) itest = itest + 1
     IF (itest > 0) THEN
-      WRITE(ctmp1, FMT = *) ' E R R O R : Segments ', ib1, 'and ', ib2
-      WRITE(ctmp2, FMT = *) ' ==========  have different open bdy schemes'
+      WRITE(ctmp1, *) ' E R R O R : Segments ', ib1, 'and ', ib2
+      WRITE(ctmp2, *) ' ==========  have different open bdy schemes'
       CALL ctl_stop(' ', ctmp1, ctmp2, ' ')
     END IF
     CALL profile_psy_data0 % PostEnd

@@ -119,8 +119,7 @@ MODULE tide_mod
     CALL profile_psy_data0 % PreStart('tide_pulse', 'r0', 0, 0)
     zscale = rad / (36525._wp * 86400._wp)
     DO jh = 1, kc
-      pomega(jh) = (zomega_T * Wave(ktide(jh)) % nT + zomega_s * Wave(ktide(jh)) % ns + zomega_h * Wave(ktide(jh)) % nh + zomega_p &
-&* Wave(ktide(jh)) % np + zomega_p1 * Wave(ktide(jh)) % np1) * zscale
+      pomega(jh) = (zomega_T * Wave(ktide(jh)) % nT + zomega_s * Wave(ktide(jh)) % ns + zomega_h * Wave(ktide(jh)) % nh + zomega_p * Wave(ktide(jh)) % np + zomega_p1 * Wave(ktide(jh)) % np1) * zscale
     END DO
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE tide_pulse
@@ -133,10 +132,8 @@ MODULE tide_mod
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('tide_vuf', 'r0', 0, 0)
     DO jh = 1, kc
-      pvt(jh) = sh_T * Wave(ktide(jh)) % nT + sh_s * Wave(ktide(jh)) % ns + sh_h * Wave(ktide(jh)) % nh + sh_p * Wave(ktide(jh)) % &
-&np + sh_p1 * Wave(ktide(jh)) % np1 + Wave(ktide(jh)) % shift * rad
-      put(jh) = sh_xi * Wave(ktide(jh)) % nksi + sh_nu * Wave(ktide(jh)) % nnu0 + sh_nuprim * Wave(ktide(jh)) % nnu1 + sh_nusec * &
-&Wave(ktide(jh)) % nnu2 + sh_R * Wave(ktide(jh)) % R
+      pvt(jh) = sh_T * Wave(ktide(jh)) % nT + sh_s * Wave(ktide(jh)) % ns + sh_h * Wave(ktide(jh)) % nh + sh_p * Wave(ktide(jh)) % np + sh_p1 * Wave(ktide(jh)) % np1 + Wave(ktide(jh)) % shift * rad
+      put(jh) = sh_xi * Wave(ktide(jh)) % nksi + sh_nu * Wave(ktide(jh)) % nnu0 + sh_nuprim * Wave(ktide(jh)) % nnu1 + sh_nusec * Wave(ktide(jh)) % nnu2 + sh_R * Wave(ktide(jh)) % R
       pcor(jh) = nodal_factort(Wave(ktide(jh)) % nformula)
     END DO
     CALL profile_psy_data0 % PostEnd

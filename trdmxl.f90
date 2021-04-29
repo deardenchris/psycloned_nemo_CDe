@@ -46,14 +46,14 @@ MODULE trdmxl
     REAL(KIND = wp), DIMENSION(:, :), INTENT(IN) :: kmxln
     INTEGER :: ji, jj, jk
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    !$ACC KERNELS
     IF (kt /= nkstp) THEN
-      !$ACC KERNELS
       nkstp = kt
       tmltrd(:, :, :) = 0._wp
       smltrd(:, :, :) = 0._wp
       wkx(:, :, :) = 0._wp
       DO jk = 1, jpktrd
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             IF (jk - kmxln(ji, jj) < 0) wkx(ji, jj, jk) = e3t_n(ji, jj, jk) * tmask(ji, jj, jk)
@@ -69,15 +69,11 @@ MODULE trdmxl
       END DO
       tml(:, :) = 0._wp
       sml(:, :) = 0._wp
-      !$ACC END KERNELS
       DO jk = 1, jpktrd
-        !$ACC KERNELS
         tml(:, :) = tml(:, :) + wkx(:, :, jk) * tsn(:, :, jk, jp_tem)
         sml(:, :) = sml(:, :) + wkx(:, :, jk) * tsn(:, :, jk, jp_sal)
-        !$ACC END KERNELS
       END DO
     END IF
-    !$ACC KERNELS
     tmltrd(:, :, ktrd) = tmltrd(:, :, ktrd) + ptrdx(:, :, jk) * wkx(:, :, jk)
     smltrd(:, :, ktrd) = smltrd(:, :, ktrd) + ptrdy(:, :, jk) * wkx(:, :, jk)
     !$ACC END KERNELS
@@ -148,6 +144,8 @@ MODULE trdmxl
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
     !$ACC KERNELS
     ztmltrd2(:, :, :) = 0.E0
     zsmltrd2(:, :, :) = 0.E0
@@ -180,7 +178,7 @@ MODULE trdmxl
       !$ACC END KERNELS
       CALL profile_psy_data0 % PreStart('trd_mxl', 'r0', 0, 0)
       IF (ln_ctl) THEN
-        WRITE(numout, FMT = *) '             we reach kt == nit000 + 1 = ', nit000 + 1
+        WRITE(numout, *) '             we reach kt == nit000 + 1 = ', nit000 + 1
         CALL prt_ctl(tab2d_1 = tmlbb, clinfo1 = ' tmlbb   -   : ', mask1 = tmask)
         CALL prt_ctl(tab2d_1 = tmlbn, clinfo1 = ' tmlbn   -   : ', mask1 = tmask)
         CALL prt_ctl(tab2d_1 = tmlatfb, clinfo1 = ' tmlatfb -   : ', mask1 = tmask)
@@ -190,12 +188,12 @@ MODULE trdmxl
     CALL profile_psy_data1 % PreStart('trd_mxl', 'r1', 0, 0)
     IF ((ln_rstart) .AND. (kt == nit000) .AND. (ln_ctl)) THEN
       IF (ln_trdmxl_instant) THEN
-        WRITE(numout, FMT = *) '             restart from kt == nit000 = ', nit000
+        WRITE(numout, *) '             restart from kt == nit000 = ', nit000
         CALL prt_ctl(tab2d_1 = tmlbb, clinfo1 = ' tmlbb   -   : ', mask1 = tmask)
         CALL prt_ctl(tab2d_1 = tmlbn, clinfo1 = ' tmlbn   -   : ', mask1 = tmask)
         CALL prt_ctl(tab2d_1 = tmlatfb, clinfo1 = ' tmlatfb -   : ', mask1 = tmask)
       ELSE
-        WRITE(numout, FMT = *) '             restart from kt == nit000 = ', nit000
+        WRITE(numout, *) '             restart from kt == nit000 = ', nit000
         CALL prt_ctl(tab2d_1 = tmlbn, clinfo1 = ' tmlbn           -  : ', mask1 = tmask)
         CALL prt_ctl(tab2d_1 = hmxlbn, clinfo1 = ' hmxlbn          -  : ', mask1 = tmask)
         CALL prt_ctl(tab2d_1 = tml_sumb, clinfo1 = ' tml_sumb        -  : ', mask1 = tmask)
@@ -245,8 +243,9 @@ MODULE trdmxl
       ztmlatf(:, :) = tmlatfm(:, :) - tmlatfn(:, :) + tmlatfb(:, :)
       zsmlatf(:, :) = smlatfm(:, :) - smlatfn(:, :) + smlatfb(:, :)
       !$ACC END KERNELS
-      CALL lbc_lnk_multi('trdmxl', ztmltot, 'T', 1., zsmltot, 'T', 1., ztmlres, 'T', 1., zsmlres, 'T', 1., ztmlatf, 'T', 1., &
-&zsmlatf, 'T', 1.)
+      CALL profile_psy_data2 % PreStart('trd_mxl', 'r2', 0, 0)
+      CALL lbc_lnk_multi('trdmxl', ztmltot, 'T', 1., zsmltot, 'T', 1., ztmlres, 'T', 1., zsmlres, 'T', 1., ztmlatf, 'T', 1., zsmlatf, 'T', 1.)
+      CALL profile_psy_data2 % PostEnd
       !$ACC KERNELS
       hmxl_sum(:, :) = hmxlbn(:, :) + 2 * (hmxl_sum(:, :) - hmxl(:, :)) + hmxl(:, :)
       tml_sum(:, :) = tmlbn(:, :) + 2 * (tml_sum(:, :) - tml(:, :)) + tml(:, :)
@@ -272,10 +271,10 @@ MODULE trdmxl
       ztmlatf2(:, :) = ztmltrd2(:, :, jpmxl_atf) - tmltrd_sum(:, :, jpmxl_atf) + tmltrd_atf_sumb(:, :)
       zsmlatf2(:, :) = zsmltrd2(:, :, jpmxl_atf) - smltrd_sum(:, :, jpmxl_atf) + smltrd_atf_sumb(:, :)
       !$ACC END KERNELS
-      CALL profile_psy_data2 % PreStart('trd_mxl', 'r2', 0, 0)
+      CALL profile_psy_data3 % PreStart('trd_mxl', 'r3', 0, 0)
       CALL lbc_lnk_multi('trdmxl', ztmltot2, 'T', 1., zsmltot2, 'T', 1., ztmlres2, 'T', 1., zsmlres2, 'T', 1.)
       CALL lbc_lnk_multi('trdmxl', ztmltrd2(:, :, :), 'T', 1., zsmltrd2(:, :, :), 'T', 1.)
-      CALL profile_psy_data2 % PostEnd
+      CALL profile_psy_data3 % PostEnd
       !$ACC KERNELS
       tmlbb(:, :) = tmlb(:, :)
       smlbb(:, :) = smlb(:, :)
@@ -291,7 +290,7 @@ MODULE trdmxl
       smltrd_atf_sumb(:, :) = smltrd_sum(:, :, jpmxl_atf)
       hmxlbn(:, :) = hmxl(:, :)
       !$ACC END KERNELS
-      CALL profile_psy_data3 % PreStart('trd_mxl', 'r3', 0, 0)
+      CALL profile_psy_data4 % PreStart('trd_mxl', 'r4', 0, 0)
       IF (ln_ctl) THEN
         IF (ln_trdmxl_instant) THEN
           CALL prt_ctl(tab2d_1 = tmlbb, clinfo1 = ' tmlbb   -   : ', mask1 = tmask)
@@ -305,7 +304,7 @@ MODULE trdmxl
           CALL prt_ctl(tab3d_1 = tmltrd_csum_ub, clinfo1 = ' tmltrd_csum_ub  -  : ', mask1 = tmask, kdim = 1)
         END IF
       END IF
-      CALL profile_psy_data3 % PostEnd
+      CALL profile_psy_data4 % PostEnd
       !$ACC KERNELS
       ztmltot(:, :) = ztmltot(:, :) * rn_ucf / zfn
       zsmltot(:, :) = zsmltot(:, :) * rn_ucf / zfn
@@ -325,40 +324,40 @@ MODULE trdmxl
       zsmlres2(:, :) = zsmlres2(:, :) * rn_ucf / zfn2
       hmxl_sum(:, :) = hmxl_sum(:, :) / (2 * zfn)
       !$ACC END KERNELS
-      CALL profile_psy_data4 % PreStart('trd_mxl', 'r4', 0, 0)
+      CALL profile_psy_data5 % PreStart('trd_mxl', 'r5', 0, 0)
       IF (lldebug) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) 'trd_mxl : write trends in the Mixed Layer for debugging process:'
-        WRITE(numout, FMT = *) '~~~~~~~  '
-        WRITE(numout, FMT = *) '          TRA kt = ', kt, 'nmoymltrd = ', nmoymltrd
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '          >>>>>>>>>>>>>>>>>>  TRA TEMPERATURE <<<<<<<<<<<<<<<<<<'
-        WRITE(numout, FMT = *) '          TRA ztmlres    : ', SUM(ztmlres(:, :))
-        WRITE(numout, FMT = *) '          TRA ztmltot    : ', SUM(ztmltot(:, :))
-        WRITE(numout, FMT = *) '          TRA tmltrdm    : ', SUM(tmltrdm(:, :))
-        WRITE(numout, FMT = *) '          TRA tmlatfb    : ', SUM(tmlatfb(:, :))
-        WRITE(numout, FMT = *) '          TRA tmlatfn    : ', SUM(tmlatfn(:, :))
+        WRITE(numout, *)
+        WRITE(numout, *) 'trd_mxl : write trends in the Mixed Layer for debugging process:'
+        WRITE(numout, *) '~~~~~~~  '
+        WRITE(numout, *) '          TRA kt = ', kt, 'nmoymltrd = ', nmoymltrd
+        WRITE(numout, *)
+        WRITE(numout, *) '          >>>>>>>>>>>>>>>>>>  TRA TEMPERATURE <<<<<<<<<<<<<<<<<<'
+        WRITE(numout, *) '          TRA ztmlres    : ', SUM(ztmlres(:, :))
+        WRITE(numout, *) '          TRA ztmltot    : ', SUM(ztmltot(:, :))
+        WRITE(numout, *) '          TRA tmltrdm    : ', SUM(tmltrdm(:, :))
+        WRITE(numout, *) '          TRA tmlatfb    : ', SUM(tmlatfb(:, :))
+        WRITE(numout, *) '          TRA tmlatfn    : ', SUM(tmlatfn(:, :))
         DO jl = 1, jpltrd
-          WRITE(numout, FMT = *) '          * TRA TREND INDEX jpmxl_xxx = jl = ', jl, ' tmltrd : ', SUM(tmltrd(:, :, jl))
+          WRITE(numout, *) '          * TRA TREND INDEX jpmxl_xxx = jl = ', jl, ' tmltrd : ', SUM(tmltrd(:, :, jl))
         END DO
-        WRITE(numout, FMT = *) '          TRA ztmlres (jpi/2,jpj/2) : ', ztmlres(jpi / 2, jpj / 2)
-        WRITE(numout, FMT = *) '          TRA ztmlres2(jpi/2,jpj/2) : ', ztmlres2(jpi / 2, jpj / 2)
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '          >>>>>>>>>>>>>>>>>>  TRA SALINITY <<<<<<<<<<<<<<<<<<'
-        WRITE(numout, FMT = *) '          TRA zsmlres    : ', SUM(zsmlres(:, :))
-        WRITE(numout, FMT = *) '          TRA zsmltot    : ', SUM(zsmltot(:, :))
-        WRITE(numout, FMT = *) '          TRA smltrdm    : ', SUM(smltrdm(:, :))
-        WRITE(numout, FMT = *) '          TRA smlatfb    : ', SUM(smlatfb(:, :))
-        WRITE(numout, FMT = *) '          TRA smlatfn    : ', SUM(smlatfn(:, :))
+        WRITE(numout, *) '          TRA ztmlres (jpi/2,jpj/2) : ', ztmlres(jpi / 2, jpj / 2)
+        WRITE(numout, *) '          TRA ztmlres2(jpi/2,jpj/2) : ', ztmlres2(jpi / 2, jpj / 2)
+        WRITE(numout, *)
+        WRITE(numout, *) '          >>>>>>>>>>>>>>>>>>  TRA SALINITY <<<<<<<<<<<<<<<<<<'
+        WRITE(numout, *) '          TRA zsmlres    : ', SUM(zsmlres(:, :))
+        WRITE(numout, *) '          TRA zsmltot    : ', SUM(zsmltot(:, :))
+        WRITE(numout, *) '          TRA smltrdm    : ', SUM(smltrdm(:, :))
+        WRITE(numout, *) '          TRA smlatfb    : ', SUM(smlatfb(:, :))
+        WRITE(numout, *) '          TRA smlatfn    : ', SUM(smlatfn(:, :))
         DO jl = 1, jpltrd
-          WRITE(numout, FMT = *) '          * TRA TREND INDEX jpmxl_xxx = jl = ', jl, ' smltrd : ', SUM(smltrd(:, :, jl))
+          WRITE(numout, *) '          * TRA TREND INDEX jpmxl_xxx = jl = ', jl, ' smltrd : ', SUM(smltrd(:, :, jl))
         END DO
-        WRITE(numout, FMT = *) '          TRA zsmlres (jpi/2,jpj/2) : ', zsmlres(jpi / 2, jpj / 2)
-        WRITE(numout, FMT = *) '          TRA zsmlres2(jpi/2,jpj/2) : ', zsmlres2(jpi / 2, jpj / 2)
+        WRITE(numout, *) '          TRA zsmlres (jpi/2,jpj/2) : ', zsmlres(jpi / 2, jpj / 2)
+        WRITE(numout, *) '          TRA zsmlres2(jpi/2,jpj/2) : ', zsmlres2(jpi / 2, jpj / 2)
       END IF
-      CALL profile_psy_data4 % PostEnd
+      CALL profile_psy_data5 % PostEnd
     END IF MODULO_NTRD
-    CALL profile_psy_data5 % PreStart('trd_mxl', 'r5', 0, 0)
+    CALL profile_psy_data6 % PreStart('trd_mxl', 'r6', 0, 0)
     IF (ln_trdmxl_instant) THEN
       CALL iom_put("mxl_depth", hmxl(:, :))
       CALL iom_put("tml", tml(:, :))
@@ -392,7 +391,7 @@ MODULE trdmxl
       END DO
       CALL iom_put(TRIM("sml" // ctrd(jpmxl_atf, 2)), zsmlatf2(:, :))
     END IF
-    CALL profile_psy_data5 % PostEnd
+    CALL profile_psy_data6 % PostEnd
     !$ACC KERNELS
     IF (MOD(itmod, nn_trd) == 0) THEN
       nmoymltrd = 0
@@ -409,7 +408,9 @@ MODULE trdmxl
       hmxl_sum(:, :) = 0.E0
     END IF
     !$ACC END KERNELS
+    CALL profile_psy_data7 % PreStart('trd_mxl', 'r7', 0, 0)
     IF (lrst_oce) CALL trd_mxl_rst_write(kt)
+    CALL profile_psy_data7 % PostEnd
   END SUBROUTINE trd_mxl
   SUBROUTINE trd_mxl_init
     INTEGER :: jl
@@ -427,30 +428,29 @@ MODULE trdmxl
 902 IF (ios > 0) CALL ctl_nam(ios, 'namtrd_mxl in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namtrd_mxl)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) ' trd_mxl_init : Mixed-layer trends'
-      WRITE(numout, FMT = *) ' ~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namtrd : set trends parameters'
-      WRITE(numout, FMT = *) '      frequency of trends diagnostics (glo)      nn_trd             = ', nn_trd
-      WRITE(numout, FMT = *) '      density criteria used to defined the MLD   rn_rho_c           = ', rn_rho_c
-      WRITE(numout, FMT = *) '      control surface type            (mld)      nn_ctls            = ', nn_ctls
-      WRITE(numout, FMT = *) '      restart for ML diagnostics                 ln_trdmxl_restart  = ', ln_trdmxl_restart
-      WRITE(numout, FMT = *) '      instantaneous or mean ML T/S               ln_trdmxl_instant  = ', ln_trdmxl_instant
-      WRITE(numout, FMT = *) '      unit conversion factor                     rn_ucf             = ', rn_ucf
-      WRITE(numout, FMT = *) '      criteria to compute the MLD                rn_rho_c           = ', rn_rho_c
+      WRITE(numout, *)
+      WRITE(numout, *) ' trd_mxl_init : Mixed-layer trends'
+      WRITE(numout, *) ' ~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist namtrd : set trends parameters'
+      WRITE(numout, *) '      frequency of trends diagnostics (glo)      nn_trd             = ', nn_trd
+      WRITE(numout, *) '      density criteria used to defined the MLD   rn_rho_c           = ', rn_rho_c
+      WRITE(numout, *) '      control surface type            (mld)      nn_ctls            = ', nn_ctls
+      WRITE(numout, *) '      restart for ML diagnostics                 ln_trdmxl_restart  = ', ln_trdmxl_restart
+      WRITE(numout, *) '      instantaneous or mean ML T/S               ln_trdmxl_instant  = ', ln_trdmxl_instant
+      WRITE(numout, *) '      unit conversion factor                     rn_ucf             = ', rn_ucf
+      WRITE(numout, *) '      criteria to compute the MLD                rn_rho_c           = ', rn_rho_c
     END IF
-    IF (rn_rho_c /= rho_c) CALL ctl_warn('Unless you have good reason to do so, you should use the value ', 'defined in zdfmxl.F90 &
-&module to calculate the mixed layer depth')
+    IF (rn_rho_c /= rho_c) CALL ctl_warn('Unless you have good reason to do so, you should use the value ', 'defined in zdfmxl.F90 module to calculate the mixed layer depth')
     IF (MOD(nitend, nn_trd) /= 0) THEN
       WRITE(numout, cform_err)
-      WRITE(numout, FMT = *) '                Your nitend parameter, nitend = ', nitend
-      WRITE(numout, FMT = *) '                is no multiple of the trends diagnostics frequency        '
-      WRITE(numout, FMT = *) '                          you defined, nn_trd   = ', nn_trd
-      WRITE(numout, FMT = *) '                This will not allow you to restart from this simulation.  '
-      WRITE(numout, FMT = *) '                You should reconsider this choice.                        '
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '                N.B. the nitend parameter is also constrained to be a     '
-      WRITE(numout, FMT = *) '                     multiple of the nn_fsbc parameter '
+      WRITE(numout, *) '                Your nitend parameter, nitend = ', nitend
+      WRITE(numout, *) '                is no multiple of the trends diagnostics frequency        '
+      WRITE(numout, *) '                          you defined, nn_trd   = ', nn_trd
+      WRITE(numout, *) '                This will not allow you to restart from this simulation.  '
+      WRITE(numout, *) '                You should reconsider this choice.                        '
+      WRITE(numout, *)
+      WRITE(numout, *) '                N.B. the nitend parameter is also constrained to be a     '
+      WRITE(numout, *) '                     multiple of the nn_fsbc parameter '
       CALL ctl_stop('trd_mxl_init: see comment just above')
     END IF
     IF (trd_mxl_alloc() /= 0) CALL ctl_stop('STOP', 'trd_mxl_init : unable to allocate trdmxl     arrays')
@@ -495,7 +495,7 @@ MODULE trdmxl
     ionce = 1
     IF (nn_ctls == 1) THEN
       CALL ctl_opn(inum, 'ctlsurf_idx', 'OLD', 'UNFORMATTED', 'SEQUENTIAL', - 1, numout, lwp)
-      READ(inum, FMT = *) nbol
+      READ(inum, *) nbol
       CLOSE(UNIT = inum)
     END IF
     IF (nn_ctls == 0) THEN
@@ -503,7 +503,7 @@ MODULE trdmxl
     ELSE IF (nn_ctls == 1) THEN
       clmxl = '      Bowl '
     ELSE IF (nn_ctls >= 2) THEN
-      WRITE(clmxl, FMT = '(A10,I2,1X)') 'Levels 1 -', nn_ctls
+      WRITE(clmxl, '(A10,I2,1X)') 'Levels 1 -', nn_ctls
     END IF
     ctrd(jpmxl_xad, 1) = " Zonal advection"
     ctrd(jpmxl_xad, 2) = "_xad"

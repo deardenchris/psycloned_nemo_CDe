@@ -46,17 +46,13 @@ MODULE obs_grid
         CALL obs_grd_lookup(kobsin, plam, pphi, kobsi, kobsj, kproc)
       ELSE
         IF (cdgrid == 'T') THEN
-          CALL obs_grd_bruteforce(jpi, jpj, jpiglo, jpjglo, 1, nlci, 1, nlcj, nproc, jpnij, glamt, gphit, tmask, kobsin, plam, &
-&pphi, kobsi, kobsj, kproc)
+          CALL obs_grd_bruteforce(jpi, jpj, jpiglo, jpjglo, 1, nlci, 1, nlcj, nproc, jpnij, glamt, gphit, tmask, kobsin, plam, pphi, kobsi, kobsj, kproc)
         ELSE IF (cdgrid == 'U') THEN
-          CALL obs_grd_bruteforce(jpi, jpj, jpiglo, jpjglo, 1, nlci, 1, nlcj, nproc, jpnij, glamu, gphiu, umask, kobsin, plam, &
-&pphi, kobsi, kobsj, kproc)
+          CALL obs_grd_bruteforce(jpi, jpj, jpiglo, jpjglo, 1, nlci, 1, nlcj, nproc, jpnij, glamu, gphiu, umask, kobsin, plam, pphi, kobsi, kobsj, kproc)
         ELSE IF (cdgrid == 'V') THEN
-          CALL obs_grd_bruteforce(jpi, jpj, jpiglo, jpjglo, 1, nlci, 1, nlcj, nproc, jpnij, glamv, gphiv, vmask, kobsin, plam, &
-&pphi, kobsi, kobsj, kproc)
+          CALL obs_grd_bruteforce(jpi, jpj, jpiglo, jpjglo, 1, nlci, 1, nlcj, nproc, jpnij, glamv, gphiv, vmask, kobsin, plam, pphi, kobsi, kobsj, kproc)
         ELSE IF (cdgrid == 'F') THEN
-          CALL obs_grd_bruteforce(jpi, jpj, jpiglo, jpjglo, 1, nlci, 1, nlcj, nproc, jpnij, glamf, gphif, fmask, kobsin, plam, &
-&pphi, kobsi, kobsj, kproc)
+          CALL obs_grd_bruteforce(jpi, jpj, jpiglo, jpjglo, 1, nlci, 1, nlcj, nproc, jpnij, glamf, gphif, fmask, kobsin, plam, pphi, kobsi, kobsj, kproc)
         ELSE
           CALL ctl_stop('Grid not supported')
         END IF
@@ -64,8 +60,7 @@ MODULE obs_grid
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE obs_grid_search
-  SUBROUTINE obs_grd_bruteforce(kpi, kpj, kpiglo, kpjglo, kldi, klei, kldj, klej, kmyproc, ktotproc, pglam, pgphi, pmask, kobs, &
-&plam, pphi, kobsi, kobsj, kproc)
+  SUBROUTINE obs_grd_bruteforce(kpi, kpj, kpiglo, kpjglo, kldi, klei, kldj, klej, kmyproc, ktotproc, pglam, pgphi, pmask, kobs, plam, pphi, kobsi, kobsj, kproc)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     INTEGER, INTENT(IN) :: kpi
     INTEGER, INTENT(IN) :: kpj
@@ -108,9 +103,7 @@ MODULE obs_grid
       joffset = 0
       jostride = 1
     END IF
-    ALLOCATE(zlamg(jlon, jlat), zphig(jlon, jlat), zmskg(jlon, jlat), zphitmax(jlon - 1, jlat - 1), zphitmin(jlon - 1, jlat - 1), &
-&zlamtmax(jlon - 1, jlat - 1), zlamtmin(jlon - 1, jlat - 1), llinvalidcell(jlon - 1, jlat - 1), zlamtm(4, jlon - 1, jlat - 1), &
-&zphitm(4, jlon - 1, jlat - 1))
+    ALLOCATE(zlamg(jlon, jlat), zphig(jlon, jlat), zmskg(jlon, jlat), zphitmax(jlon - 1, jlat - 1), zphitmin(jlon - 1, jlat - 1), zlamtmax(jlon - 1, jlat - 1), zlamtmin(jlon - 1, jlat - 1), llinvalidcell(jlon - 1, jlat - 1), zlamtm(4, jlon - 1, jlat - 1), zphitm(4, jlon - 1, jlat - 1))
     IF (ln_grid_global) THEN
       zlamg(:, :) = - 1.E+10
       zphig(:, :) = - 1.E+10
@@ -173,8 +166,7 @@ MODULE obs_grid
     llinvalidcell(:, :) = .FALSE.
     DO jj = 1, jlat - 1
       DO ji = 1, jlon - 1
-        llinvalidcell(ji, jj) = zmskg(ji, jj) == 0.0_wp .AND. zmskg(ji + 1, jj) == 0.0_wp .AND. zmskg(ji + 1, jj + 1) == 0.0_wp &
-&.AND. zmskg(ji, jj + 1) == 0.0_wp
+        llinvalidcell(ji, jj) = zmskg(ji, jj) == 0.0_wp .AND. zmskg(ji + 1, jj) == 0.0_wp .AND. zmskg(ji + 1, jj + 1) == 0.0_wp .AND. zmskg(ji, jj + 1) == 0.0_wp
       END DO
     END DO
     DO jo = 1 + joffset, kobs, jostride
@@ -316,9 +308,7 @@ MODULE obs_grid
       joffset = 0
       jostride = 1
     END IF
-    ALLOCATE(zlamg(jlon, jlat), zphig(jlon, jlat), zmskg(jlon, jlat), zphitmax(jlon - 1, jlat - 1), zphitmin(jlon - 1, jlat - 1), &
-&zlamtmax(jlon - 1, jlat - 1), zlamtmin(jlon - 1, jlat - 1), llinvalidcell(jlon - 1, jlat - 1), zlamtm(4, jlon - 1, jlat - 1), &
-&zphitm(4, jlon - 1, jlat - 1))
+    ALLOCATE(zlamg(jlon, jlat), zphig(jlon, jlat), zmskg(jlon, jlat), zphitmax(jlon - 1, jlat - 1), zphitmin(jlon - 1, jlat - 1), zlamtmax(jlon - 1, jlat - 1), zlamtmin(jlon - 1, jlat - 1), llinvalidcell(jlon - 1, jlat - 1), zlamtm(4, jlon - 1, jlat - 1), zphitm(4, jlon - 1, jlat - 1))
     IF (ln_grid_global) THEN
       zlamg(:, :) = - 1.E+10
       zphig(:, :) = - 1.E+10
@@ -380,11 +370,10 @@ MODULE obs_grid
     llinvalidcell(:, :) = .FALSE.
     DO jj = 1, jlat - 1
       DO ji = 1, jlon - 1
-        llinvalidcell(ji, jj) = zmskg(ji, jj) == 0.0_wp .AND. zmskg(ji + 1, jj) == 0.0_wp .AND. zmskg(ji + 1, jj + 1) == 0.0_wp &
-&.AND. zmskg(ji, jj + 1) == 0.0_wp
+        llinvalidcell(ji, jj) = zmskg(ji, jj) == 0.0_wp .AND. zmskg(ji + 1, jj) == 0.0_wp .AND. zmskg(ji + 1, jj + 1) == 0.0_wp .AND. zmskg(ji, jj + 1) == 0.0_wp
       END DO
     END DO
-    IF (lwp) WRITE(numout, FMT = *) 'obs_grid_lookup do coordinate search using lookup table'
+    IF (lwp) WRITE(numout, *) 'obs_grid_lookup do coordinate search using lookup table'
     ifourflagcountt = 0
     ifourflagcountf = 0
     ifourflagcountr(:) = 0
@@ -572,9 +561,9 @@ MODULE obs_grid
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('obs_grid_setup', 'r0', 0, 0)
     IF (ln_grid_search_lookup) THEN
-      WRITE(numout, FMT = *) 'Calling obs_grid_setup'
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'Grid search resolution : ', rn_gridsearchres
+      WRITE(numout, *) 'Calling obs_grid_setup'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'Grid search resolution : ', rn_gridsearchres
       gsearch_nlons_def = NINT(360.0_wp / rn_gridsearchres)
       gsearch_nlats_def = NINT(180.0_wp / rn_gridsearchres)
       gsearch_lonmin_def = - 180.0_wp + 0.5_wp * rn_gridsearchres
@@ -582,12 +571,12 @@ MODULE obs_grid
       gsearch_dlon_def = rn_gridsearchres
       gsearch_dlat_def = rn_gridsearchres
       IF (lwp) THEN
-        WRITE(numout, FMT = *) 'Grid search gsearch_nlons_def  = ', gsearch_nlons_def
-        WRITE(numout, FMT = *) 'Grid search gsearch_nlats_def  = ', gsearch_nlats_def
-        WRITE(numout, FMT = *) 'Grid search gsearch_lonmin_def = ', gsearch_lonmin_def
-        WRITE(numout, FMT = *) 'Grid search gsearch_latmin_def = ', gsearch_latmin_def
-        WRITE(numout, FMT = *) 'Grid search gsearch_dlon_def   = ', gsearch_dlon_def
-        WRITE(numout, FMT = *) 'Grid search gsearch_dlat_def   = ', gsearch_dlat_def
+        WRITE(numout, *) 'Grid search gsearch_nlons_def  = ', gsearch_nlons_def
+        WRITE(numout, *) 'Grid search gsearch_nlats_def  = ', gsearch_nlats_def
+        WRITE(numout, *) 'Grid search gsearch_lonmin_def = ', gsearch_lonmin_def
+        WRITE(numout, *) 'Grid search gsearch_latmin_def = ', gsearch_latmin_def
+        WRITE(numout, *) 'Grid search gsearch_dlon_def   = ', gsearch_dlon_def
+        WRITE(numout, *) 'Grid search gsearch_dlat_def   = ', gsearch_dlat_def
       END IF
       IF (ln_grid_global) THEN
         WRITE(cfname, FMT = "(A,'_',A)") TRIM(cn_gridsearchfile), 'global.nc'
@@ -596,7 +585,7 @@ MODULE obs_grid
       END IF
       fileexist = nf90_open(TRIM(cfname), nf90_nowrite, idfile)
       IF (fileexist == nf90_noerr) THEN
-        WRITE(numout, FMT = *) 'Reading: ', cfname
+        WRITE(numout, *) 'Reading: ', cfname
         CALL chkerr(nf90_open(TRIM(cfname), nf90_nowrite, idfile), cpname, 729)
         CALL chkerr(nf90_get_att(idfile, nf90_global, 'maxxdiff', maxxdiff), cpname, 731)
         CALL chkerr(nf90_get_att(idfile, nf90_global, 'maxydiff', maxydiff), cpname, 733)
@@ -622,8 +611,8 @@ MODULE obs_grid
         END DO
       ELSE
         IF (lwp) THEN
-          WRITE(numout, FMT = *) 'creating: ', cfname
-          WRITE(numout, FMT = *) 'calling obs_grid_search: ', nlons * nlats
+          WRITE(numout, *) 'creating: ', cfname
+          WRITE(numout, *) 'calling obs_grid_search: ', nlons * nlats
         END IF
         nlons = gsearch_nlons_def
         nlats = gsearch_nlats_def
@@ -638,8 +627,7 @@ MODULE obs_grid
             latsi(ji, jj) = latmin + (jj - 1) * dlat
           END DO
         END DO
-        CALL obs_grd_bruteforce(jpi, jpj, jpiglo, jpjglo, 1, nlci, 1, nlcj, nproc, jpnij, glamt, gphit, tmask, nlons * nlats, &
-&lonsi, latsi, ixposi, iyposi, iproci)
+        CALL obs_grd_bruteforce(jpi, jpj, jpiglo, jpjglo, 1, nlci, 1, nlcj, nproc, jpnij, glamt, gphit, tmask, nlons * nlats, lonsi, latsi, ixposi, iyposi, iproci)
         jimin = 1
         jimax = nlons
         jjmin = 1
@@ -720,16 +708,16 @@ MODULE obs_grid
           END DO
         END DO
         IF (lwp) THEN
-          WRITE(numout, FMT = *) 'histograms'
-          WRITE(numout, FMT = *) '0   1   2   3   4   5   6   7   8   9   10 ...'
-          WRITE(numout, FMT = *) 'histx1'
-          WRITE(numout, FMT = *) histx1
-          WRITE(numout, FMT = *) 'histx2'
-          WRITE(numout, FMT = *) histx2
-          WRITE(numout, FMT = *) 'histy1'
-          WRITE(numout, FMT = *) histy1
-          WRITE(numout, FMT = *) 'histy2'
-          WRITE(numout, FMT = *) histy2
+          WRITE(numout, *) 'histograms'
+          WRITE(numout, *) '0   1   2   3   4   5   6   7   8   9   10 ...'
+          WRITE(numout, *) 'histx1'
+          WRITE(numout, *) histx1
+          WRITE(numout, *) 'histx2'
+          WRITE(numout, *) histx2
+          WRITE(numout, *) 'histy1'
+          WRITE(numout, *) histy1
+          WRITE(numout, *) 'histy2'
+          WRITE(numout, *) histy2
         END IF
         meanxdiff1 = tmpx1 / numx1
         meanydiff1 = tmpy1 / numy1
@@ -738,10 +726,10 @@ MODULE obs_grid
         meanxdiff = MAXVAL((/meanxdiff1, meanxdiff2/))
         meanydiff = MAXVAL((/meanydiff1, meanydiff2/))
         IF (lwp) THEN
-          WRITE(numout, FMT = *) tmpx1, tmpx2, tmpy1, tmpy2
-          WRITE(numout, FMT = *) numx1, numx2, numy1, numy2
-          WRITE(numout, FMT = *) 'meanxdiff: ', meanxdiff, meanxdiff1, meanxdiff2
-          WRITE(numout, FMT = *) 'meanydiff: ', meanydiff, meanydiff1, meanydiff2
+          WRITE(numout, *) tmpx1, tmpx2, tmpy1, tmpy2
+          WRITE(numout, *) numx1, numx2, numy1, numy2
+          WRITE(numout, *) 'meanxdiff: ', meanxdiff, meanxdiff1, meanxdiff2
+          WRITE(numout, *) 'meanydiff: ', meanydiff, meanydiff1, meanydiff2
         END IF
         tmpx1 = 0
         tmpx2 = 0
@@ -802,16 +790,16 @@ MODULE obs_grid
         fhisty1(:) = histy1(:) * 1.0 / numy1
         fhisty2(:) = histy2(:) * 1.0 / numy2
         IF (lwp) THEN
-          WRITE(numout, FMT = *) 'cumulative histograms'
-          WRITE(numout, FMT = *) '0   1   2   3   4   5   6   7   8   9   10 ...'
-          WRITE(numout, FMT = *) 'fhistx1'
-          WRITE(numout, FMT = *) fhistx1
-          WRITE(numout, FMT = *) 'fhistx2'
-          WRITE(numout, FMT = *) fhistx2
-          WRITE(numout, FMT = *) 'fhisty1'
-          WRITE(numout, FMT = *) fhisty1
-          WRITE(numout, FMT = *) 'fhisty2'
-          WRITE(numout, FMT = *) fhisty2
+          WRITE(numout, *) 'cumulative histograms'
+          WRITE(numout, *) '0   1   2   3   4   5   6   7   8   9   10 ...'
+          WRITE(numout, *) 'fhistx1'
+          WRITE(numout, *) fhistx1
+          WRITE(numout, *) 'fhistx2'
+          WRITE(numout, *) fhistx2
+          WRITE(numout, *) 'fhisty1'
+          WRITE(numout, *) fhisty1
+          WRITE(numout, *) 'fhisty2'
+          WRITE(numout, *) fhisty2
         END IF
         histtol = 0.999
         tmpx1 = MAXVAL(MAXLOC(fhistx1(:), mask = (fhistx1(:) <= histtol)))
@@ -950,7 +938,7 @@ MODULE obs_grid
     CALL profile_psy_data0 % PreStart('find_obs_proc', 'r0', 0, 0)
     DO ji = 1, kno
       IF (kobsi(ji) < kldi .OR. kobsj(ji) < kldj .OR. kobsi(ji) > klei .OR. kobsj(ji) > klej) THEN
-        IF (lwp .AND. kobsp(ji) /= - 1) WRITE(numout, FMT = *) 'kobs: ', kobsi(ji), kobsj(ji), kobsp(ji)
+        IF (lwp .AND. kobsp(ji) /= - 1) WRITE(numout, *) 'kobs: ', kobsi(ji), kobsj(ji), kobsp(ji)
         kobsp(ji) = 1000000
       END IF
     END DO

@@ -38,17 +38,10 @@ MODULE oce
   INTEGER FUNCTION oce_alloc()
     INTEGER :: ierr(6)
     ierr(:) = 0
-    ALLOCATE(ub(jpi, jpj, jpk), un(jpi, jpj, jpk), ua(jpi, jpj, jpk), vb(jpi, jpj, jpk), vn(jpi, jpj, jpk), va(jpi, jpj, jpk), &
-&wn(jpi, jpj, jpk), hdivn(jpi, jpj, jpk), tsb(jpi, jpj, jpk, jpts), tsn(jpi, jpj, jpk, jpts), tsa(jpi, jpj, jpk, jpts), rab_b(jpi, &
-&jpj, jpk, jpts), rab_n(jpi, jpj, jpk, jpts), rn2b(jpi, jpj, jpk), rn2(jpi, jpj, jpk), rhd(jpi, jpj, jpk), rhop(jpi, jpj, jpk), &
-&STAT = ierr(1))
-    ALLOCATE(sshb(jpi, jpj), sshn(jpi, jpj), ssha(jpi, jpj), ub_b(jpi, jpj), un_b(jpi, jpj), ua_b(jpi, jpj), vb_b(jpi, jpj), &
-&vn_b(jpi, jpj), va_b(jpi, jpj), spgu(jpi, jpj), spgv(jpi, jpj), gtsu(jpi, jpj, jpts), gtsv(jpi, jpj, jpts), gru(jpi, jpj), &
-&grv(jpi, jpj), gtui(jpi, jpj, jpts), gtvi(jpi, jpj, jpts), grui(jpi, jpj), grvi(jpi, jpj), riceload(jpi, jpj), STAT = ierr(2))
+    ALLOCATE(ub(jpi, jpj, jpk), un(jpi, jpj, jpk), ua(jpi, jpj, jpk), vb(jpi, jpj, jpk), vn(jpi, jpj, jpk), va(jpi, jpj, jpk), wn(jpi, jpj, jpk), hdivn(jpi, jpj, jpk), tsb(jpi, jpj, jpk, jpts), tsn(jpi, jpj, jpk, jpts), tsa(jpi, jpj, jpk, jpts), rab_b(jpi, jpj, jpk, jpts), rab_n(jpi, jpj, jpk, jpts), rn2b(jpi, jpj, jpk), rn2(jpi, jpj, jpk), rhd(jpi, jpj, jpk), rhop(jpi, jpj, jpk), STAT = ierr(1))
+    ALLOCATE(sshb(jpi, jpj), sshn(jpi, jpj), ssha(jpi, jpj), ub_b(jpi, jpj), un_b(jpi, jpj), ua_b(jpi, jpj), vb_b(jpi, jpj), vn_b(jpi, jpj), va_b(jpi, jpj), spgu(jpi, jpj), spgv(jpi, jpj), gtsu(jpi, jpj, jpts), gtsv(jpi, jpj, jpts), gru(jpi, jpj), grv(jpi, jpj), gtui(jpi, jpj, jpts), gtvi(jpi, jpj, jpts), grui(jpi, jpj), grvi(jpi, jpj), riceload(jpi, jpj), STAT = ierr(2))
     ALLOCATE(fraqsr_1lev(jpi, jpj), STAT = ierr(3))
-    ALLOCATE(ssha_e(jpi, jpj), sshn_e(jpi, jpj), sshb_e(jpi, jpj), sshbb_e(jpi, jpj), ua_e(jpi, jpj), un_e(jpi, jpj), ub_e(jpi, &
-&jpj), ubb_e(jpi, jpj), va_e(jpi, jpj), vn_e(jpi, jpj), vb_e(jpi, jpj), vbb_e(jpi, jpj), hu_e(jpi, jpj), hur_e(jpi, jpj), &
-&hv_e(jpi, jpj), hvr_e(jpi, jpj), STAT = ierr(4))
+    ALLOCATE(ssha_e(jpi, jpj), sshn_e(jpi, jpj), sshb_e(jpi, jpj), sshbb_e(jpi, jpj), ua_e(jpi, jpj), un_e(jpi, jpj), ub_e(jpi, jpj), ubb_e(jpi, jpj), va_e(jpi, jpj), vn_e(jpi, jpj), vb_e(jpi, jpj), vbb_e(jpi, jpj), hu_e(jpi, jpj), hur_e(jpi, jpj), hv_e(jpi, jpj), hvr_e(jpi, jpj), STAT = ierr(4))
     ALLOCATE(ub2_b(jpi, jpj), vb2_b(jpi, jpj), un_bf(jpi, jpj), vn_bf(jpi, jpj), STAT = ierr(6))
     oce_alloc = MAXVAL(ierr)
     IF (oce_alloc /= 0) CALL ctl_stop('STOP', 'oce_alloc: failed to allocate arrays')

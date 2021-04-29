@@ -50,44 +50,44 @@ MODULE phycst
     r1_rhos = 1._wp / rhos
     r1_rcpi = 1._wp / rcpi
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'phy_cst : initialization of ocean parameters and constants'
-      WRITE(numout, FMT = *) '~~~~~~~'
-      WRITE(numout, FMT = *) '      mathematical constant                 rpi = ', rpi
-      WRITE(numout, FMT = *) '      day                                rday   = ', rday, ' s'
-      WRITE(numout, FMT = *) '      sideral year                       rsiyea = ', rsiyea, ' s'
-      WRITE(numout, FMT = *) '      sideral day                        rsiday = ', rsiday, ' s'
-      WRITE(numout, FMT = *) '      omega                              omega  = ', omega, ' s^-1'
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '      nb of months per year               raamo = ', raamo, ' months'
-      WRITE(numout, FMT = *) '      nb of hours per day                 rjjhh = ', rjjhh, ' hours'
-      WRITE(numout, FMT = *) '      nb of minutes per hour              rhhmm = ', rhhmm, ' mn'
-      WRITE(numout, FMT = *) '      nb of seconds per minute            rmmss = ', rmmss, ' s'
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '      earth radius                         ra   = ', ra, ' m'
-      WRITE(numout, FMT = *) '      gravity                              grav = ', grav, ' m/s^2'
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '      freezing point of water              rt0  = ', rt0, ' K'
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '   reference density and heat capacity now defined in eosbn2.f90'
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '      thermal conductivity of pure ice          = ', rcnd_i, ' J/s/m/K'
-      WRITE(numout, FMT = *) '      thermal conductivity of snow is defined in a namelist '
-      WRITE(numout, FMT = *) '      fresh ice specific heat                   = ', rcpi, ' J/kg/K'
-      WRITE(numout, FMT = *) '      latent heat of fusion of fresh ice / snow = ', rLfus, ' J/kg'
-      WRITE(numout, FMT = *) '      latent heat of subl.  of fresh ice / snow = ', rLsub, ' J/kg'
-      WRITE(numout, FMT = *) '      density of sea ice                        = ', rhoi, ' kg/m^3'
-      WRITE(numout, FMT = *) '      density of snow                           = ', rhos, ' kg/m^3'
-      WRITE(numout, FMT = *) '      density of freshwater (in melt ponds)     = ', rhow, ' kg/m^3'
-      WRITE(numout, FMT = *) '      salinity of ice (for pisces)              = ', sice, ' psu'
-      WRITE(numout, FMT = *) '      salinity of sea (for pisces and isf)      = ', soce, ' psu'
-      WRITE(numout, FMT = *) '      latent heat of evaporation (water)        = ', rLevap, ' J/m^3'
-      WRITE(numout, FMT = *) '      von Karman constant                       = ', vkarmn
-      WRITE(numout, FMT = *) '      Stefan-Boltzmann constant                 = ', stefan, ' J/s/m^2/K^4'
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '      conversion: degre ==> radian          rad = ', rad
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '      smallest real computer value       rsmall = ', rsmall
+      WRITE(numout, *)
+      WRITE(numout, *) 'phy_cst : initialization of ocean parameters and constants'
+      WRITE(numout, *) '~~~~~~~'
+      WRITE(numout, *) '      mathematical constant                 rpi = ', rpi
+      WRITE(numout, *) '      day                                rday   = ', rday, ' s'
+      WRITE(numout, *) '      sideral year                       rsiyea = ', rsiyea, ' s'
+      WRITE(numout, *) '      sideral day                        rsiday = ', rsiday, ' s'
+      WRITE(numout, *) '      omega                              omega  = ', omega, ' s^-1'
+      WRITE(numout, *)
+      WRITE(numout, *) '      nb of months per year               raamo = ', raamo, ' months'
+      WRITE(numout, *) '      nb of hours per day                 rjjhh = ', rjjhh, ' hours'
+      WRITE(numout, *) '      nb of minutes per hour              rhhmm = ', rhhmm, ' mn'
+      WRITE(numout, *) '      nb of seconds per minute            rmmss = ', rmmss, ' s'
+      WRITE(numout, *)
+      WRITE(numout, *) '      earth radius                         ra   = ', ra, ' m'
+      WRITE(numout, *) '      gravity                              grav = ', grav, ' m/s^2'
+      WRITE(numout, *)
+      WRITE(numout, *) '      freezing point of water              rt0  = ', rt0, ' K'
+      WRITE(numout, *)
+      WRITE(numout, *) '   reference density and heat capacity now defined in eosbn2.f90'
+      WRITE(numout, *)
+      WRITE(numout, *) '      thermal conductivity of pure ice          = ', rcnd_i, ' J/s/m/K'
+      WRITE(numout, *) '      thermal conductivity of snow is defined in a namelist '
+      WRITE(numout, *) '      fresh ice specific heat                   = ', rcpi, ' J/kg/K'
+      WRITE(numout, *) '      latent heat of fusion of fresh ice / snow = ', rLfus, ' J/kg'
+      WRITE(numout, *) '      latent heat of subl.  of fresh ice / snow = ', rLsub, ' J/kg'
+      WRITE(numout, *) '      density of sea ice                        = ', rhoi, ' kg/m^3'
+      WRITE(numout, *) '      density of snow                           = ', rhos, ' kg/m^3'
+      WRITE(numout, *) '      density of freshwater (in melt ponds)     = ', rhow, ' kg/m^3'
+      WRITE(numout, *) '      salinity of ice (for pisces)              = ', sice, ' psu'
+      WRITE(numout, *) '      salinity of sea (for pisces and isf)      = ', soce, ' psu'
+      WRITE(numout, *) '      latent heat of evaporation (water)        = ', rLevap, ' J/m^3'
+      WRITE(numout, *) '      von Karman constant                       = ', vkarmn
+      WRITE(numout, *) '      Stefan-Boltzmann constant                 = ', stefan, ' J/s/m^2/K^4'
+      WRITE(numout, *)
+      WRITE(numout, *) '      conversion: degre ==> radian          rad = ', rad
+      WRITE(numout, *)
+      WRITE(numout, *) '      smallest real computer value       rsmall = ', rsmall
     END IF
   END SUBROUTINE phy_cst
 END MODULE phycst

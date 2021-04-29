@@ -148,9 +148,12 @@ MODULE icbdyn
     REAL(KIND = wp) :: zlambda, zdetA, zA11, zA12, zaxe, zaye, zD_hi
     REAL(KIND = wp) :: zuveln, zvveln, zus, zvs, zspeed, zloc_dx, zspeed_new
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('icb_accel', 'r0', 0, 0)
     nknberg = berg % number(1)
     CALL icb_utl_interp(pxi, pe1, zuo, zui, zua, zssh_x, pyj, pe2, zvo, zvi, zva, zssh_y, zsst, zcn, zhi, zff)
+    CALL profile_psy_data0 % PostEnd
+    !$ACC KERNELS
     zM = berg % current_point % mass
     zT = berg % current_point % thickness
     zD = (rn_rho_bergs / pp_rho_seawater) * zT
@@ -219,6 +222,8 @@ MODULE icbdyn
       zuveln = puvel0 + pdt * pax
       zvveln = pvvel0 + pdt * pay
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('icb_accel', 'r1', 0, 0)
     IF (rn_speed_limit > 0._wp) THEN
       zspeed = SQRT(zuveln * zuveln + zvveln * zvveln)
       IF (zspeed > 0._wp) THEN
@@ -232,11 +237,9 @@ MODULE icbdyn
       END IF
     END IF
     IF (nn_verbose_level > 0) THEN
-      IF (ABS(zuveln) > pp_vel_lim .OR. ABS(zvveln) > pp_vel_lim) WRITE(numicb, '("pe=",i3,x,a)') narea, 'Dump triggered by &
-&excessive velocity'
-      IF (ABS(pax) > pp_accel_lim .OR. ABS(pay) > pp_accel_lim) WRITE(numicb, '("pe=",i3,x,a)') narea, 'Dump triggered by &
-&excessive acceleration'
+      IF (ABS(zuveln) > pp_vel_lim .OR. ABS(zvveln) > pp_vel_lim) WRITE(numicb, '("pe=",i3,x,a)') narea, 'Dump triggered by excessive velocity'
+      IF (ABS(pax) > pp_accel_lim .OR. ABS(pay) > pp_accel_lim) WRITE(numicb, '("pe=",i3,x,a)') narea, 'Dump triggered by excessive acceleration'
     END IF
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data1 % PostEnd
   END SUBROUTINE icb_accel
 END MODULE icbdyn

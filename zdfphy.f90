@@ -37,12 +37,11 @@ MODULE zdfphy
   SUBROUTINE zdf_phy_init
     INTEGER :: jk
     INTEGER :: ioptio, ios
-    NAMELIST /namzdf/ ln_zdfcst, ln_zdfric, ln_zdftke, ln_zdfgls, ln_zdfosm, ln_zdfevd, nn_evdm, rn_evd, ln_zdfnpc, nn_npc, &
-&nn_npcp, ln_zdfddm, rn_avts, rn_hsbfr, ln_zdfswm, ln_zdfiwm, ln_zdftmx, ln_zad_Aimp, rn_avm0, rn_avt0, nn_avb, nn_havtb
+    NAMELIST /namzdf/ ln_zdfcst, ln_zdfric, ln_zdftke, ln_zdfgls, ln_zdfosm, ln_zdfevd, nn_evdm, rn_evd, ln_zdfnpc, nn_npc, nn_npcp, ln_zdfddm, rn_avts, rn_hsbfr, ln_zdfswm, ln_zdfiwm, ln_zdftmx, ln_zad_Aimp, rn_avm0, rn_avt0, nn_avb, nn_havtb
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'zdf_phy_init: ocean vertical physics'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+      WRITE(numout, *)
+      WRITE(numout, *) 'zdf_phy_init: ocean vertical physics'
+      WRITE(numout, *) '~~~~~~~~~~~~'
     END IF
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, namzdf, IOSTAT = ios, ERR = 901)
@@ -52,33 +51,33 @@ MODULE zdfphy
 902 IF (ios > 0) CALL ctl_nam(ios, 'namzdf in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namzdf)
     IF (lwp) THEN
-      WRITE(numout, FMT = *) '   Namelist namzdf : set vertical mixing mixing parameters'
-      WRITE(numout, FMT = *) '      adaptive-implicit vertical advection'
-      WRITE(numout, FMT = *) '         Courant number targeted application   ln_zad_Aimp = ', ln_zad_Aimp
-      WRITE(numout, FMT = *) '      vertical closure scheme'
-      WRITE(numout, FMT = *) '         constant vertical mixing coefficient    ln_zdfcst = ', ln_zdfcst
-      WRITE(numout, FMT = *) '         Richardson number dependent closure     ln_zdfric = ', ln_zdfric
-      WRITE(numout, FMT = *) '         Turbulent Kinetic Energy closure (TKE)  ln_zdftke = ', ln_zdftke
-      WRITE(numout, FMT = *) '         Generic Length Scale closure (GLS)      ln_zdfgls = ', ln_zdfgls
-      WRITE(numout, FMT = *) '         OSMOSIS-OBL closure (OSM)               ln_zdfosm = ', ln_zdfosm
-      WRITE(numout, FMT = *) '      convection: '
-      WRITE(numout, FMT = *) '         enhanced vertical diffusion             ln_zdfevd = ', ln_zdfevd
-      WRITE(numout, FMT = *) '            applied on momentum (=1/0)             nn_evdm = ', nn_evdm
-      WRITE(numout, FMT = *) '            vertical coefficient for evd           rn_evd  = ', rn_evd
-      WRITE(numout, FMT = *) '         non-penetrative convection (npc)        ln_zdfnpc = ', ln_zdfnpc
-      WRITE(numout, FMT = *) '            npc call  frequency                    nn_npc  = ', nn_npc
-      WRITE(numout, FMT = *) '            npc print frequency                    nn_npcp = ', nn_npcp
-      WRITE(numout, FMT = *) '      double diffusive mixing                    ln_zdfddm = ', ln_zdfddm
-      WRITE(numout, FMT = *) '         maximum avs for dd mixing                 rn_avts = ', rn_avts
-      WRITE(numout, FMT = *) '         heat/salt buoyancy flux ratio             rn_hsbfr= ', rn_hsbfr
-      WRITE(numout, FMT = *) '      gravity wave-induced mixing'
-      WRITE(numout, FMT = *) '         surface  wave (Qiao et al 2010)         ln_zdfswm = ', ln_zdfswm
-      WRITE(numout, FMT = *) '         internal wave (de Lavergne et al 2017)  ln_zdfiwm = ', ln_zdfiwm
-      WRITE(numout, FMT = *) '      coefficients : '
-      WRITE(numout, FMT = *) '         vertical eddy viscosity                 rn_avm0   = ', rn_avm0
-      WRITE(numout, FMT = *) '         vertical eddy diffusivity               rn_avt0   = ', rn_avt0
-      WRITE(numout, FMT = *) '         constant background or profile          nn_avb    = ', nn_avb
-      WRITE(numout, FMT = *) '         horizontal variation for avtb           nn_havtb  = ', nn_havtb
+      WRITE(numout, *) '   Namelist namzdf : set vertical mixing mixing parameters'
+      WRITE(numout, *) '      adaptive-implicit vertical advection'
+      WRITE(numout, *) '         Courant number targeted application   ln_zad_Aimp = ', ln_zad_Aimp
+      WRITE(numout, *) '      vertical closure scheme'
+      WRITE(numout, *) '         constant vertical mixing coefficient    ln_zdfcst = ', ln_zdfcst
+      WRITE(numout, *) '         Richardson number dependent closure     ln_zdfric = ', ln_zdfric
+      WRITE(numout, *) '         Turbulent Kinetic Energy closure (TKE)  ln_zdftke = ', ln_zdftke
+      WRITE(numout, *) '         Generic Length Scale closure (GLS)      ln_zdfgls = ', ln_zdfgls
+      WRITE(numout, *) '         OSMOSIS-OBL closure (OSM)               ln_zdfosm = ', ln_zdfosm
+      WRITE(numout, *) '      convection: '
+      WRITE(numout, *) '         enhanced vertical diffusion             ln_zdfevd = ', ln_zdfevd
+      WRITE(numout, *) '            applied on momentum (=1/0)             nn_evdm = ', nn_evdm
+      WRITE(numout, *) '            vertical coefficient for evd           rn_evd  = ', rn_evd
+      WRITE(numout, *) '         non-penetrative convection (npc)        ln_zdfnpc = ', ln_zdfnpc
+      WRITE(numout, *) '            npc call  frequency                    nn_npc  = ', nn_npc
+      WRITE(numout, *) '            npc print frequency                    nn_npcp = ', nn_npcp
+      WRITE(numout, *) '      double diffusive mixing                    ln_zdfddm = ', ln_zdfddm
+      WRITE(numout, *) '         maximum avs for dd mixing                 rn_avts = ', rn_avts
+      WRITE(numout, *) '         heat/salt buoyancy flux ratio             rn_hsbfr= ', rn_hsbfr
+      WRITE(numout, *) '      gravity wave-induced mixing'
+      WRITE(numout, *) '         surface  wave (Qiao et al 2010)         ln_zdfswm = ', ln_zdfswm
+      WRITE(numout, *) '         internal wave (de Lavergne et al 2017)  ln_zdfiwm = ', ln_zdfiwm
+      WRITE(numout, *) '      coefficients : '
+      WRITE(numout, *) '         vertical eddy viscosity                 rn_avm0   = ', rn_avm0
+      WRITE(numout, *) '         vertical eddy diffusivity               rn_avt0   = ', rn_avt0
+      WRITE(numout, *) '         constant background or profile          nn_avb    = ', nn_avb
+      WRITE(numout, *) '         horizontal variation for avtb           nn_havtb  = ', nn_havtb
     END IF
     IF (ln_zad_Aimp) THEN
       IF (zdf_phy_alloc() /= 0) CALL ctl_stop('STOP', 'zdf_phy_init : unable to allocate adaptive-implicit z-advection arrays')
@@ -107,13 +106,11 @@ MODULE zdfphy
       WHERE (- 5. <= gphit .AND. gphit < 5) avtb_2d = 0.1
       WHERE (5. <= gphit .AND. gphit < 15) avtb_2d = (0.1 + 0.09 * (gphit - 5.))
     END IF
+    !$ACC KERNELS
     DO jk = 1, jpk
-      !$ACC KERNELS
       avt_k(:, :, jk) = avtb_2d(:, :) * avtb(jk) * wmask(:, :, jk)
       avm_k(:, :, jk) = avmb(jk) * wmask(:, :, jk)
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
     avt(:, :, :) = 0._wp
     avs(:, :, :) = 0._wp
     avm(:, :, :) = 0._wp
@@ -123,21 +120,21 @@ MODULE zdfphy
     IF (lk_top .AND. ln_zdfnpc) CALL ctl_stop('zdf_phy_init: npc scheme is not working with key_top')
     IF (lk_top .AND. ln_zdfosm) CALL ctl_stop('zdf_phy_init: osmosis scheme is not working with key_top')
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
       IF (ln_zdfnpc) THEN
-        WRITE(numout, FMT = *) '   ==>>>   convection: use non penetrative convective scheme'
+        WRITE(numout, *) '   ==>>>   convection: use non penetrative convective scheme'
       ELSE IF (ln_zdfevd) THEN
-        WRITE(numout, FMT = *) '   ==>>>   convection: use enhanced vertical diffusion scheme'
+        WRITE(numout, *) '   ==>>>   convection: use enhanced vertical diffusion scheme'
       ELSE
-        WRITE(numout, FMT = *) '   ==>>>   convection: no specific scheme used'
+        WRITE(numout, *) '   ==>>>   convection: no specific scheme used'
       END IF
     END IF
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
       IF (ln_zdfddm) THEN
-        WRITE(numout, FMT = *) '   ==>>>   use double diffusive mixing: avs /= avt'
+        WRITE(numout, *) '   ==>>>   use double diffusive mixing: avs /= avt'
       ELSE
-        WRITE(numout, FMT = *) '   ==>>>   No  double diffusive mixing: avs = avt'
+        WRITE(numout, *) '   ==>>>   No  double diffusive mixing: avs = avt'
       END IF
     END IF
     ioptio = 0
@@ -187,6 +184,8 @@ MODULE zdfphy
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     CALL profile_psy_data0 % PreStart('zdf_phy', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('zdf_phy')
     IF (l_zdfdrg) THEN
@@ -223,15 +222,19 @@ MODULE zdfphy
       END DO
       !$ACC END KERNELS
     END IF
+    CALL profile_psy_data2 % PreStart('zdf_phy', 'r2', 0, 0)
     IF (ln_zdfevd) CALL zdf_evd(kt, avm, avt)
+    CALL profile_psy_data2 % PostEnd
     IF (ln_zdfddm) THEN
+      CALL profile_psy_data3 % PreStart('zdf_phy', 'r3', 0, 0)
       CALL zdf_ddm(kt, avm, avt, avs)
+      CALL profile_psy_data3 % PostEnd
     ELSE
       !$ACC KERNELS
       avs(2 : jpim1, 2 : jpjm1, 1 : jpkm1) = avt(2 : jpim1, 2 : jpjm1, 1 : jpkm1)
       !$ACC END KERNELS
     END IF
-    CALL profile_psy_data2 % PreStart('zdf_phy', 'r2', 0, 0)
+    CALL profile_psy_data4 % PreStart('zdf_phy', 'r4', 0, 0)
     IF (ln_zdfswm) CALL zdf_swm(kt, avm, avt, avs)
     IF (ln_zdfiwm) CALL zdf_iwm(kt, avm, avt, avs)
     IF (ln_zdftmx) CALL zdf_tmx(kt, avm, avt, avs)
@@ -254,7 +257,7 @@ MODULE zdfphy
       IF (ln_zdfric) CALL ric_rst(kt, 'WRITE')
     END IF
     IF (ln_timing) CALL timing_stop('zdf_phy')
-    CALL profile_psy_data2 % PostEnd
+    CALL profile_psy_data4 % PostEnd
   END SUBROUTINE zdf_phy
   INTEGER FUNCTION zdf_phy_alloc()
     ALLOCATE(wi(jpi, jpj, jpk), Cu_adv(jpi, jpj, jpk), STAT = zdf_phy_alloc)

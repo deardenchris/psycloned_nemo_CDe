@@ -41,13 +41,16 @@ MODULE traadv_mus
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
     IF (kt == kit000) THEN
       CALL profile_psy_data0 % PreStart('tra_adv_mus', 'r0', 0, 0)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'tra_adv : MUSCL advection scheme on ', cdtype
-      IF (lwp) WRITE(numout, FMT = *) '        : mixed up-stream           ', ld_msc_ups
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~'
-      IF (lwp) WRITE(numout, FMT = *)
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'tra_adv : MUSCL advection scheme on ', cdtype
+      IF (lwp) WRITE(numout, *) '        : mixed up-stream           ', ld_msc_ups
+      IF (lwp) WRITE(numout, *) '~~~~~~~'
+      IF (lwp) WRITE(numout, *)
       ALLOCATE(xind(jpi, jpj, jpk), STAT = ierr)
       CALL profile_psy_data0 % PostEnd
       !$ACC KERNELS
@@ -69,15 +72,14 @@ MODULE traadv_mus
     l_ptr = .FALSE.
     IF ((cdtype == 'TRA' .AND. l_trdtra) .OR. (cdtype == 'TRC' .AND. l_trdtrc)) l_trd = .TRUE.
     IF (cdtype == 'TRA' .AND. ln_diaptr) l_ptr = .TRUE.
-    IF (cdtype == 'TRA' .AND. (iom_use("uadv_heattr") .OR. iom_use("vadv_heattr") .OR. iom_use("uadv_salttr") .OR. &
-&iom_use("vadv_salttr"))) l_hst = .TRUE.
+    IF (cdtype == 'TRA' .AND. (iom_use("uadv_heattr") .OR. iom_use("vadv_heattr") .OR. iom_use("uadv_salttr") .OR. iom_use("vadv_salttr"))) l_hst = .TRUE.
     CALL profile_psy_data1 % PostEnd
     DO jn = 1, kjpt
       !$ACC KERNELS
       zwx(:, :, jpk) = 0._wp
       zwy(:, :, jpk) = 0._wp
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
             zwx(ji, jj, jk) = umask(ji, jj, jk) * (ptb(ji + 1, jj, jk, jn) - ptb(ji, jj, jk, jn))
@@ -86,12 +88,14 @@ MODULE traadv_mus
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data2 % PreStart('tra_adv_mus', 'r2', 0, 0)
       CALL lbc_lnk_multi('traadv_mus', zwx, 'U', - 1., zwy, 'V', - 1.)
+      CALL profile_psy_data2 % PostEnd
       !$ACC KERNELS
       zslpx(:, :, jpk) = 0._wp
       zslpy(:, :, jpk) = 0._wp
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpj
           DO ji = 2, jpi
             zslpx(ji, jj, jk) = (zwx(ji, jj, jk) + zwx(ji - 1, jj, jk)) * (0.25 + SIGN(0.25, zwx(ji, jj, jk) * zwx(ji - 1, jj, jk)))
@@ -100,18 +104,16 @@ MODULE traadv_mus
         END DO
       END DO
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpj
           DO ji = 2, jpi
-            zslpx(ji, jj, jk) = SIGN(1., zslpx(ji, jj, jk)) * MIN(ABS(zslpx(ji, jj, jk)), 2. * ABS(zwx(ji - 1, jj, jk)), 2. * &
-&ABS(zwx(ji, jj, jk)))
-            zslpy(ji, jj, jk) = SIGN(1., zslpy(ji, jj, jk)) * MIN(ABS(zslpy(ji, jj, jk)), 2. * ABS(zwy(ji, jj - 1, jk)), 2. * &
-&ABS(zwy(ji, jj, jk)))
+            zslpx(ji, jj, jk) = SIGN(1., zslpx(ji, jj, jk)) * MIN(ABS(zslpx(ji, jj, jk)), 2. * ABS(zwx(ji - 1, jj, jk)), 2. * ABS(zwx(ji, jj, jk)))
+            zslpy(ji, jj, jk) = SIGN(1., zslpy(ji, jj, jk)) * MIN(ABS(zslpy(ji, jj, jk)), 2. * ABS(zwy(ji, jj - 1, jk)), 2. * ABS(zwy(ji, jj, jk)))
           END DO
         END DO
       END DO
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             z0u = SIGN(0.5, pun(ji, jj, jk))
@@ -130,26 +132,27 @@ MODULE traadv_mus
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data3 % PreStart('tra_adv_mus', 'r3', 0, 0)
       CALL lbc_lnk_multi('traadv_mus', zwx, 'U', - 1., zwy, 'V', - 1.)
+      CALL profile_psy_data3 % PostEnd
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (zwx(ji, jj, jk) - zwx(ji - 1, jj, jk) + zwy(ji, jj, jk) - zwy(ji, jj - 1, &
-&jk)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
+            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (zwx(ji, jj, jk) - zwx(ji - 1, jj, jk) + zwy(ji, jj, jk) - zwy(ji, jj - 1, jk)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
           END DO
         END DO
       END DO
       !$ACC END KERNELS
-      CALL profile_psy_data2 % PreStart('tra_adv_mus', 'r2', 0, 0)
+      CALL profile_psy_data4 % PreStart('tra_adv_mus', 'r4', 0, 0)
       IF (l_trd) THEN
         CALL trd_tra(kt, cdtype, jn, jptra_xad, zwx, pun, ptb(:, :, :, jn))
         CALL trd_tra(kt, cdtype, jn, jptra_yad, zwy, pvn, ptb(:, :, :, jn))
       END IF
       IF (l_ptr) CALL dia_ptr_hst(jn, 'adv', zwy(:, :, :))
       IF (l_hst) CALL dia_ar5_hst(jn, 'adv', zwx(:, :, :), zwy(:, :, :))
-      CALL profile_psy_data2 % PostEnd
+      CALL profile_psy_data4 % PostEnd
       !$ACC KERNELS
       zwx(:, :, 1) = 0._wp
       zwx(:, :, jpk) = 0._wp
@@ -158,7 +161,7 @@ MODULE traadv_mus
       END DO
       zslpx(:, :, 1) = 0._wp
       DO jk = 2, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zslpx(ji, jj, jk) = (zwx(ji, jj, jk) + zwx(ji, jj, jk + 1)) * (0.25 + SIGN(0.25, zwx(ji, jj, jk) * zwx(ji, jj, jk + 1)))
@@ -166,16 +169,15 @@ MODULE traadv_mus
         END DO
       END DO
       DO jk = 2, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
-            zslpx(ji, jj, jk) = SIGN(1., zslpx(ji, jj, jk)) * MIN(ABS(zslpx(ji, jj, jk)), 2. * ABS(zwx(ji, jj, jk + 1)), 2. * &
-&ABS(zwx(ji, jj, jk)))
+            zslpx(ji, jj, jk) = SIGN(1., zslpx(ji, jj, jk)) * MIN(ABS(zslpx(ji, jj, jk)), 2. * ABS(zwx(ji, jj, jk + 1)), 2. * ABS(zwx(ji, jj, jk)))
           END DO
         END DO
       END DO
       DO jk = 1, jpk - 2
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
             z0w = SIGN(0.5, pwn(ji, jj, jk + 1))
@@ -191,7 +193,7 @@ MODULE traadv_mus
       IF (ln_linssh) THEN
         IF (ln_isfcav) THEN
           !$ACC KERNELS
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               zwx(ji, jj, mikt(ji, jj)) = pwn(ji, jj, mikt(ji, jj)) * ptb(ji, jj, mikt(ji, jj), jn)
@@ -206,16 +208,17 @@ MODULE traadv_mus
       END IF
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (zwx(ji, jj, jk) - zwx(ji, jj, jk + 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, &
-&jk)
+            pta(ji, jj, jk, jn) = pta(ji, jj, jk, jn) - (zwx(ji, jj, jk) - zwx(ji, jj, jk + 1)) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, jk)
           END DO
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data5 % PreStart('tra_adv_mus', 'r5', 0, 0)
       IF (l_trd) CALL trd_tra(kt, cdtype, jn, jptra_zad, zwx, pwn, ptb(:, :, :, jn))
+      CALL profile_psy_data5 % PostEnd
     END DO
   END SUBROUTINE tra_adv_mus
 END MODULE traadv_mus

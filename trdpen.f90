@@ -35,6 +35,9 @@ MODULE trdpen
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
     !$ACC KERNELS
     zpe(:, :, :) = 0._wp
     !$ACC END KERNELS
@@ -50,32 +53,36 @@ MODULE trdpen
     !$ACC KERNELS
     zpe(:, :, jpk) = 0._wp
     DO jk = 1, jpkm1
-      zpe(:, :, jk) = (- (rab_n(:, :, jk, jp_tem) + rab_pe(:, :, jk, jp_tem)) * ptrdx(:, :, jk) + (rab_n(:, :, jk, jp_sal) + &
-&rab_pe(:, :, jk, jp_sal)) * ptrdy(:, :, jk))
+      zpe(:, :, jk) = (- (rab_n(:, :, jk, jp_tem) + rab_pe(:, :, jk, jp_tem)) * ptrdx(:, :, jk) + (rab_n(:, :, jk, jp_sal) + rab_pe(:, :, jk, jp_sal)) * ptrdy(:, :, jk))
     END DO
     !$ACC END KERNELS
     SELECT CASE (ktrd)
     CASE (jptra_xad)
+      CALL profile_psy_data1 % PreStart('trd_pen', 'r1', 0, 0)
       CALL iom_put("petrd_xad", zpe)
+      CALL profile_psy_data1 % PostEnd
     CASE (jptra_yad)
+      CALL profile_psy_data2 % PreStart('trd_pen', 'r2', 0, 0)
       CALL iom_put("petrd_yad", zpe)
+      CALL profile_psy_data2 % PostEnd
     CASE (jptra_zad)
+      CALL profile_psy_data3 % PreStart('trd_pen', 'r3', 0, 0)
       CALL iom_put("petrd_zad", zpe)
+      CALL profile_psy_data3 % PostEnd
       IF (ln_linssh) THEN
         ALLOCATE(z2d(jpi, jpj))
         !$ACC KERNELS
-        z2d(:, :) = wn(:, :, 1) * (- (rab_n(:, :, 1, jp_tem) + rab_pe(:, :, 1, jp_tem)) * tsn(:, :, 1, jp_tem) + (rab_n(:, :, 1, &
-&jp_sal) + rab_pe(:, :, 1, jp_sal)) * tsn(:, :, 1, jp_sal)) / e3t_n(:, :, 1)
+        z2d(:, :) = wn(:, :, 1) * (- (rab_n(:, :, 1, jp_tem) + rab_pe(:, :, 1, jp_tem)) * tsn(:, :, 1, jp_tem) + (rab_n(:, :, 1, jp_sal) + rab_pe(:, :, 1, jp_sal)) * tsn(:, :, 1, jp_sal)) / e3t_n(:, :, 1)
         !$ACC END KERNELS
-        CALL profile_psy_data1 % PreStart('trd_pen', 'r1', 0, 0)
+        CALL profile_psy_data4 % PreStart('trd_pen', 'r4', 0, 0)
         CALL iom_put("petrd_sad", z2d)
         DEALLOCATE(z2d)
-        CALL profile_psy_data1 % PostEnd
+        CALL profile_psy_data4 % PostEnd
       END IF
     CASE (jptra_ldf)
-      CALL profile_psy_data2 % PreStart('trd_pen', 'r2', 0, 0)
+      CALL profile_psy_data5 % PreStart('trd_pen', 'r5', 0, 0)
       CALL iom_put("petrd_ldf", zpe)
-      CALL profile_psy_data2 % PostEnd
+      CALL profile_psy_data5 % PostEnd
     CASE (jptra_zdf)
       CALL iom_put("petrd_zdf", zpe)
     CASE (jptra_zdfp)
@@ -99,9 +106,9 @@ MODULE trdpen
   SUBROUTINE trd_pen_init
     INTEGER :: ji, jj, jk
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'trd_pen_init : 3D Potential ENergy trends'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~~'
+      WRITE(numout, *)
+      WRITE(numout, *) 'trd_pen_init : 3D Potential ENergy trends'
+      WRITE(numout, *) '~~~~~~~~~~~~~'
     END IF
     IF (trd_pen_alloc() /= 0) CALL ctl_stop('trd_pen_alloc: failed to allocate arrays')
     !$ACC KERNELS

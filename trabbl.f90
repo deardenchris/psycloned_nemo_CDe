@@ -32,9 +32,7 @@ MODULE trabbl
   REAL(KIND = wp), ALLOCATABLE, SAVE, DIMENSION(:, :), PUBLIC :: e3u_bbl_0, e3v_bbl_0
   CONTAINS
   INTEGER FUNCTION tra_bbl_alloc()
-    ALLOCATE(utr_bbl(jpi, jpj), ahu_bbl(jpi, jpj), mbku_d(jpi, jpj), mgrhu(jpi, jpj), vtr_bbl(jpi, jpj), ahv_bbl(jpi, jpj), &
-&mbkv_d(jpi, jpj), mgrhv(jpi, jpj), ahu_bbl_0(jpi, jpj), ahv_bbl_0(jpi, jpj), e3u_bbl_0(jpi, jpj), e3v_bbl_0(jpi, jpj), STAT = &
-&tra_bbl_alloc)
+    ALLOCATE(utr_bbl(jpi, jpj), ahu_bbl(jpi, jpj), mbku_d(jpi, jpj), mgrhu(jpi, jpj), vtr_bbl(jpi, jpj), ahv_bbl(jpi, jpj), mbkv_d(jpi, jpj), mgrhv(jpi, jpj), ahu_bbl_0(jpi, jpj), ahv_bbl_0(jpi, jpj), e3u_bbl_0(jpi, jpj), e3v_bbl_0(jpi, jpj), STAT = tra_bbl_alloc)
     CALL mpp_sum('trabbl', tra_bbl_alloc)
     IF (tra_bbl_alloc > 0) CALL ctl_warn('tra_bbl_alloc: allocation of arrays failed.')
   END FUNCTION tra_bbl_alloc
@@ -44,7 +42,11 @@ MODULE trabbl
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :, :) :: ztrdt, ztrds
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    CALL profile_psy_data0 % PreStart('tra_bbl', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('tra_bbl')
+    CALL profile_psy_data0 % PostEnd
     IF (l_trdtra) THEN
       ALLOCATE(ztrdt(jpi, jpj, jpk), ztrds(jpi, jpj, jpk))
       !$ACC KERNELS
@@ -52,37 +54,37 @@ MODULE trabbl
       ztrds(:, :, :) = tsa(:, :, :, jp_sal)
       !$ACC END KERNELS
     END IF
-    CALL profile_psy_data0 % PreStart('tra_bbl', 'r0', 0, 0)
+    CALL profile_psy_data1 % PreStart('tra_bbl', 'r1', 0, 0)
     IF (l_bbl) CALL bbl(kt, nit000, 'TRA')
     IF (nn_bbl_ldf == 1) THEN
       CALL tra_bbl_dif(tsb, tsa, jpts)
-      IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsa(:, :, :, jp_tem), clinfo1 = ' bbl_ldf  - Ta: ', mask1 = tmask, tab3d_2 = tsa(:, :, :, &
-&jp_sal), clinfo2 = ' Sa: ', mask2 = tmask, clinfo3 = 'tra')
+      IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsa(:, :, :, jp_tem), clinfo1 = ' bbl_ldf  - Ta: ', mask1 = tmask, tab3d_2 = tsa(:, :, :, jp_sal), clinfo2 = ' Sa: ', mask2 = tmask, clinfo3 = 'tra')
       CALL lbc_lnk_multi('trabbl', ahu_bbl, 'U', 1., ahv_bbl, 'V', 1.)
       CALL iom_put("ahu_bbl", ahu_bbl)
       CALL iom_put("ahv_bbl", ahv_bbl)
     END IF
     IF (nn_bbl_adv /= 0) THEN
       CALL tra_bbl_adv(tsb, tsa, jpts)
-      IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsa(:, :, :, jp_tem), clinfo1 = ' bbl_adv  - Ta: ', mask1 = tmask, tab3d_2 = tsa(:, :, :, &
-&jp_sal), clinfo2 = ' Sa: ', mask2 = tmask, clinfo3 = 'tra')
+      IF (ln_ctl) CALL prt_ctl(tab3d_1 = tsa(:, :, :, jp_tem), clinfo1 = ' bbl_adv  - Ta: ', mask1 = tmask, tab3d_2 = tsa(:, :, :, jp_sal), clinfo2 = ' Sa: ', mask2 = tmask, clinfo3 = 'tra')
       CALL lbc_lnk_multi('trabbl', utr_bbl, 'U', 1., vtr_bbl, 'V', 1.)
       CALL iom_put("uoce_bbl", utr_bbl)
       CALL iom_put("voce_bbl", vtr_bbl)
     END IF
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data1 % PostEnd
     IF (l_trdtra) THEN
       !$ACC KERNELS
       ztrdt(:, :, :) = tsa(:, :, :, jp_tem) - ztrdt(:, :, :)
       ztrds(:, :, :) = tsa(:, :, :, jp_sal) - ztrds(:, :, :)
       !$ACC END KERNELS
-      CALL profile_psy_data1 % PreStart('tra_bbl', 'r1', 0, 0)
+      CALL profile_psy_data2 % PreStart('tra_bbl', 'r2', 0, 0)
       CALL trd_tra(kt, 'TRA', jp_tem, jptra_bbl, ztrdt)
       CALL trd_tra(kt, 'TRA', jp_sal, jptra_bbl, ztrds)
       DEALLOCATE(ztrdt, ztrds)
-      CALL profile_psy_data1 % PostEnd
+      CALL profile_psy_data2 % PostEnd
     END IF
+    CALL profile_psy_data3 % PreStart('tra_bbl', 'r3', 0, 0)
     IF (ln_timing) CALL timing_stop('tra_bbl')
+    CALL profile_psy_data3 % PostEnd
   END SUBROUTINE tra_bbl
   SUBROUTINE tra_bbl_dif(ptb, pta, kjpt)
     INTEGER, INTENT(IN) :: kjpt
@@ -94,20 +96,18 @@ MODULE trabbl
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zptb
     !$ACC KERNELS
     DO jn = 1, kjpt
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           ik = mbkt(ji, jj)
           zptb(ji, jj) = ptb(ji, jj, ik, jn)
         END DO
       END DO
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           ik = mbkt(ji, jj)
-          pta(ji, jj, ik, jn) = pta(ji, jj, ik, jn) + (ahu_bbl(ji, jj) * (zptb(ji + 1, jj) - zptb(ji, jj)) - ahu_bbl(ji - 1, jj) * &
-&(zptb(ji, jj) - zptb(ji - 1, jj)) + ahv_bbl(ji, jj) * (zptb(ji, jj + 1) - zptb(ji, jj)) - ahv_bbl(ji, jj - 1) * (zptb(ji, jj) - &
-&zptb(ji, jj - 1))) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, ik)
+          pta(ji, jj, ik, jn) = pta(ji, jj, ik, jn) + (ahu_bbl(ji, jj) * (zptb(ji + 1, jj) - zptb(ji, jj)) - ahu_bbl(ji - 1, jj) * (zptb(ji, jj) - zptb(ji - 1, jj)) + ahv_bbl(ji, jj) * (zptb(ji, jj + 1) - zptb(ji, jj)) - ahv_bbl(ji, jj - 1) * (zptb(ji, jj) - zptb(ji, jj - 1))) * r1_e1e2t(ji, jj) / e3t_n(ji, jj, ik)
         END DO
       END DO
     END DO
@@ -124,7 +124,7 @@ MODULE trabbl
     REAL(KIND = wp) :: zu_bbl, zv_bbl
     !$ACC KERNELS
     DO jn = 1, kjpt
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           IF (utr_bbl(ji, jj) /= 0.E0) THEN
@@ -182,15 +182,16 @@ MODULE trabbl
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpts) :: zts, zab
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zub, zvb, zdep
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('bbl', 'r0', 0, 0)
     IF (kt == kit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'trabbl:bbl : Compute bbl velocities and diffusive coefficients in ', cdtype
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'trabbl:bbl : Compute bbl velocities and diffusive coefficients in ', cdtype
+      IF (lwp) WRITE(numout, *) '~~~~~~~~~~'
     END IF
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         ik = mbkt(ji, jj)
@@ -202,22 +203,22 @@ MODULE trabbl
       END DO
     END DO
     !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('bbl', 'r1', 0, 0)
     CALL eos_rab(zts, zdep, zab)
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     IF (nn_bbl_ldf == 1) THEN
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           za = zab(ji + 1, jj, jp_tem) + zab(ji, jj, jp_tem)
           zb = zab(ji + 1, jj, jp_sal) + zab(ji, jj, jp_sal)
-          zgdrho = (za * (zts(ji + 1, jj, jp_tem) - zts(ji, jj, jp_tem)) - zb * (zts(ji + 1, jj, jp_sal) - zts(ji, jj, jp_sal))) * &
-&umask(ji, jj, 1)
+          zgdrho = (za * (zts(ji + 1, jj, jp_tem) - zts(ji, jj, jp_tem)) - zb * (zts(ji + 1, jj, jp_sal) - zts(ji, jj, jp_sal))) * umask(ji, jj, 1)
           zsign = SIGN(0.5, - zgdrho * REAL(mgrhu(ji, jj)))
           ahu_bbl(ji, jj) = (0.5 - zsign) * ahu_bbl_0(ji, jj)
           za = zab(ji, jj + 1, jp_tem) + zab(ji, jj, jp_tem)
           zb = zab(ji, jj + 1, jp_sal) + zab(ji, jj, jp_sal)
-          zgdrho = (za * (zts(ji, jj + 1, jp_tem) - zts(ji, jj, jp_tem)) - zb * (zts(ji, jj + 1, jp_sal) - zts(ji, jj, jp_sal))) * &
-&vmask(ji, jj, 1)
+          zgdrho = (za * (zts(ji, jj + 1, jp_tem) - zts(ji, jj, jp_tem)) - zb * (zts(ji, jj + 1, jp_sal) - zts(ji, jj, jp_sal))) * vmask(ji, jj, 1)
           zsign = SIGN(0.5, - zgdrho * REAL(mgrhv(ji, jj)))
           ahv_bbl(ji, jj) = (0.5 - zsign) * ahv_bbl_0(ji, jj)
         END DO
@@ -226,20 +227,18 @@ MODULE trabbl
     IF (nn_bbl_adv /= 0) THEN
       SELECT CASE (nn_bbl_adv)
       CASE (1)
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
             za = zab(ji + 1, jj, jp_tem) + zab(ji, jj, jp_tem)
             zb = zab(ji + 1, jj, jp_sal) + zab(ji, jj, jp_sal)
-            zgdrho = (za * (zts(ji + 1, jj, jp_tem) - zts(ji, jj, jp_tem)) - zb * (zts(ji + 1, jj, jp_sal) - zts(ji, jj, jp_sal))) &
-&* umask(ji, jj, 1)
+            zgdrho = (za * (zts(ji + 1, jj, jp_tem) - zts(ji, jj, jp_tem)) - zb * (zts(ji + 1, jj, jp_sal) - zts(ji, jj, jp_sal))) * umask(ji, jj, 1)
             zsign = SIGN(0.5, - zgdrho * REAL(mgrhu(ji, jj)))
             zsigna = SIGN(0.5, zub(ji, jj) * REAL(mgrhu(ji, jj)))
             utr_bbl(ji, jj) = (0.5 + zsigna) * (0.5 - zsign) * e2u(ji, jj) * e3u_bbl_0(ji, jj) * zub(ji, jj)
             za = zab(ji, jj + 1, jp_tem) + zab(ji, jj, jp_tem)
             zb = zab(ji, jj + 1, jp_sal) + zab(ji, jj, jp_sal)
-            zgdrho = (za * (zts(ji, jj + 1, jp_tem) - zts(ji, jj, jp_tem)) - zb * (zts(ji, jj + 1, jp_sal) - zts(ji, jj, jp_sal))) &
-&* vmask(ji, jj, 1)
+            zgdrho = (za * (zts(ji, jj + 1, jp_tem) - zts(ji, jj, jp_tem)) - zb * (zts(ji, jj + 1, jp_sal) - zts(ji, jj, jp_sal))) * vmask(ji, jj, 1)
             zsign = SIGN(0.5, - zgdrho * REAL(mgrhv(ji, jj)))
             zsigna = SIGN(0.5, zvb(ji, jj) * REAL(mgrhv(ji, jj)))
             vtr_bbl(ji, jj) = (0.5 + zsigna) * (0.5 - zsign) * e1v(ji, jj) * e3v_bbl_0(ji, jj) * zvb(ji, jj)
@@ -247,7 +246,7 @@ MODULE trabbl
         END DO
       CASE (2)
         zgbbl = grav * rn_gambbl
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
             iid = ji + MAX(0, mgrhu(ji, jj))
@@ -256,8 +255,7 @@ MODULE trabbl
             ikus = mbku(ji, jj)
             za = zab(ji + 1, jj, jp_tem) + zab(ji, jj, jp_tem)
             zb = zab(ji + 1, jj, jp_sal) + zab(ji, jj, jp_sal)
-            zgdrho = 0.5 * (za * (zts(iid, jj, jp_tem) - zts(iis, jj, jp_tem)) - zb * (zts(iid, jj, jp_sal) - zts(iis, jj, &
-&jp_sal))) * umask(ji, jj, 1)
+            zgdrho = 0.5 * (za * (zts(iid, jj, jp_tem) - zts(iis, jj, jp_tem)) - zb * (zts(iid, jj, jp_sal) - zts(iis, jj, jp_sal))) * umask(ji, jj, 1)
             zgdrho = MAX(0.E0, zgdrho)
             utr_bbl(ji, jj) = e2u(ji, jj) * e3u_bbl_0(ji, jj) * zgbbl * zgdrho * REAL(mgrhu(ji, jj))
             ijd = jj + MAX(0, mgrhv(ji, jj))
@@ -266,8 +264,7 @@ MODULE trabbl
             ikvs = mbkv(ji, jj)
             za = zab(ji, jj + 1, jp_tem) + zab(ji, jj, jp_tem)
             zb = zab(ji, jj + 1, jp_sal) + zab(ji, jj, jp_sal)
-            zgdrho = 0.5 * (za * (zts(ji, ijd, jp_tem) - zts(ji, ijs, jp_tem)) - zb * (zts(ji, ijd, jp_sal) - zts(ji, ijs, &
-&jp_sal))) * vmask(ji, jj, 1)
+            zgdrho = 0.5 * (za * (zts(ji, ijd, jp_tem) - zts(ji, ijs, jp_tem)) - zb * (zts(ji, ijd, jp_sal) - zts(ji, ijs, jp_sal))) * vmask(ji, jj, 1)
             zgdrho = MAX(0.E0, zgdrho)
             vtr_bbl(ji, jj) = e1v(ji, jj) * e3v_bbl_0(ji, jj) * zgbbl * zgdrho * REAL(mgrhv(ji, jj))
           END DO
@@ -290,26 +287,26 @@ MODULE trabbl
     IF (lwm) WRITE(numond, nambbl)
     l_bbl = .TRUE.
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'tra_bbl_init : bottom boundary layer initialisation'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '       Namelist nambbl : set bbl parameters'
-      WRITE(numout, FMT = *) '          bottom boundary layer flag          ln_trabbl  = ', ln_trabbl
+      WRITE(numout, *)
+      WRITE(numout, *) 'tra_bbl_init : bottom boundary layer initialisation'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '       Namelist nambbl : set bbl parameters'
+      WRITE(numout, *) '          bottom boundary layer flag          ln_trabbl  = ', ln_trabbl
     END IF
     IF (.NOT. ln_trabbl) RETURN
     IF (lwp) THEN
-      WRITE(numout, FMT = *) '          diffusive bbl (=1)   or not (=0)    nn_bbl_ldf = ', nn_bbl_ldf
-      WRITE(numout, FMT = *) '          advective bbl (=1/2) or not (=0)    nn_bbl_adv = ', nn_bbl_adv
-      WRITE(numout, FMT = *) '          diffusive bbl coefficient           rn_ahtbbl  = ', rn_ahtbbl, ' m2/s'
-      WRITE(numout, FMT = *) '          advective bbl coefficient           rn_gambbl  = ', rn_gambbl, ' s'
+      WRITE(numout, *) '          diffusive bbl (=1)   or not (=0)    nn_bbl_ldf = ', nn_bbl_ldf
+      WRITE(numout, *) '          advective bbl (=1/2) or not (=0)    nn_bbl_adv = ', nn_bbl_adv
+      WRITE(numout, *) '          diffusive bbl coefficient           rn_ahtbbl  = ', rn_ahtbbl, ' m2/s'
+      WRITE(numout, *) '          advective bbl coefficient           rn_gambbl  = ', rn_gambbl, ' s'
     END IF
     IF (tra_bbl_alloc() /= 0) CALL ctl_stop('STOP', 'tra_bbl_init : unable to allocate arrays')
     IF (lwp) THEN
-      IF (nn_bbl_adv == 1) WRITE(numout, FMT = *) '       * Advective BBL using upper velocity'
-      IF (nn_bbl_adv == 2) WRITE(numout, FMT = *) '       * Advective BBL using velocity = F( delta rho)'
+      IF (nn_bbl_adv == 1) WRITE(numout, *) '       * Advective BBL using upper velocity'
+      IF (nn_bbl_adv == 2) WRITE(numout, *) '       * Advective BBL using velocity = F( delta rho)'
     END IF
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpjm1
       DO ji = 1, jpim1
         mbku_d(ji, jj) = MAX(mbkt(ji + 1, jj), mbkt(ji, jj))
@@ -325,7 +322,7 @@ MODULE trabbl
     mbkv_d(:, :) = MAX(NINT(zmbkv(:, :)), 1)
     mgrhu(:, :) = 0
     mgrhv(:, :) = 0
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpjm1
       DO ji = 1, jpim1
         IF (gdept_0(ji + 1, jj, mbkt(ji + 1, jj)) - gdept_0(ji, jj, mbkt(ji, jj)) /= 0._wp) THEN
@@ -336,7 +333,7 @@ MODULE trabbl
         END IF
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpjm1
       DO ji = 1, jpim1
         e3u_bbl_0(ji, jj) = MIN(e3u_0(ji, jj, mbkt(ji + 1, jj)), e3u_0(ji, jj, mbkt(ji, jj)))

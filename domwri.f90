@@ -24,10 +24,12 @@ MODULE domwri
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     CALL profile_psy_data0 % PreStart('dom_wri', 'r0', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) 'dom_wri : create NetCDF mesh and mask information file(s)'
-    IF (lwp) WRITE(numout, FMT = *) '~~~~~~~'
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) 'dom_wri : create NetCDF mesh and mask information file(s)'
+    IF (lwp) WRITE(numout, *) '~~~~~~~'
     clnam = 'mesh_mask'
     CALL iom_open(TRIM(clnam), inum, ldwrt = .TRUE.)
     CALL iom_rstput(0, 0, inum, 'jpiglo', REAL(jpiglo, wp), ktype = jp_i4)
@@ -65,7 +67,7 @@ MODULE domwri
     CALL dom_uniq(zprw, 'T')
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zprt(ji, jj) = ssmask(ji, jj) * zprw(ji, jj)
@@ -77,7 +79,7 @@ MODULE domwri
     CALL dom_uniq(zprw, 'U')
     CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zprt(ji, jj) = ssumask(ji, jj) * zprw(ji, jj)
@@ -89,7 +91,7 @@ MODULE domwri
     CALL dom_uniq(zprw, 'V')
     CALL profile_psy_data2 % PostEnd
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zprt(ji, jj) = ssvmask(ji, jj) * zprw(ji, jj)
@@ -120,15 +122,19 @@ MODULE domwri
     !$ACC KERNELS
     zprt(:, :) = ssmask(:, :) * REAL(mbkt(:, :), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data4 % PreStart('dom_wri', 'r4', 0, 0)
     CALL iom_rstput(0, 0, inum, 'mbathy', zprt, ktype = jp_i4)
+    CALL profile_psy_data4 % PostEnd
     !$ACC KERNELS
     zprt(:, :) = ssmask(:, :) * REAL(mikt(:, :), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data5 % PreStart('dom_wri', 'r5', 0, 0)
     CALL iom_rstput(0, 0, inum, 'misf', zprt, ktype = jp_i4)
+    CALL profile_psy_data5 % PostEnd
     !$ACC KERNELS
     zprt(:, :) = ssmask(:, :) * REAL(risfdep(:, :), wp)
     !$ACC END KERNELS
-    CALL profile_psy_data4 % PreStart('dom_wri', 'r4', 0, 0)
+    CALL profile_psy_data6 % PreStart('dom_wri', 'r6', 0, 0)
     CALL iom_rstput(0, 0, inum, 'isfdraft', zprt, ktype = jp_r8)
     CALL iom_rstput(0, 0, inum, 'e3t_0', e3t_0, ktype = jp_r8)
     CALL iom_rstput(0, 0, inum, 'e3u_0', e3u_0, ktype = jp_r8)
@@ -144,7 +150,7 @@ MODULE domwri
     END IF
     IF (ll_wd) CALL iom_rstput(0, 0, inum, 'ht_0', ht_0, ktype = jp_r8)
     CALL iom_close(inum)
-    CALL profile_psy_data4 % PostEnd
+    CALL profile_psy_data6 % PostEnd
   END SUBROUTINE dom_wri
   SUBROUTINE dom_uniq(puniq, cdgrd)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -155,6 +161,8 @@ MODULE domwri
     LOGICAL, DIMENSION(SIZE(puniq, 1), SIZE(puniq, 2), 1) :: lldbl
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: ztstref
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     CALL profile_psy_data0 % PreStart('dom_uniq', 'r0', 0, 0)
     zshift = jpi * jpj * (narea - 1)
     ztstref(:, :) = RESHAPE((/(zshift + REAL(ji, wp), ji = 1, jpi * jpj)/), (/jpi, jpj/))
@@ -162,12 +170,16 @@ MODULE domwri
     !$ACC KERNELS
     puniq(:, :) = ztstref(:, :)
     !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('dom_uniq', 'r1', 0, 0)
     CALL lbc_lnk('domwri', puniq, cdgrd, 1.)
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     lldbl(:, :, 1) = puniq(:, :) == ztstref(:, :)
     puniq(:, :) = 1.
-    puniq(nldi : nlei, nldj : nlej) = REAL(COUNT(lldbl(nldi : nlei, nldj : nlej, :), dim = 3), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data2 % PreStart('dom_uniq', 'r2', 0, 0)
+    puniq(nldi : nlei, nldj : nlej) = REAL(COUNT(lldbl(nldi : nlei, nldj : nlej, :), dim = 3), wp)
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE dom_uniq
   SUBROUTINE dom_stiff(px1)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -186,18 +198,10 @@ MODULE domwri
       DO jj = 2, jpjm1
         !$ACC KERNELS
         DO jk = 1, jpkm1
-          zr1(1) = ABS((gdepw_0(ji, jj, jk) - gdepw_0(ji - 1, jj, jk) + gdepw_0(ji, jj, jk + 1) - gdepw_0(ji - 1, jj, jk + 1)) / &
-&(gdepw_0(ji, jj, jk) + gdepw_0(ji - 1, jj, jk) - gdepw_0(ji, jj, jk + 1) - gdepw_0(ji - 1, jj, jk + 1) + rsmall)) * umask(ji - 1, &
-&jj, jk)
-          zr1(2) = ABS((gdepw_0(ji + 1, jj, jk) - gdepw_0(ji, jj, jk) + gdepw_0(ji + 1, jj, jk + 1) - gdepw_0(ji, jj, jk + 1)) / &
-&(gdepw_0(ji + 1, jj, jk) + gdepw_0(ji, jj, jk) - gdepw_0(ji + 1, jj, jk + 1) - gdepw_0(ji, jj, jk + 1) + rsmall)) * umask(ji, jj, &
-&jk)
-          zr1(3) = ABS((gdepw_0(ji, jj + 1, jk) - gdepw_0(ji, jj, jk) + gdepw_0(ji, jj + 1, jk + 1) - gdepw_0(ji, jj, jk + 1)) / &
-&(gdepw_0(ji, jj + 1, jk) + gdepw_0(ji, jj, jk) - gdepw_0(ji, jj + 1, jk + 1) - gdepw_0(ji, jj, jk + 1) + rsmall)) * vmask(ji, jj, &
-&jk)
-          zr1(4) = ABS((gdepw_0(ji, jj, jk) - gdepw_0(ji, jj - 1, jk) + gdepw_0(ji, jj, jk + 1) - gdepw_0(ji, jj - 1, jk + 1)) / &
-&(gdepw_0(ji, jj, jk) + gdepw_0(ji, jj - 1, jk) - gdepw_0(ji, jj, jk + 1) - gdepw_0(ji, jj - 1, jk + 1) + rsmall)) * vmask(ji, jj &
-&- 1, jk)
+          zr1(1) = ABS((gdepw_0(ji, jj, jk) - gdepw_0(ji - 1, jj, jk) + gdepw_0(ji, jj, jk + 1) - gdepw_0(ji - 1, jj, jk + 1)) / (gdepw_0(ji, jj, jk) + gdepw_0(ji - 1, jj, jk) - gdepw_0(ji, jj, jk + 1) - gdepw_0(ji - 1, jj, jk + 1) + rsmall)) * umask(ji - 1, jj, jk)
+          zr1(2) = ABS((gdepw_0(ji + 1, jj, jk) - gdepw_0(ji, jj, jk) + gdepw_0(ji + 1, jj, jk + 1) - gdepw_0(ji, jj, jk + 1)) / (gdepw_0(ji + 1, jj, jk) + gdepw_0(ji, jj, jk) - gdepw_0(ji + 1, jj, jk + 1) - gdepw_0(ji, jj, jk + 1) + rsmall)) * umask(ji, jj, jk)
+          zr1(3) = ABS((gdepw_0(ji, jj + 1, jk) - gdepw_0(ji, jj, jk) + gdepw_0(ji, jj + 1, jk + 1) - gdepw_0(ji, jj, jk + 1)) / (gdepw_0(ji, jj + 1, jk) + gdepw_0(ji, jj, jk) - gdepw_0(ji, jj + 1, jk + 1) - gdepw_0(ji, jj, jk + 1) + rsmall)) * vmask(ji, jj, jk)
+          zr1(4) = ABS((gdepw_0(ji, jj, jk) - gdepw_0(ji, jj - 1, jk) + gdepw_0(ji, jj, jk + 1) - gdepw_0(ji, jj - 1, jk + 1)) / (gdepw_0(ji, jj, jk) + gdepw_0(ji, jj - 1, jk) - gdepw_0(ji, jj, jk + 1) - gdepw_0(ji, jj - 1, jk + 1) + rsmall)) * vmask(ji, jj - 1, jk)
           zrxmax = MAXVAL(zr1(1 : 4))
           zx1(ji, jj) = MAX(zx1(ji, jj), zrxmax)
         END DO
@@ -210,9 +214,9 @@ MODULE domwri
     zrxmax = MAXVAL(zx1)
     CALL mpp_max('domwri', zrxmax)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'dom_stiff : maximum grid stiffness ratio: ', zrxmax
-      WRITE(numout, FMT = *) '~~~~~~~~~'
+      WRITE(numout, *)
+      WRITE(numout, *) 'dom_stiff : maximum grid stiffness ratio: ', zrxmax
+      WRITE(numout, *) '~~~~~~~~~'
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE dom_stiff

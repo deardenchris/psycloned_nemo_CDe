@@ -42,12 +42,10 @@ MODULE lib_mpp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('mynode', 'r0', 0, 0)
     IF (PRESENT(localComm)) mpi_comm_oce = localComm
-    CALL profile_psy_data0 % PostEnd
-    !$ACC KERNELS
     function_value = 0
     IF (.FALSE.) ldtxt(:) = 'never done'
-    !$ACC END KERNELS
     CALL ctl_opn(kumond, TRIM(ldname), 'UNKNOWN', 'FORMATTED', 'SEQUENTIAL', - 1, 6, .FALSE., 1)
+    CALL profile_psy_data0 % PostEnd
   END FUNCTION mynode
   SUBROUTINE mppsync
   END SUBROUTINE mppsync
@@ -157,7 +155,7 @@ MODULE lib_mpp
     INTEGER, INTENT(OUT) :: kindex(2)
     kindex = 0
     pmin = 0.
-    WRITE(*, FMT = *) 'ROUTINE_LOC: You should not have seen this print! error?'
+    WRITE(*, *) 'ROUTINE_LOC: You should not have seen this print! error?'
   END SUBROUTINE mpp_minloc2d
   SUBROUTINE mpp_minloc3d(cdname, ptab, pmask, pmin, kindex)
     CHARACTER(LEN = *), INTENT(IN) :: cdname
@@ -167,7 +165,7 @@ MODULE lib_mpp
     INTEGER, INTENT(OUT) :: kindex(3)
     kindex = 0
     pmin = 0.
-    WRITE(*, FMT = *) 'ROUTINE_LOC: You should not have seen this print! error?'
+    WRITE(*, *) 'ROUTINE_LOC: You should not have seen this print! error?'
   END SUBROUTINE mpp_minloc3d
   SUBROUTINE mpp_maxloc2d(cdname, ptab, pmask, pmin, kindex)
     CHARACTER(LEN = *), INTENT(IN) :: cdname
@@ -177,7 +175,7 @@ MODULE lib_mpp
     INTEGER, INTENT(OUT) :: kindex(2)
     kindex = 0
     pmin = 0.
-    WRITE(*, FMT = *) 'ROUTINE_LOC: You should not have seen this print! error?'
+    WRITE(*, *) 'ROUTINE_LOC: You should not have seen this print! error?'
   END SUBROUTINE mpp_maxloc2d
   SUBROUTINE mpp_maxloc3d(cdname, ptab, pmask, pmin, kindex)
     CHARACTER(LEN = *), INTENT(IN) :: cdname
@@ -187,7 +185,7 @@ MODULE lib_mpp
     INTEGER, INTENT(OUT) :: kindex(3)
     kindex = 0
     pmin = 0.
-    WRITE(*, FMT = *) 'ROUTINE_LOC: You should not have seen this print! error?'
+    WRITE(*, *) 'ROUTINE_LOC: You should not have seen this print! error?'
   END SUBROUTINE mpp_maxloc3d
   SUBROUTINE mpp_delay_sum(cdname, cdelay, y_in, pout, ldlast, kcom)
     CHARACTER(LEN = *), INTENT(IN) :: cdname
@@ -213,7 +211,7 @@ MODULE lib_mpp
   END SUBROUTINE mpp_delay_max
   SUBROUTINE mpp_delay_rcv(kid)
     INTEGER, INTENT(IN) :: kid
-    WRITE(*, FMT = *) 'mpp_delay_rcv: You should not have seen this print! error?', kid
+    WRITE(*, *) 'mpp_delay_rcv: You should not have seen this print! error?', kid
   END SUBROUTINE mpp_delay_rcv
   SUBROUTINE mppstop(ldfinal, ld_force_abort)
     LOGICAL, OPTIONAL, INTENT(IN) :: ldfinal
@@ -222,11 +220,11 @@ MODULE lib_mpp
   END SUBROUTINE mppstop
   SUBROUTINE mpp_ini_znl(knum)
     INTEGER :: knum
-    WRITE(*, FMT = *) 'mpp_ini_znl: You should not have seen this print! error?', knum
+    WRITE(*, *) 'mpp_ini_znl: You should not have seen this print! error?', knum
   END SUBROUTINE mpp_ini_znl
   SUBROUTINE mpp_comm_free(kcom)
     INTEGER :: kcom
-    WRITE(*, FMT = *) 'mpp_comm_free: You should not have seen this print! error?', kcom
+    WRITE(*, *) 'mpp_comm_free: You should not have seen this print! error?', kcom
   END SUBROUTINE mpp_comm_free
   SUBROUTINE ctl_stop(cd1, cd2, cd3, cd4, cd5, cd6, cd7, cd8, cd9, cd10)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -237,22 +235,22 @@ MODULE lib_mpp
     nstop = nstop + 1
     IF (numout == 6) CALL ctl_opn(numout, 'ocean.output', 'APPEND', 'FORMATTED', 'SEQUENTIAL', - 1, 6, .FALSE.)
     WRITE(numout, cform_err)
-    IF (PRESENT(cd1)) WRITE(numout, FMT = *) TRIM(cd1)
-    IF (PRESENT(cd2)) WRITE(numout, FMT = *) TRIM(cd2)
-    IF (PRESENT(cd3)) WRITE(numout, FMT = *) TRIM(cd3)
-    IF (PRESENT(cd4)) WRITE(numout, FMT = *) TRIM(cd4)
-    IF (PRESENT(cd5)) WRITE(numout, FMT = *) TRIM(cd5)
-    IF (PRESENT(cd6)) WRITE(numout, FMT = *) TRIM(cd6)
-    IF (PRESENT(cd7)) WRITE(numout, FMT = *) TRIM(cd7)
-    IF (PRESENT(cd8)) WRITE(numout, FMT = *) TRIM(cd8)
-    IF (PRESENT(cd9)) WRITE(numout, FMT = *) TRIM(cd9)
-    IF (PRESENT(cd10)) WRITE(numout, FMT = *) TRIM(cd10)
+    IF (PRESENT(cd1)) WRITE(numout, *) TRIM(cd1)
+    IF (PRESENT(cd2)) WRITE(numout, *) TRIM(cd2)
+    IF (PRESENT(cd3)) WRITE(numout, *) TRIM(cd3)
+    IF (PRESENT(cd4)) WRITE(numout, *) TRIM(cd4)
+    IF (PRESENT(cd5)) WRITE(numout, *) TRIM(cd5)
+    IF (PRESENT(cd6)) WRITE(numout, *) TRIM(cd6)
+    IF (PRESENT(cd7)) WRITE(numout, *) TRIM(cd7)
+    IF (PRESENT(cd8)) WRITE(numout, *) TRIM(cd8)
+    IF (PRESENT(cd9)) WRITE(numout, *) TRIM(cd9)
+    IF (PRESENT(cd10)) WRITE(numout, *) TRIM(cd10)
     CALL FLUSH(numout)
     IF (numstp /= - 1) CALL FLUSH(numstp)
     IF (numrun /= - 1) CALL FLUSH(numrun)
     IF (numevo_ice /= - 1) CALL FLUSH(numevo_ice)
     IF (cd1 == 'STOP') THEN
-      WRITE(numout, FMT = *) 'huge E-R-R-O-R : immediate stop'
+      WRITE(numout, *) 'huge E-R-R-O-R : immediate stop'
       CALL mppstop(ld_force_abort = .TRUE.)
     END IF
     CALL profile_psy_data0 % PostEnd
@@ -266,16 +264,16 @@ MODULE lib_mpp
     nwarn = nwarn + 1
     IF (lwp) THEN
       WRITE(numout, cform_war)
-      IF (PRESENT(cd1)) WRITE(numout, FMT = *) TRIM(cd1)
-      IF (PRESENT(cd2)) WRITE(numout, FMT = *) TRIM(cd2)
-      IF (PRESENT(cd3)) WRITE(numout, FMT = *) TRIM(cd3)
-      IF (PRESENT(cd4)) WRITE(numout, FMT = *) TRIM(cd4)
-      IF (PRESENT(cd5)) WRITE(numout, FMT = *) TRIM(cd5)
-      IF (PRESENT(cd6)) WRITE(numout, FMT = *) TRIM(cd6)
-      IF (PRESENT(cd7)) WRITE(numout, FMT = *) TRIM(cd7)
-      IF (PRESENT(cd8)) WRITE(numout, FMT = *) TRIM(cd8)
-      IF (PRESENT(cd9)) WRITE(numout, FMT = *) TRIM(cd9)
-      IF (PRESENT(cd10)) WRITE(numout, FMT = *) TRIM(cd10)
+      IF (PRESENT(cd1)) WRITE(numout, *) TRIM(cd1)
+      IF (PRESENT(cd2)) WRITE(numout, *) TRIM(cd2)
+      IF (PRESENT(cd3)) WRITE(numout, *) TRIM(cd3)
+      IF (PRESENT(cd4)) WRITE(numout, *) TRIM(cd4)
+      IF (PRESENT(cd5)) WRITE(numout, *) TRIM(cd5)
+      IF (PRESENT(cd6)) WRITE(numout, *) TRIM(cd6)
+      IF (PRESENT(cd7)) WRITE(numout, *) TRIM(cd7)
+      IF (PRESENT(cd8)) WRITE(numout, *) TRIM(cd8)
+      IF (PRESENT(cd9)) WRITE(numout, *) TRIM(cd9)
+      IF (PRESENT(cd10)) WRITE(numout, *) TRIM(cd10)
     END IF
     CALL FLUSH(numout)
     CALL profile_psy_data0 % PostEnd
@@ -297,7 +295,7 @@ MODULE lib_mpp
     CALL profile_psy_data0 % PreStart('ctl_opn', 'r0', 0, 0)
     clfile = TRIM(cdfile)
     IF (PRESENT(karea)) THEN
-      IF (karea > 1) WRITE(clfile, FMT = "(a,'_',i6.6)") TRIM(clfile), karea - 1
+      IF (karea > 1) WRITE(clfile, "(a,'_',i6.6)") TRIM(clfile), karea - 1
     END IF
     knum = get_unit()
     IF (TRIM(cdfile) == '/dev/null') clfile = TRIM(cdfile)
@@ -305,47 +303,45 @@ MODULE lib_mpp
     IF (cdacce(1 : 6) == 'DIRECT') THEN
       OPEN(UNIT = knum, FILE = clfile, FORM = cdform, ACCESS = cdacce, STATUS = cdstat, RECL = klengh, ERR = 100, IOSTAT = iost)
     ELSE IF (TRIM(cdstat) == 'APPEND') THEN
-      OPEN(UNIT = knum, FILE = clfile, FORM = cdform, ACCESS = cdacce, STATUS = 'UNKNOWN', POSITION = 'APPEND', ERR = 100, IOSTAT &
-&= iost)
+      OPEN(UNIT = knum, FILE = clfile, FORM = cdform, ACCESS = cdacce, STATUS = 'UNKNOWN', POSITION = 'APPEND', ERR = 100, IOSTAT = iost)
     ELSE
       OPEN(UNIT = knum, FILE = clfile, FORM = cdform, ACCESS = cdacce, STATUS = cdstat, ERR = 100, IOSTAT = iost)
     END IF
-    IF (iost /= 0 .AND. TRIM(clfile) == '/dev/null') OPEN(UNIT = knum, FILE = 'NUL', FORM = cdform, ACCESS = cdacce, STATUS = &
-&cdstat, ERR = 100, IOSTAT = iost)
+    IF (iost /= 0 .AND. TRIM(clfile) == '/dev/null') OPEN(UNIT = knum, FILE = 'NUL', FORM = cdform, ACCESS = cdacce, STATUS = cdstat, ERR = 100, IOSTAT = iost)
     IF (iost == 0) THEN
       IF (ldwp) THEN
-        WRITE(kout, FMT = *) '     file   : ', TRIM(clfile), ' open ok'
-        WRITE(kout, FMT = *) '     unit   = ', knum
-        WRITE(kout, FMT = *) '     status = ', cdstat
-        WRITE(kout, FMT = *) '     form   = ', cdform
-        WRITE(kout, FMT = *) '     access = ', cdacce
-        WRITE(kout, FMT = *)
+        WRITE(kout, *) '     file   : ', TRIM(clfile), ' open ok'
+        WRITE(kout, *) '     unit   = ', knum
+        WRITE(kout, *) '     status = ', cdstat
+        WRITE(kout, *) '     form   = ', cdform
+        WRITE(kout, *) '     access = ', cdacce
+        WRITE(kout, *)
       END IF
     END IF
 100 CONTINUE
     IF (iost /= 0) THEN
       IF (ldwp) THEN
-        WRITE(kout, FMT = *)
-        WRITE(kout, FMT = *) ' ===>>>> : bad opening file: ', TRIM(clfile)
-        WRITE(kout, FMT = *) ' =======   ===  '
-        WRITE(kout, FMT = *) '           unit   = ', knum
-        WRITE(kout, FMT = *) '           status = ', cdstat
-        WRITE(kout, FMT = *) '           form   = ', cdform
-        WRITE(kout, FMT = *) '           access = ', cdacce
-        WRITE(kout, FMT = *) '           iostat = ', iost
-        WRITE(kout, FMT = *) '           we stop. verify the file '
-        WRITE(kout, FMT = *)
+        WRITE(kout, *)
+        WRITE(kout, *) ' ===>>>> : bad opening file: ', TRIM(clfile)
+        WRITE(kout, *) ' =======   ===  '
+        WRITE(kout, *) '           unit   = ', knum
+        WRITE(kout, *) '           status = ', cdstat
+        WRITE(kout, *) '           form   = ', cdform
+        WRITE(kout, *) '           access = ', cdacce
+        WRITE(kout, *) '           iostat = ', iost
+        WRITE(kout, *) '           we stop. verify the file '
+        WRITE(kout, *)
       ELSE
-        WRITE(*, FMT = *)
-        WRITE(*, FMT = *) ' ===>>>> : bad opening file: ', TRIM(clfile)
-        WRITE(*, FMT = *) ' =======   ===  '
-        WRITE(*, FMT = *) '           unit   = ', knum
-        WRITE(*, FMT = *) '           status = ', cdstat
-        WRITE(*, FMT = *) '           form   = ', cdform
-        WRITE(*, FMT = *) '           access = ', cdacce
-        WRITE(*, FMT = *) '           iostat = ', iost
-        WRITE(*, FMT = *) '           we stop. verify the file '
-        WRITE(*, FMT = *)
+        WRITE(*, *)
+        WRITE(*, *) ' ===>>>> : bad opening file: ', TRIM(clfile)
+        WRITE(*, *) ' =======   ===  '
+        WRITE(*, *) '           unit   = ', knum
+        WRITE(*, *) '           status = ', cdstat
+        WRITE(*, *) '           form   = ', cdform
+        WRITE(*, *) '           access = ', cdacce
+        WRITE(*, *) '           iostat = ', iost
+        WRITE(*, *) '           we stop. verify the file '
+        WRITE(*, *)
       END IF
       CALL FLUSH(kout)
       STOP 'ctl_opn bad opening'
@@ -360,7 +356,7 @@ MODULE lib_mpp
     LOGICAL, INTENT(IN) :: ldwp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('ctl_nam', 'r0', 0, 0)
-    WRITE(clios, FMT = '(I5.0)') kios
+    WRITE(clios, '(I5.0)') kios
     IF (kios < 0) THEN
       CALL ctl_warn('end of record or file while reading namelist ' // TRIM(cdnam) // ' iostat = ' // TRIM(clios))
     END IF

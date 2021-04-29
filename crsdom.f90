@@ -243,10 +243,8 @@ MODULE crsdom
         DO jk = 1, jpk
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
-            p_fld1_crs(ii, 2, jk) = zvol(ji, je_2, jk) + zvol(ji + 1, je_2, jk) + zvol(ji + 2, je_2, jk) + zvol(ji, je_2 - 1, jk) &
-&+ zvol(ji + 1, je_2 - 1, jk) + zvol(ji + 2, je_2 - 1, jk)
-            zdAm = zvol(ji, je_2, jk) * zmask(ji, je_2, jk) + zvol(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) + zvol(ji + 2, &
-&je_2, jk) * zmask(ji + 2, je_2, jk)
+            p_fld1_crs(ii, 2, jk) = zvol(ji, je_2, jk) + zvol(ji + 1, je_2, jk) + zvol(ji + 2, je_2, jk) + zvol(ji, je_2 - 1, jk) + zvol(ji + 1, je_2 - 1, jk) + zvol(ji + 2, je_2 - 1, jk)
+            zdAm = zvol(ji, je_2, jk) * zmask(ji, je_2, jk) + zvol(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) + zvol(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk)
             p_fld2_crs(ii, 2, jk) = zdAm / p_fld1_crs(ii, 2, jk)
           END DO
         END DO
@@ -258,13 +256,8 @@ MODULE crsdom
       DO jk = 1, jpk
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
-          p_fld1_crs(ii, 2, jk) = zvol(ji, je_2, jk) + zvol(ji + 1, je_2, jk) + zvol(ji + 2, je_2, jk) + zvol(ji, je_2 + 1, jk) + &
-&zvol(ji + 1, je_2 + 1, jk) + zvol(ji + 2, je_2 + 1, jk) + zvol(ji, je_2 + 2, jk) + zvol(ji + 1, je_2 + 2, jk) + zvol(ji + 2, je_2 &
-&+ 2, jk)
-          zdAm = zvol(ji, je_2, jk) * zmask(ji, je_2, jk) + zvol(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) + zvol(ji + 2, je_2, &
-&jk) * zmask(ji + 2, je_2, jk) + zvol(ji, je_2 + 1, jk) * zmask(ji, je_2 + 1, jk) + zvol(ji + 1, je_2 + 1, jk) * zmask(ji + 1, &
-&je_2 + 1, jk) + zvol(ji + 2, je_2 + 1, jk) * zmask(ji + 2, je_2 + 1, jk) + zvol(ji, je_2 + 2, jk) * zmask(ji, je_2 + 2, jk) + &
-&zvol(ji + 1, je_2 + 2, jk) * zmask(ji + 1, je_2 + 2, jk) + zvol(ji + 2, je_2 + 2, jk) * zmask(ji + 2, je_2 + 2, jk)
+          p_fld1_crs(ii, 2, jk) = zvol(ji, je_2, jk) + zvol(ji + 1, je_2, jk) + zvol(ji + 2, je_2, jk) + zvol(ji, je_2 + 1, jk) + zvol(ji + 1, je_2 + 1, jk) + zvol(ji + 2, je_2 + 1, jk) + zvol(ji, je_2 + 2, jk) + zvol(ji + 1, je_2 + 2, jk) + zvol(ji + 2, je_2 + 2, jk)
+          zdAm = zvol(ji, je_2, jk) * zmask(ji, je_2, jk) + zvol(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) + zvol(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk) + zvol(ji, je_2 + 1, jk) * zmask(ji, je_2 + 1, jk) + zvol(ji + 1, je_2 + 1, jk) * zmask(ji + 1, je_2 + 1, jk) + zvol(ji + 2, je_2 + 1, jk) * zmask(ji + 2, je_2 + 1, jk) + zvol(ji, je_2 + 2, jk) * zmask(ji, je_2 + 2, jk) + zvol(ji + 1, je_2 + 2, jk) * zmask(ji + 1, je_2 + 2, jk) + zvol(ji + 2, je_2 + 2, jk) * zmask(ji + 2, je_2 + 2, jk)
           p_fld2_crs(ii, 2, jk) = zdAm / p_fld1_crs(ii, 2, jk)
         END DO
       END DO
@@ -272,17 +265,12 @@ MODULE crsdom
     END IF
     !$ACC KERNELS
     DO jk = 1, jpk
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = njstr, njend, nn_facty
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
           ij = (jj - njstr) * rfacty_r + 3
-          p_fld1_crs(ii, ij, jk) = zvol(ji, jj, jk) + zvol(ji + 1, jj, jk) + zvol(ji + 2, jj, jk) + zvol(ji, jj + 1, jk) + zvol(ji &
-&+ 1, jj + 1, jk) + zvol(ji + 2, jj + 1, jk) + zvol(ji, jj + 2, jk) + zvol(ji + 1, jj + 2, jk) + zvol(ji + 2, jj + 2, jk)
-          zdAm = zvol(ji, jj, jk) * zmask(ji, jj, jk) + zvol(ji + 1, jj, jk) * zmask(ji + 1, jj, jk) + zvol(ji + 2, jj, jk) * &
-&zmask(ji + 2, jj, jk) + zvol(ji, jj + 1, jk) * zmask(ji, jj + 1, jk) + zvol(ji + 1, jj + 1, jk) * zmask(ji + 1, jj + 1, jk) + &
-&zvol(ji + 2, jj + 1, jk) * zmask(ji + 2, jj + 1, jk) + zvol(ji, jj + 2, jk) * zmask(ji, jj + 2, jk) + zvol(ji + 1, jj + 2, jk) * &
-&zmask(ji + 1, jj + 2, jk) + zvol(ji + 2, jj + 2, jk) * zmask(ji + 2, jj + 2, jk)
+          p_fld1_crs(ii, ij, jk) = zvol(ji, jj, jk) + zvol(ji + 1, jj, jk) + zvol(ji + 2, jj, jk) + zvol(ji, jj + 1, jk) + zvol(ji + 1, jj + 1, jk) + zvol(ji + 2, jj + 1, jk) + zvol(ji, jj + 2, jk) + zvol(ji + 1, jj + 2, jk) + zvol(ji + 2, jj + 2, jk)
+          zdAm = zvol(ji, jj, jk) * zmask(ji, jj, jk) + zvol(ji + 1, jj, jk) * zmask(ji + 1, jj, jk) + zvol(ji + 2, jj, jk) * zmask(ji + 2, jj, jk) + zvol(ji, jj + 1, jk) * zmask(ji, jj + 1, jk) + zvol(ji + 1, jj + 1, jk) * zmask(ji + 1, jj + 1, jk) + zvol(ji + 2, jj + 1, jk) * zmask(ji + 2, jj + 1, jk) + zvol(ji, jj + 2, jk) * zmask(ji, jj + 2, jk) + zvol(ji + 1, jj + 2, jk) * zmask(ji + 1, jj + 2, jk) + zvol(ji + 2, jj + 2, jk) * zmask(ji + 2, jj + 2, jk)
           p_fld2_crs(ii, ij, jk) = zdAm / p_fld1_crs(ii, ij, jk)
         END DO
       END DO
@@ -313,6 +301,7 @@ MODULE crsdom
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     !$ACC KERNELS
     p_fld_crs(:, :, :) = 0._wp
     !$ACC END KERNELS
@@ -321,25 +310,21 @@ MODULE crsdom
       ALLOCATE(zsurf(jpi, jpj, jpk), zsurfmsk(jpi, jpj, jpk))
       SELECT CASE (cd_type)
       CASE ('T', 'W')
+        !$ACC KERNELS
         IF (cd_type == 'T') THEN
           DO jk = 1, jpk
-            !$ACC KERNELS
             zsurf(:, :, jk) = p_e12(:, :) * p_e3(:, :, jk) * p_mask(:, :, jk)
             zsurfmsk(:, :, jk) = zsurf(:, :, jk)
-            !$ACC END KERNELS
           END DO
         ELSE
-          !$ACC KERNELS
           zsurf(:, :, 1) = p_e12(:, :) * p_e3(:, :, 1)
           zsurfmsk(:, :, 1) = zsurf(:, :, 1) * p_mask(:, :, 1)
-          !$ACC END KERNELS
           DO jk = 2, jpk
-            !$ACC KERNELS
             zsurf(:, :, jk) = p_e12(:, :) * p_e3(:, :, jk)
             zsurfmsk(:, :, jk) = zsurf(:, :, jk) * p_mask(:, :, jk - 1)
-            !$ACC END KERNELS
           END DO
         END IF
+        !$ACC END KERNELS
         IF (nldj_crs == 1 .AND. ((mje_crs(2) - mjs_crs(2)) < 2)) THEN
           IF (mje_crs(2) - mjs_crs(2) == 1) THEN
             !$ACC KERNELS
@@ -347,8 +332,7 @@ MODULE crsdom
             DO jk = 1, jpk
               DO ji = nistr, niend, nn_factx
                 ii = (ji - mis_crs(2)) * rfactx_r + 2
-                zflcrs = p_fld(ji, je_2, jk) * zsurfmsk(ji, je_2, jk) + p_fld(ji + 1, je_2, jk) * zsurfmsk(ji + 1, je_2, jk) + &
-&p_fld(ji + 2, je_2, jk) * zsurfmsk(ji + 2, je_2, jk)
+                zflcrs = p_fld(ji, je_2, jk) * zsurfmsk(ji, je_2, jk) + p_fld(ji + 1, je_2, jk) * zsurfmsk(ji + 1, je_2, jk) + p_fld(ji + 2, je_2, jk) * zsurfmsk(ji + 2, je_2, jk)
                 zsfcrs = zsurf(ji, je_2, jk) + zsurf(ji + 1, je_2, jk) + zsurf(ji + 2, je_2, jk)
                 p_fld_crs(ii, 2, jk) = zflcrs
                 IF (zsfcrs /= 0.0) p_fld_crs(ii, 2, jk) = zflcrs / zsfcrs
@@ -362,14 +346,8 @@ MODULE crsdom
           DO jk = 1, jpk
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
-              zflcrs = p_fld(ji, je_2, jk) * zsurfmsk(ji, je_2, jk) + p_fld(ji + 1, je_2, jk) * zsurfmsk(ji + 1, je_2, jk) + &
-&p_fld(ji + 2, je_2, jk) * zsurfmsk(ji + 2, je_2, jk) + p_fld(ji, je_2 + 1, jk) * zsurfmsk(ji, je_2 + 1, jk) + p_fld(ji + 1, je_2 &
-&+ 1, jk) * zsurfmsk(ji + 1, je_2 + 1, jk) + p_fld(ji + 2, je_2 + 1, jk) * zsurfmsk(ji + 2, je_2 + 1, jk) + p_fld(ji, je_2 + 2, &
-&jk) * zsurfmsk(ji, je_2 + 2, jk) + p_fld(ji + 1, je_2 + 2, jk) * zsurfmsk(ji + 1, je_2 + 2, jk) + p_fld(ji + 2, je_2 + 2, jk) * &
-&zsurfmsk(ji + 2, je_2 + 2, jk)
-              zsfcrs = zsurf(ji, je_2, jk) + zsurf(ji + 1, je_2, jk) + zsurf(ji + 2, je_2, jk) + zsurf(ji, je_2 + 1, jk) + &
-&zsurf(ji + 1, je_2 + 1, jk) + zsurf(ji + 2, je_2 + 1, jk) + zsurf(ji, je_2 + 2, jk) + zsurf(ji + 1, je_2 + 2, jk) + zsurf(ji + 2, &
-&je_2 + 2, jk)
+              zflcrs = p_fld(ji, je_2, jk) * zsurfmsk(ji, je_2, jk) + p_fld(ji + 1, je_2, jk) * zsurfmsk(ji + 1, je_2, jk) + p_fld(ji + 2, je_2, jk) * zsurfmsk(ji + 2, je_2, jk) + p_fld(ji, je_2 + 1, jk) * zsurfmsk(ji, je_2 + 1, jk) + p_fld(ji + 1, je_2 + 1, jk) * zsurfmsk(ji + 1, je_2 + 1, jk) + p_fld(ji + 2, je_2 + 1, jk) * zsurfmsk(ji + 2, je_2 + 1, jk) + p_fld(ji, je_2 + 2, jk) * zsurfmsk(ji, je_2 + 2, jk) + p_fld(ji + 1, je_2 + 2, jk) * zsurfmsk(ji + 1, je_2 + 2, jk) + p_fld(ji + 2, je_2 + 2, jk) * zsurfmsk(ji + 2, je_2 + 2, jk)
+              zsfcrs = zsurf(ji, je_2, jk) + zsurf(ji + 1, je_2, jk) + zsurf(ji + 2, je_2, jk) + zsurf(ji, je_2 + 1, jk) + zsurf(ji + 1, je_2 + 1, jk) + zsurf(ji + 2, je_2 + 1, jk) + zsurf(ji, je_2 + 2, jk) + zsurf(ji + 1, je_2 + 2, jk) + zsurf(ji + 2, je_2 + 2, jk)
               p_fld_crs(ii, 2, jk) = zflcrs
               IF (zsfcrs /= 0.0) p_fld_crs(ii, 2, jk) = zflcrs / zsfcrs
             END DO
@@ -378,17 +356,12 @@ MODULE crsdom
         END IF
         !$ACC KERNELS
         DO jk = 1, jpk
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = njstr, njend, nn_facty
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ij = (jj - njstr) * rfacty_r + 3
-              zflcrs = p_fld(ji, jj, jk) * zsurfmsk(ji, jj, jk) + p_fld(ji + 1, jj, jk) * zsurfmsk(ji + 1, jj, jk) + p_fld(ji + 2, &
-&jj, jk) * zsurfmsk(ji + 2, jj, jk) + p_fld(ji, jj + 1, jk) * zsurfmsk(ji, jj + 1, jk) + p_fld(ji + 1, jj + 1, jk) * zsurfmsk(ji + &
-&1, jj + 1, jk) + p_fld(ji + 2, jj + 1, jk) * zsurfmsk(ji + 2, jj + 1, jk) + p_fld(ji, jj + 2, jk) * zsurfmsk(ji, jj + 2, jk) + &
-&p_fld(ji + 1, jj + 2, jk) * zsurfmsk(ji + 1, jj + 2, jk) + p_fld(ji + 2, jj + 2, jk) * zsurfmsk(ji + 2, jj + 2, jk)
-              zsfcrs = zsurf(ji, jj, jk) + zsurf(ji + 1, jj, jk) + zsurf(ji + 2, jj, jk) + zsurf(ji, jj + 1, jk) + zsurf(ji + 1, &
-&jj + 1, jk) + zsurf(ji + 2, jj + 1, jk) + zsurf(ji, jj + 2, jk) + zsurf(ji + 1, jj + 2, jk) + zsurf(ji + 2, jj + 2, jk)
+              zflcrs = p_fld(ji, jj, jk) * zsurfmsk(ji, jj, jk) + p_fld(ji + 1, jj, jk) * zsurfmsk(ji + 1, jj, jk) + p_fld(ji + 2, jj, jk) * zsurfmsk(ji + 2, jj, jk) + p_fld(ji, jj + 1, jk) * zsurfmsk(ji, jj + 1, jk) + p_fld(ji + 1, jj + 1, jk) * zsurfmsk(ji + 1, jj + 1, jk) + p_fld(ji + 2, jj + 1, jk) * zsurfmsk(ji + 2, jj + 1, jk) + p_fld(ji, jj + 2, jk) * zsurfmsk(ji, jj + 2, jk) + p_fld(ji + 1, jj + 2, jk) * zsurfmsk(ji + 1, jj + 2, jk) + p_fld(ji + 2, jj + 2, jk) * zsurfmsk(ji + 2, jj + 2, jk)
+              zsfcrs = zsurf(ji, jj, jk) + zsurf(ji + 1, jj, jk) + zsurf(ji + 2, jj, jk) + zsurf(ji, jj + 1, jk) + zsurf(ji + 1, jj + 1, jk) + zsurf(ji + 2, jj + 1, jk) + zsurf(ji, jj + 2, jk) + zsurf(ji + 1, jj + 2, jk) + zsurf(ji + 2, jj + 2, jk)
               p_fld_crs(ii, ij, jk) = zflcrs
               IF (zsfcrs /= 0.0) p_fld_crs(ii, ij, jk) = zflcrs / zsfcrs
             END DO
@@ -442,8 +415,7 @@ MODULE crsdom
             DO jk = 1, jpk
               DO ji = nistr, niend, nn_factx
                 ii = (ji - mis_crs(2)) * rfactx_r + 2
-                zflcrs = p_fld(ji, je_2, jk) * zsurfmsk(ji, je_2, jk) + p_fld(ji + 1, je_2, jk) * zsurfmsk(ji + 1, je_2, jk) + &
-&p_fld(ji + 2, je_2, jk) * zsurfmsk(ji + 2, je_2, jk)
+                zflcrs = p_fld(ji, je_2, jk) * zsurfmsk(ji, je_2, jk) + p_fld(ji + 1, je_2, jk) * zsurfmsk(ji + 1, je_2, jk) + p_fld(ji + 2, je_2, jk) * zsurfmsk(ji + 2, je_2, jk)
                 p_fld_crs(ii, 2, jk) = zflcrs
               END DO
             END DO
@@ -455,11 +427,7 @@ MODULE crsdom
           DO jk = 1, jpk
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
-              zflcrs = p_fld(ji, je_2, jk) * zsurfmsk(ji, je_2, jk) + p_fld(ji + 1, je_2, jk) * zsurfmsk(ji + 1, je_2, jk) + &
-&p_fld(ji + 2, je_2, jk) * zsurfmsk(ji + 2, je_2, jk) + p_fld(ji, je_2 + 1, jk) * zsurfmsk(ji, je_2 + 1, jk) + p_fld(ji + 1, je_2 &
-&+ 1, jk) * zsurfmsk(ji + 1, je_2 + 1, jk) + p_fld(ji + 2, je_2 + 1, jk) * zsurfmsk(ji + 2, je_2 + 1, jk) + p_fld(ji, je_2 + 2, &
-&jk) * zsurfmsk(ji, je_2 + 2, jk) + p_fld(ji + 1, je_2 + 2, jk) * zsurfmsk(ji + 1, je_2 + 2, jk) + p_fld(ji + 2, je_2 + 2, jk) * &
-&zsurfmsk(ji + 2, je_2 + 2, jk)
+              zflcrs = p_fld(ji, je_2, jk) * zsurfmsk(ji, je_2, jk) + p_fld(ji + 1, je_2, jk) * zsurfmsk(ji + 1, je_2, jk) + p_fld(ji + 2, je_2, jk) * zsurfmsk(ji + 2, je_2, jk) + p_fld(ji, je_2 + 1, jk) * zsurfmsk(ji, je_2 + 1, jk) + p_fld(ji + 1, je_2 + 1, jk) * zsurfmsk(ji + 1, je_2 + 1, jk) + p_fld(ji + 2, je_2 + 1, jk) * zsurfmsk(ji + 2, je_2 + 1, jk) + p_fld(ji, je_2 + 2, jk) * zsurfmsk(ji, je_2 + 2, jk) + p_fld(ji + 1, je_2 + 2, jk) * zsurfmsk(ji + 1, je_2 + 2, jk) + p_fld(ji + 2, je_2 + 2, jk) * zsurfmsk(ji + 2, je_2 + 2, jk)
               p_fld_crs(ii, 2, jk) = zflcrs
             END DO
           END DO
@@ -467,15 +435,11 @@ MODULE crsdom
         END IF
         !$ACC KERNELS
         DO jk = 1, jpk
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = njstr, njend, nn_facty
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ij = (jj - njstr) * rfacty_r + 3
-              zflcrs = p_fld(ji, jj, jk) * zsurfmsk(ji, jj, jk) + p_fld(ji + 1, jj, jk) * zsurfmsk(ji + 1, jj, jk) + p_fld(ji + 2, &
-&jj, jk) * zsurfmsk(ji + 2, jj, jk) + p_fld(ji, jj + 1, jk) * zsurfmsk(ji, jj + 1, jk) + p_fld(ji + 1, jj + 1, jk) * zsurfmsk(ji + &
-&1, jj + 1, jk) + p_fld(ji + 2, jj + 1, jk) * zsurfmsk(ji + 2, jj + 1, jk) + p_fld(ji, jj + 2, jk) * zsurfmsk(ji, jj + 2, jk) + &
-&p_fld(ji + 1, jj + 2, jk) * zsurfmsk(ji + 1, jj + 2, jk) + p_fld(ji + 2, jj + 2, jk) * zsurfmsk(ji + 2, jj + 2, jk)
+              zflcrs = p_fld(ji, jj, jk) * zsurfmsk(ji, jj, jk) + p_fld(ji + 1, jj, jk) * zsurfmsk(ji + 1, jj, jk) + p_fld(ji + 2, jj, jk) * zsurfmsk(ji + 2, jj, jk) + p_fld(ji, jj + 1, jk) * zsurfmsk(ji, jj + 1, jk) + p_fld(ji + 1, jj + 1, jk) * zsurfmsk(ji + 1, jj + 1, jk) + p_fld(ji + 2, jj + 1, jk) * zsurfmsk(ji + 2, jj + 1, jk) + p_fld(ji, jj + 2, jk) * zsurfmsk(ji, jj + 2, jk) + p_fld(ji + 1, jj + 2, jk) * zsurfmsk(ji + 1, jj + 2, jk) + p_fld(ji + 2, jj + 2, jk) * zsurfmsk(ji + 2, jj + 2, jk)
               p_fld_crs(ii, ij, jk) = zflcrs
             END DO
           END DO
@@ -495,20 +459,17 @@ MODULE crsdom
         DO jk = 1, jpk
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
-            zflcrs = p_fld(ji, ijje, jk) * zsurfmsk(ji, ijje, jk) + p_fld(ji + 1, ijje, jk) * zsurfmsk(ji + 1, ijje, jk) + &
-&p_fld(ji + 2, ijje, jk) * zsurfmsk(ji + 2, ijje, jk)
+            zflcrs = p_fld(ji, ijje, jk) * zsurfmsk(ji, ijje, jk) + p_fld(ji + 1, ijje, jk) * zsurfmsk(ji + 1, ijje, jk) + p_fld(ji + 2, ijje, jk) * zsurfmsk(ji + 2, ijje, jk)
             p_fld_crs(ii, 2, jk) = zflcrs
           END DO
         END DO
         DO jk = 1, jpk
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = njstr, njend, nn_facty
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ij = (jj - njstr) * rfacty_r + 3
               ijje = mje_crs(ij)
-              zflcrs = p_fld(ji, ijje, jk) * zsurfmsk(ji, ijje, jk) + p_fld(ji + 1, ijje, jk) * zsurfmsk(ji + 1, ijje, jk) + &
-&p_fld(ji + 2, ijje, jk) * zsurfmsk(ji + 2, ijje, jk)
+              zflcrs = p_fld(ji, ijje, jk) * zsurfmsk(ji, ijje, jk) + p_fld(ji + 1, ijje, jk) * zsurfmsk(ji + 1, ijje, jk) + p_fld(ji + 2, ijje, jk) * zsurfmsk(ji + 2, ijje, jk)
               p_fld_crs(ii, ij, jk) = zflcrs
             END DO
           END DO
@@ -536,8 +497,7 @@ MODULE crsdom
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ijie = mie_crs(ii)
-              zflcrs = p_fld(ijie, je_2, jk) * zsurfmsk(ijie, je_2, jk) + p_fld(ijie, je_2 + 1, jk) * zsurfmsk(ijie, je_2 + 1, jk) &
-&+ p_fld(ijie, je_2 + 2, jk) * zsurfmsk(ijie, je_2 + 2, jk)
+              zflcrs = p_fld(ijie, je_2, jk) * zsurfmsk(ijie, je_2, jk) + p_fld(ijie, je_2 + 1, jk) * zsurfmsk(ijie, je_2 + 1, jk) + p_fld(ijie, je_2 + 2, jk) * zsurfmsk(ijie, je_2 + 2, jk)
               p_fld_crs(ii, 2, jk) = zflcrs
             END DO
           END DO
@@ -545,14 +505,12 @@ MODULE crsdom
         END IF
         !$ACC KERNELS
         DO jk = 1, jpk
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = njstr, njend, nn_facty
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ij = (jj - njstr) * rfacty_r + 3
               ijie = mie_crs(ii)
-              zflcrs = p_fld(ijie, jj, jk) * zsurfmsk(ijie, jj, jk) + p_fld(ijie, jj + 1, jk) * zsurfmsk(ijie, jj + 1, jk) + &
-&p_fld(ijie, jj + 2, jk) * zsurfmsk(ijie, jj + 2, jk)
+              zflcrs = p_fld(ijie, jj, jk) * zsurfmsk(ijie, jj, jk) + p_fld(ijie, jj + 1, jk) * zsurfmsk(ijie, jj + 1, jk) + p_fld(ijie, jj + 2, jk) * zsurfmsk(ijie, jj + 2, jk)
               p_fld_crs(ii, ij, jk) = zflcrs
             END DO
           END DO
@@ -591,9 +549,7 @@ MODULE crsdom
             DO jk = 1, jpk
               DO ji = nistr, niend, nn_factx
                 ii = (ji - mis_crs(2)) * rfactx_r + 2
-                zflcrs = MAX(p_fld(ji, je_2, jk) * zmask(ji, je_2, jk) - (1. - zmask(ji, je_2, jk)) * r_inf, p_fld(ji + 1, je_2, &
-&jk) * zmask(ji + 1, je_2, jk) - (1. - zmask(ji + 1, je_2, jk)) * r_inf, p_fld(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk) - (1. - &
-&zmask(ji + 2, je_2, jk)) * r_inf)
+                zflcrs = MAX(p_fld(ji, je_2, jk) * zmask(ji, je_2, jk) - (1. - zmask(ji, je_2, jk)) * r_inf, p_fld(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) - (1. - zmask(ji + 1, je_2, jk)) * r_inf, p_fld(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk) - (1. - zmask(ji + 2, je_2, jk)) * r_inf)
                 p_fld_crs(ii, 2, jk) = zflcrs
               END DO
             END DO
@@ -605,13 +561,7 @@ MODULE crsdom
           DO jk = 1, jpk
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
-              zflcrs = MAX(p_fld(ji, je_2, jk) * zmask(ji, je_2, jk) - (1. - zmask(ji, je_2, jk)) * r_inf, p_fld(ji + 1, je_2, jk) &
-&* zmask(ji + 1, je_2, jk) - (1. - zmask(ji + 1, je_2, jk)) * r_inf, p_fld(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk) - (1. - &
-&zmask(ji + 2, je_2, jk)) * r_inf, p_fld(ji, je_2 + 1, jk) * zmask(ji, je_2 + 1, jk) - (1. - zmask(ji, je_2 + 1, jk)) * r_inf, &
-&p_fld(ji + 1, je_2 + 1, jk) * zmask(ji + 1, je_2 + 1, jk) - (1. - zmask(ji + 1, je_2 + 1, jk)) * r_inf, p_fld(ji + 2, je_2 + 1, &
-&jk) * zmask(ji + 2, je_2 + 1, jk) - (1. - zmask(ji + 2, je_2 + 1, jk)) * r_inf, p_fld(ji, je_2 + 2, jk) * zmask(ji, je_2 + 2, jk) &
-&- (1. - zmask(ji, je_2 + 2, jk)) * r_inf, p_fld(ji + 1, je_2 + 2, jk) * zmask(ji + 1, je_2 + 2, jk) - (1. - zmask(ji + 1, je_2 + &
-&2, jk)) * r_inf, p_fld(ji + 2, je_2 + 2, jk) * zmask(ji + 2, je_2 + 2, jk) - (1. - zmask(ji + 2, je_2 + 2, jk)) * r_inf)
+              zflcrs = MAX(p_fld(ji, je_2, jk) * zmask(ji, je_2, jk) - (1. - zmask(ji, je_2, jk)) * r_inf, p_fld(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) - (1. - zmask(ji + 1, je_2, jk)) * r_inf, p_fld(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk) - (1. - zmask(ji + 2, je_2, jk)) * r_inf, p_fld(ji, je_2 + 1, jk) * zmask(ji, je_2 + 1, jk) - (1. - zmask(ji, je_2 + 1, jk)) * r_inf, p_fld(ji + 1, je_2 + 1, jk) * zmask(ji + 1, je_2 + 1, jk) - (1. - zmask(ji + 1, je_2 + 1, jk)) * r_inf, p_fld(ji + 2, je_2 + 1, jk) * zmask(ji + 2, je_2 + 1, jk) - (1. - zmask(ji + 2, je_2 + 1, jk)) * r_inf, p_fld(ji, je_2 + 2, jk) * zmask(ji, je_2 + 2, jk) - (1. - zmask(ji, je_2 + 2, jk)) * r_inf, p_fld(ji + 1, je_2 + 2, jk) * zmask(ji + 1, je_2 + 2, jk) - (1. - zmask(ji + 1, je_2 + 2, jk)) * r_inf, p_fld(ji + 2, je_2 + 2, jk) * zmask(ji + 2, je_2 + 2, jk) - (1. - zmask(ji + 2, je_2 + 2, jk)) * r_inf)
               p_fld_crs(ii, 2, jk) = zflcrs
             END DO
           END DO
@@ -619,18 +569,11 @@ MODULE crsdom
         END IF
         !$ACC KERNELS
         DO jk = 1, jpk
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = njstr, njend, nn_facty
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ij = (jj - njstr) * rfacty_r + 3
-              zflcrs = MAX(p_fld(ji, jj, jk) * zmask(ji, jj, jk) - (1. - zmask(ji, jj, jk)) * r_inf, p_fld(ji + 1, jj, jk) * &
-&zmask(ji + 1, jj, jk) - (1. - zmask(ji + 1, jj, jk)) * r_inf, p_fld(ji + 2, jj, jk) * zmask(ji + 2, jj, jk) - (1. - zmask(ji + 2, &
-&jj, jk)) * r_inf, p_fld(ji, jj + 1, jk) * zmask(ji, jj + 1, jk) - (1. - zmask(ji, jj + 1, jk)) * r_inf, p_fld(ji + 1, jj + 1, jk) &
-&* zmask(ji + 1, jj + 1, jk) - (1. - zmask(ji + 1, jj + 1, jk)) * r_inf, p_fld(ji + 2, jj + 1, jk) * zmask(ji + 2, jj + 1, jk) - &
-&(1. - zmask(ji + 2, jj + 1, jk)) * r_inf, p_fld(ji, jj + 2, jk) * zmask(ji, jj + 2, jk) - (1. - zmask(ji, jj + 2, jk)) * r_inf, &
-&p_fld(ji + 1, jj + 2, jk) * zmask(ji + 1, jj + 2, jk) - (1. - zmask(ji + 1, jj + 2, jk)) * r_inf, p_fld(ji + 2, jj + 2, jk) * &
-&zmask(ji + 2, jj + 2, jk) - (1. - zmask(ji + 2, jj + 2, jk)) * r_inf)
+              zflcrs = MAX(p_fld(ji, jj, jk) * zmask(ji, jj, jk) - (1. - zmask(ji, jj, jk)) * r_inf, p_fld(ji + 1, jj, jk) * zmask(ji + 1, jj, jk) - (1. - zmask(ji + 1, jj, jk)) * r_inf, p_fld(ji + 2, jj, jk) * zmask(ji + 2, jj, jk) - (1. - zmask(ji + 2, jj, jk)) * r_inf, p_fld(ji, jj + 1, jk) * zmask(ji, jj + 1, jk) - (1. - zmask(ji, jj + 1, jk)) * r_inf, p_fld(ji + 1, jj + 1, jk) * zmask(ji + 1, jj + 1, jk) - (1. - zmask(ji + 1, jj + 1, jk)) * r_inf, p_fld(ji + 2, jj + 1, jk) * zmask(ji + 2, jj + 1, jk) - (1. - zmask(ji + 2, jj + 1, jk)) * r_inf, p_fld(ji, jj + 2, jk) * zmask(ji, jj + 2, jk) - (1. - zmask(ji, jj + 2, jk)) * r_inf, p_fld(ji + 1, jj + 2, jk) * zmask(ji + 1, jj + 2, jk) - (1. - zmask(ji + 1, jj + 2, jk)) * r_inf, p_fld(ji + 2, jj + 2, jk) * zmask(ji + 2, jj + 2, jk) - (1. - zmask(ji + 2, jj + 2, jk)) * r_inf)
               p_fld_crs(ii, ij, jk) = zflcrs
             END DO
           END DO
@@ -650,22 +593,17 @@ MODULE crsdom
         DO jk = 1, jpk
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
-            zflcrs = MAX(p_fld(ji, ijje, jk) * p_mask(ji, ijje, jk) - (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 1, ijje, jk) &
-&* p_mask(ji + 1, ijje, jk) - (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 2, ijje, jk) * p_mask(ji + 2, ijje, jk) - (1. - &
-&p_mask(ji, ijje, jk)) * r_inf)
+            zflcrs = MAX(p_fld(ji, ijje, jk) * p_mask(ji, ijje, jk) - (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 1, ijje, jk) * p_mask(ji + 1, ijje, jk) - (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 2, ijje, jk) * p_mask(ji + 2, ijje, jk) - (1. - p_mask(ji, ijje, jk)) * r_inf)
             p_fld_crs(ii, 2, jk) = zflcrs
           END DO
         END DO
         DO jk = 1, jpk
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = njstr, njend, nn_facty
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ij = (jj - njstr) * rfacty_r + 3
               ijje = mje_crs(ij)
-              zflcrs = MAX(p_fld(ji, ijje, jk) * p_mask(ji, ijje, jk) - (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 1, ijje, &
-&jk) * p_mask(ji + 1, ijje, jk) - (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 2, ijje, jk) * p_mask(ji + 2, ijje, jk) - (1. - &
-&p_mask(ji, ijje, jk)) * r_inf)
+              zflcrs = MAX(p_fld(ji, ijje, jk) * p_mask(ji, ijje, jk) - (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 1, ijje, jk) * p_mask(ji + 1, ijje, jk) - (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 2, ijje, jk) * p_mask(ji + 2, ijje, jk) - (1. - p_mask(ji, ijje, jk)) * r_inf)
               p_fld_crs(ii, ij, jk) = zflcrs
             END DO
           END DO
@@ -693,9 +631,7 @@ MODULE crsdom
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ijie = mie_crs(ii)
-              zflcrs = MAX(p_fld(ijie, je_2, jk) * p_mask(ijie, je_2, jk) - (1. - p_mask(ijie, je_2, jk)) * r_inf, p_fld(ijie, &
-&je_2 + 1, jk) * p_mask(ijie, je_2 + 1, jk) - (1. - p_mask(ijie, je_2, jk)) * r_inf, p_fld(ijie, je_2 + 2, jk) * p_mask(ijie, je_2 &
-&+ 2, jk) - (1. - p_mask(ijie, je_2, jk)) * r_inf)
+              zflcrs = MAX(p_fld(ijie, je_2, jk) * p_mask(ijie, je_2, jk) - (1. - p_mask(ijie, je_2, jk)) * r_inf, p_fld(ijie, je_2 + 1, jk) * p_mask(ijie, je_2 + 1, jk) - (1. - p_mask(ijie, je_2, jk)) * r_inf, p_fld(ijie, je_2 + 2, jk) * p_mask(ijie, je_2 + 2, jk) - (1. - p_mask(ijie, je_2, jk)) * r_inf)
               p_fld_crs(ii, 2, jk) = zflcrs
             END DO
           END DO
@@ -703,15 +639,12 @@ MODULE crsdom
         END IF
         !$ACC KERNELS
         DO jk = 1, jpk
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = njstr, njend, nn_facty
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ij = (jj - njstr) * rfacty_r + 3
               ijie = mie_crs(ii)
-              zflcrs = MAX(p_fld(ijie, jj, jk) * p_mask(ijie, jj, jk) - (1. - p_mask(ijie, jj, jk)) * r_inf, p_fld(ijie, jj + 1, &
-&jk) * p_mask(ijie, jj + 1, jk) - (1. - p_mask(ijie, jj, jk)) * r_inf, p_fld(ijie, jj + 2, jk) * p_mask(ijie, jj + 2, jk) - (1. - &
-&p_mask(ijie, jj, jk)) * r_inf)
+              zflcrs = MAX(p_fld(ijie, jj, jk) * p_mask(ijie, jj, jk) - (1. - p_mask(ijie, jj, jk)) * r_inf, p_fld(ijie, jj + 1, jk) * p_mask(ijie, jj + 1, jk) - (1. - p_mask(ijie, jj, jk)) * r_inf, p_fld(ijie, jj + 2, jk) * p_mask(ijie, jj + 2, jk) - (1. - p_mask(ijie, jj, jk)) * r_inf)
               p_fld_crs(ii, ij, jk) = zflcrs
             END DO
           END DO
@@ -745,9 +678,7 @@ MODULE crsdom
             DO jk = 1, jpk
               DO ji = nistr, niend, nn_factx
                 ii = (ji - mis_crs(2)) * rfactx_r + 2
-                zflcrs = MIN(p_fld(ji, je_2, jk) * zmask(ji, je_2, jk) + (1. - zmask(ji, je_2, jk)) * r_inf, p_fld(ji + 1, je_2, &
-&jk) * zmask(ji + 1, je_2, jk) + (1. - zmask(ji + 1, je_2, jk)) * r_inf, p_fld(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk) + (1. - &
-&zmask(ji + 2, je_2, jk)) * r_inf)
+                zflcrs = MIN(p_fld(ji, je_2, jk) * zmask(ji, je_2, jk) + (1. - zmask(ji, je_2, jk)) * r_inf, p_fld(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) + (1. - zmask(ji + 1, je_2, jk)) * r_inf, p_fld(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk) + (1. - zmask(ji + 2, je_2, jk)) * r_inf)
                 p_fld_crs(ii, 2, jk) = zflcrs
               END DO
             END DO
@@ -759,13 +690,7 @@ MODULE crsdom
           DO jk = 1, jpk
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
-              zflcrs = MIN(p_fld(ji, je_2, jk) * zmask(ji, je_2, jk) + (1. - zmask(ji, je_2, jk)) * r_inf, p_fld(ji + 1, je_2, jk) &
-&* zmask(ji + 1, je_2, jk) + (1. - zmask(ji + 1, je_2, jk)) * r_inf, p_fld(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk) + (1. - &
-&zmask(ji + 2, je_2, jk)) * r_inf, p_fld(ji, je_2 + 1, jk) * zmask(ji, je_2 + 1, jk) + (1. - zmask(ji, je_2 + 1, jk)) * r_inf, &
-&p_fld(ji + 1, je_2 + 1, jk) * zmask(ji + 1, je_2 + 1, jk) + (1. - zmask(ji + 1, je_2 + 1, jk)) * r_inf, p_fld(ji + 2, je_2 + 1, &
-&jk) * zmask(ji + 2, je_2 + 1, jk) + (1. - zmask(ji + 2, je_2 + 1, jk)) * r_inf, p_fld(ji, je_2 + 2, jk) * zmask(ji, je_2 + 2, jk) &
-&+ (1. - zmask(ji, je_2 + 2, jk)) * r_inf, p_fld(ji + 1, je_2 + 2, jk) * zmask(ji + 1, je_2 + 2, jk) + (1. - zmask(ji + 1, je_2 + &
-&2, jk)) * r_inf, p_fld(ji + 2, je_2 + 2, jk) * zmask(ji + 2, je_2 + 2, jk) + (1. - zmask(ji + 2, je_2 + 2, jk)) * r_inf)
+              zflcrs = MIN(p_fld(ji, je_2, jk) * zmask(ji, je_2, jk) + (1. - zmask(ji, je_2, jk)) * r_inf, p_fld(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) + (1. - zmask(ji + 1, je_2, jk)) * r_inf, p_fld(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk) + (1. - zmask(ji + 2, je_2, jk)) * r_inf, p_fld(ji, je_2 + 1, jk) * zmask(ji, je_2 + 1, jk) + (1. - zmask(ji, je_2 + 1, jk)) * r_inf, p_fld(ji + 1, je_2 + 1, jk) * zmask(ji + 1, je_2 + 1, jk) + (1. - zmask(ji + 1, je_2 + 1, jk)) * r_inf, p_fld(ji + 2, je_2 + 1, jk) * zmask(ji + 2, je_2 + 1, jk) + (1. - zmask(ji + 2, je_2 + 1, jk)) * r_inf, p_fld(ji, je_2 + 2, jk) * zmask(ji, je_2 + 2, jk) + (1. - zmask(ji, je_2 + 2, jk)) * r_inf, p_fld(ji + 1, je_2 + 2, jk) * zmask(ji + 1, je_2 + 2, jk) + (1. - zmask(ji + 1, je_2 + 2, jk)) * r_inf, p_fld(ji + 2, je_2 + 2, jk) * zmask(ji + 2, je_2 + 2, jk) + (1. - zmask(ji + 2, je_2 + 2, jk)) * r_inf)
               p_fld_crs(ii, 2, jk) = zflcrs
             END DO
           END DO
@@ -773,18 +698,11 @@ MODULE crsdom
         END IF
         !$ACC KERNELS
         DO jk = 1, jpk
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = njstr, njend, nn_facty
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ij = (jj - njstr) * rfacty_r + 3
-              zflcrs = MIN(p_fld(ji, jj, jk) * zmask(ji, jj, jk) + (1. - zmask(ji, jj, jk)) * r_inf, p_fld(ji + 1, jj, jk) * &
-&zmask(ji + 1, jj, jk) + (1. - zmask(ji + 1, jj, jk)) * r_inf, p_fld(ji + 2, jj, jk) * zmask(ji + 2, jj, jk) + (1. - zmask(ji + 2, &
-&jj, jk)) * r_inf, p_fld(ji, jj + 1, jk) * zmask(ji, jj + 1, jk) + (1. - zmask(ji, jj + 1, jk)) * r_inf, p_fld(ji + 1, jj + 1, jk) &
-&* zmask(ji + 1, jj + 1, jk) + (1. - zmask(ji + 1, jj + 1, jk)) * r_inf, p_fld(ji + 2, jj + 1, jk) * zmask(ji + 2, jj + 1, jk) + &
-&(1. - zmask(ji + 2, jj + 1, jk)) * r_inf, p_fld(ji, jj + 2, jk) * zmask(ji, jj + 2, jk) + (1. - zmask(ji, jj + 2, jk)) * r_inf, &
-&p_fld(ji + 1, jj + 2, jk) * zmask(ji + 1, jj + 2, jk) + (1. - zmask(ji + 1, jj + 2, jk)) * r_inf, p_fld(ji + 2, jj + 2, jk) * &
-&zmask(ji + 2, jj + 2, jk) + (1. - zmask(ji + 2, jj + 2, jk)) * r_inf)
+              zflcrs = MIN(p_fld(ji, jj, jk) * zmask(ji, jj, jk) + (1. - zmask(ji, jj, jk)) * r_inf, p_fld(ji + 1, jj, jk) * zmask(ji + 1, jj, jk) + (1. - zmask(ji + 1, jj, jk)) * r_inf, p_fld(ji + 2, jj, jk) * zmask(ji + 2, jj, jk) + (1. - zmask(ji + 2, jj, jk)) * r_inf, p_fld(ji, jj + 1, jk) * zmask(ji, jj + 1, jk) + (1. - zmask(ji, jj + 1, jk)) * r_inf, p_fld(ji + 1, jj + 1, jk) * zmask(ji + 1, jj + 1, jk) + (1. - zmask(ji + 1, jj + 1, jk)) * r_inf, p_fld(ji + 2, jj + 1, jk) * zmask(ji + 2, jj + 1, jk) + (1. - zmask(ji + 2, jj + 1, jk)) * r_inf, p_fld(ji, jj + 2, jk) * zmask(ji, jj + 2, jk) + (1. - zmask(ji, jj + 2, jk)) * r_inf, p_fld(ji + 1, jj + 2, jk) * zmask(ji + 1, jj + 2, jk) + (1. - zmask(ji + 1, jj + 2, jk)) * r_inf, p_fld(ji + 2, jj + 2, jk) * zmask(ji + 2, jj + 2, jk) + (1. - zmask(ji + 2, jj + 2, jk)) * r_inf)
               p_fld_crs(ii, ij, jk) = zflcrs
             END DO
           END DO
@@ -804,22 +722,17 @@ MODULE crsdom
         DO jk = 1, jpk
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
-            zflcrs = MIN(p_fld(ji, ijje, jk) * p_mask(ji, ijje, jk) + (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 1, ijje, jk) &
-&* p_mask(ji + 1, ijje, jk) + (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 2, ijje, jk) * p_mask(ji + 2, ijje, jk) + (1. - &
-&p_mask(ji, ijje, jk)) * r_inf)
+            zflcrs = MIN(p_fld(ji, ijje, jk) * p_mask(ji, ijje, jk) + (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 1, ijje, jk) * p_mask(ji + 1, ijje, jk) + (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 2, ijje, jk) * p_mask(ji + 2, ijje, jk) + (1. - p_mask(ji, ijje, jk)) * r_inf)
             p_fld_crs(ii, 2, jk) = zflcrs
           END DO
         END DO
         DO jk = 1, jpk
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = njstr, njend, nn_facty
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ij = (jj - njstr) * rfacty_r + 3
               ijje = mje_crs(ij)
-              zflcrs = MIN(p_fld(ji, ijje, jk) * p_mask(ji, ijje, jk) + (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 1, ijje, &
-&jk) * p_mask(ji + 1, ijje, jk) + (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 2, ijje, jk) * p_mask(ji + 2, ijje, jk) + (1. - &
-&p_mask(ji, ijje, jk)) * r_inf)
+              zflcrs = MIN(p_fld(ji, ijje, jk) * p_mask(ji, ijje, jk) + (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 1, ijje, jk) * p_mask(ji + 1, ijje, jk) + (1. - p_mask(ji, ijje, jk)) * r_inf, p_fld(ji + 2, ijje, jk) * p_mask(ji + 2, ijje, jk) + (1. - p_mask(ji, ijje, jk)) * r_inf)
               p_fld_crs(ii, ij, jk) = zflcrs
             END DO
           END DO
@@ -847,9 +760,7 @@ MODULE crsdom
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ijie = mie_crs(ii)
-              zflcrs = MIN(p_fld(ijie, je_2, jk) * p_mask(ijie, je_2, jk) + (1. - p_mask(ijie, je_2, jk)) * r_inf, p_fld(ijie, &
-&je_2 + 1, jk) * p_mask(ijie, je_2 + 1, jk) + (1. - p_mask(ijie, je_2, jk)) * r_inf, p_fld(ijie, je_2 + 2, jk) * p_mask(ijie, je_2 &
-&+ 2, jk) + (1. - p_mask(ijie, je_2, jk)) * r_inf)
+              zflcrs = MIN(p_fld(ijie, je_2, jk) * p_mask(ijie, je_2, jk) + (1. - p_mask(ijie, je_2, jk)) * r_inf, p_fld(ijie, je_2 + 1, jk) * p_mask(ijie, je_2 + 1, jk) + (1. - p_mask(ijie, je_2, jk)) * r_inf, p_fld(ijie, je_2 + 2, jk) * p_mask(ijie, je_2 + 2, jk) + (1. - p_mask(ijie, je_2, jk)) * r_inf)
               p_fld_crs(ii, 2, jk) = zflcrs
             END DO
           END DO
@@ -857,15 +768,12 @@ MODULE crsdom
         END IF
         !$ACC KERNELS
         DO jk = 1, jpk
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = njstr, njend, nn_facty
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
               ij = (jj - njstr) * rfacty_r + 3
               ijie = mie_crs(ii)
-              zflcrs = MIN(p_fld(ijie, jj, jk) * p_mask(ijie, jj, jk) + (1. - p_mask(ijie, jj, jk)) * r_inf, p_fld(ijie, jj + 1, &
-&jk) * p_mask(ijie, jj + 1, jk) + (1. - p_mask(ijie, jj, jk)) * r_inf, p_fld(ijie, jj + 2, jk) * p_mask(ijie, jj + 2, jk) + (1. - &
-&p_mask(ijie, jj, jk)) * r_inf)
+              zflcrs = MIN(p_fld(ijie, jj, jk) * p_mask(ijie, jj, jk) + (1. - p_mask(ijie, jj, jk)) * r_inf, p_fld(ijie, jj + 1, jk) * p_mask(ijie, jj + 1, jk) + (1. - p_mask(ijie, jj, jk)) * r_inf, p_fld(ijie, jj + 2, jk) * p_mask(ijie, jj + 2, jk) + (1. - p_mask(ijie, jj, jk)) * r_inf)
               p_fld_crs(ii, ij, jk) = zflcrs
             END DO
           END DO
@@ -874,7 +782,9 @@ MODULE crsdom
       END SELECT
       DEALLOCATE(zmask)
     END SELECT
+    CALL profile_psy_data4 % PreStart('crs_dom_ope_3d', 'r4', 0, 0)
     CALL crs_lbc_lnk(p_fld_crs, cd_type, psgn)
+    CALL profile_psy_data4 % PostEnd
   END SUBROUTINE crs_dom_ope_3d
   SUBROUTINE crs_dom_ope_2d(p_fld, cd_op, cd_type, p_mask, p_fld_crs, p_e12, p_e3, p_surf_crs, p_mask_crs, psgn)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -898,6 +808,7 @@ MODULE crsdom
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     !$ACC KERNELS
     p_fld_crs(:, :) = 0._wp
     !$ACC END KERNELS
@@ -913,8 +824,7 @@ MODULE crsdom
           je_2 = mje_crs(2)
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
-            zflcrs = p_fld(ji, je_2) * zsurfmsk(ji, je_2) + p_fld(ji + 1, je_2) * zsurfmsk(ji + 1, je_2) + p_fld(ji + 2, je_2) * &
-&zsurfmsk(ji + 2, je_2)
+            zflcrs = p_fld(ji, je_2) * zsurfmsk(ji, je_2) + p_fld(ji + 1, je_2) * zsurfmsk(ji + 1, je_2) + p_fld(ji + 2, je_2) * zsurfmsk(ji + 2, je_2)
             zsfcrs = zsurfmsk(ji, je_2) + zsurfmsk(ji + 1, je_2) + zsurfmsk(ji + 2, je_2)
             p_fld_crs(ii, 2) = zflcrs
             IF (zsfcrs /= 0.0) p_fld_crs(ii, 2) = zflcrs / zsfcrs
@@ -926,29 +836,20 @@ MODULE crsdom
         je_2 = mjs_crs(2)
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
-          zflcrs = p_fld(ji, je_2) * zsurfmsk(ji, je_2) + p_fld(ji + 1, je_2) * zsurfmsk(ji + 1, je_2) + p_fld(ji + 2, je_2) * &
-&zsurfmsk(ji + 2, je_2) + p_fld(ji, je_2 + 1) * zsurfmsk(ji, je_2 + 1) + p_fld(ji + 1, je_2 + 1) * zsurfmsk(ji + 1, je_2 + 1) + &
-&p_fld(ji + 2, je_2 + 1) * zsurfmsk(ji + 2, je_2 + 1) + p_fld(ji, je_2 + 2) * zsurfmsk(ji, je_2 + 2) + p_fld(ji + 1, je_2 + 2) * &
-&zsurfmsk(ji + 1, je_2 + 2) + p_fld(ji + 2, je_2 + 2) * zsurfmsk(ji + 2, je_2 + 2)
-          zsfcrs = zsurfmsk(ji, je_2) + zsurfmsk(ji + 1, je_2) + zsurfmsk(ji + 2, je_2) + zsurfmsk(ji, je_2 + 1) + zsurfmsk(ji + &
-&1, je_2 + 1) + zsurfmsk(ji + 2, je_2 + 1) + zsurfmsk(ji, je_2 + 2) + zsurfmsk(ji + 1, je_2 + 2) + zsurfmsk(ji + 2, je_2 + 2)
+          zflcrs = p_fld(ji, je_2) * zsurfmsk(ji, je_2) + p_fld(ji + 1, je_2) * zsurfmsk(ji + 1, je_2) + p_fld(ji + 2, je_2) * zsurfmsk(ji + 2, je_2) + p_fld(ji, je_2 + 1) * zsurfmsk(ji, je_2 + 1) + p_fld(ji + 1, je_2 + 1) * zsurfmsk(ji + 1, je_2 + 1) + p_fld(ji + 2, je_2 + 1) * zsurfmsk(ji + 2, je_2 + 1) + p_fld(ji, je_2 + 2) * zsurfmsk(ji, je_2 + 2) + p_fld(ji + 1, je_2 + 2) * zsurfmsk(ji + 1, je_2 + 2) + p_fld(ji + 2, je_2 + 2) * zsurfmsk(ji + 2, je_2 + 2)
+          zsfcrs = zsurfmsk(ji, je_2) + zsurfmsk(ji + 1, je_2) + zsurfmsk(ji + 2, je_2) + zsurfmsk(ji, je_2 + 1) + zsurfmsk(ji + 1, je_2 + 1) + zsurfmsk(ji + 2, je_2 + 1) + zsurfmsk(ji, je_2 + 2) + zsurfmsk(ji + 1, je_2 + 2) + zsurfmsk(ji + 2, je_2 + 2)
           p_fld_crs(ii, 2) = zflcrs
           IF (zsfcrs /= 0.0) p_fld_crs(ii, 2) = zflcrs / zsfcrs
         END DO
         !$ACC END KERNELS
       END IF
       !$ACC KERNELS
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = njstr, njend, nn_facty
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
           ij = (jj - njstr) * rfacty_r + 3
-          zflcrs = p_fld(ji, jj) * zsurfmsk(ji, jj) + p_fld(ji + 1, jj) * zsurfmsk(ji + 1, jj) + p_fld(ji + 2, jj) * zsurfmsk(ji + &
-&2, jj) + p_fld(ji, jj + 1) * zsurfmsk(ji, jj + 1) + p_fld(ji + 1, jj + 1) * zsurfmsk(ji + 1, jj + 1) + p_fld(ji + 2, jj + 1) * &
-&zsurfmsk(ji + 2, jj + 1) + p_fld(ji, jj + 2) * zsurfmsk(ji, jj + 2) + p_fld(ji + 1, jj + 2) * zsurfmsk(ji + 1, jj + 2) + p_fld(ji &
-&+ 2, jj + 2) * zsurfmsk(ji + 2, jj + 2)
-          zsfcrs = zsurfmsk(ji, jj) + zsurfmsk(ji + 1, jj) + zsurfmsk(ji + 2, jj) + zsurfmsk(ji, jj + 1) + zsurfmsk(ji + 1, jj + &
-&1) + zsurfmsk(ji + 2, jj + 1) + zsurfmsk(ji, jj + 2) + zsurfmsk(ji + 1, jj + 2) + zsurfmsk(ji + 2, jj + 2)
+          zflcrs = p_fld(ji, jj) * zsurfmsk(ji, jj) + p_fld(ji + 1, jj) * zsurfmsk(ji + 1, jj) + p_fld(ji + 2, jj) * zsurfmsk(ji + 2, jj) + p_fld(ji, jj + 1) * zsurfmsk(ji, jj + 1) + p_fld(ji + 1, jj + 1) * zsurfmsk(ji + 1, jj + 1) + p_fld(ji + 2, jj + 1) * zsurfmsk(ji + 2, jj + 1) + p_fld(ji, jj + 2) * zsurfmsk(ji, jj + 2) + p_fld(ji + 1, jj + 2) * zsurfmsk(ji + 1, jj + 2) + p_fld(ji + 2, jj + 2) * zsurfmsk(ji + 2, jj + 2)
+          zsfcrs = zsurfmsk(ji, jj) + zsurfmsk(ji + 1, jj) + zsurfmsk(ji + 2, jj) + zsurfmsk(ji, jj + 1) + zsurfmsk(ji + 1, jj + 1) + zsurfmsk(ji + 2, jj + 1) + zsurfmsk(ji, jj + 2) + zsurfmsk(ji + 1, jj + 2) + zsurfmsk(ji + 2, jj + 2)
           p_fld_crs(ii, ij) = zflcrs
           IF (zsfcrs /= 0.0) p_fld_crs(ii, ij) = zflcrs / zsfcrs
         END DO
@@ -974,8 +875,7 @@ MODULE crsdom
             je_2 = mje_crs(2)
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
-              zflcrs = p_fld(ji, je_2) * zsurfmsk(ji, je_2) + p_fld(ji + 1, je_2) * zsurfmsk(ji + 1, je_2) + p_fld(ji + 2, je_2) * &
-&zsurfmsk(ji + 2, je_2)
+              zflcrs = p_fld(ji, je_2) * zsurfmsk(ji, je_2) + p_fld(ji + 1, je_2) * zsurfmsk(ji + 1, je_2) + p_fld(ji + 2, je_2) * zsurfmsk(ji + 2, je_2)
               p_fld_crs(ii, 2) = zflcrs
             END DO
             !$ACC END KERNELS
@@ -985,24 +885,17 @@ MODULE crsdom
           je_2 = mjs_crs(2)
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
-            zflcrs = p_fld(ji, je_2) * zsurfmsk(ji, je_2) + p_fld(ji + 1, je_2) * zsurfmsk(ji + 1, je_2) + p_fld(ji + 2, je_2) * &
-&zsurfmsk(ji + 2, je_2) + p_fld(ji, je_2 + 1) * zsurfmsk(ji, je_2 + 1) + p_fld(ji + 1, je_2 + 1) * zsurfmsk(ji + 1, je_2 + 1) + &
-&p_fld(ji + 2, je_2 + 1) * zsurfmsk(ji + 2, je_2 + 1) + p_fld(ji, je_2 + 2) * zsurfmsk(ji, je_2 + 2) + p_fld(ji + 1, je_2 + 2) * &
-&zsurfmsk(ji + 1, je_2 + 2) + p_fld(ji + 2, je_2 + 2) * zsurfmsk(ji + 2, je_2 + 2)
+            zflcrs = p_fld(ji, je_2) * zsurfmsk(ji, je_2) + p_fld(ji + 1, je_2) * zsurfmsk(ji + 1, je_2) + p_fld(ji + 2, je_2) * zsurfmsk(ji + 2, je_2) + p_fld(ji, je_2 + 1) * zsurfmsk(ji, je_2 + 1) + p_fld(ji + 1, je_2 + 1) * zsurfmsk(ji + 1, je_2 + 1) + p_fld(ji + 2, je_2 + 1) * zsurfmsk(ji + 2, je_2 + 1) + p_fld(ji, je_2 + 2) * zsurfmsk(ji, je_2 + 2) + p_fld(ji + 1, je_2 + 2) * zsurfmsk(ji + 1, je_2 + 2) + p_fld(ji + 2, je_2 + 2) * zsurfmsk(ji + 2, je_2 + 2)
             p_fld_crs(ii, 2) = zflcrs
           END DO
           !$ACC END KERNELS
         END IF
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = njstr, njend, nn_facty
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
-            zflcrs = p_fld(ji, jj) * zsurfmsk(ji, jj) + p_fld(ji + 1, jj) * zsurfmsk(ji + 1, jj) + p_fld(ji + 2, jj) * zsurfmsk(ji &
-&+ 2, jj) + p_fld(ji, jj + 1) * zsurfmsk(ji, jj + 1) + p_fld(ji + 1, jj + 1) * zsurfmsk(ji + 1, jj + 1) + p_fld(ji + 2, jj + 1) * &
-&zsurfmsk(ji + 2, jj + 1) + p_fld(ji, jj + 2) * zsurfmsk(ji, jj + 2) + p_fld(ji + 1, jj + 2) * zsurfmsk(ji + 1, jj + 2) + p_fld(ji &
-&+ 2, jj + 2) * zsurfmsk(ji + 2, jj + 2)
+            zflcrs = p_fld(ji, jj) * zsurfmsk(ji, jj) + p_fld(ji + 1, jj) * zsurfmsk(ji + 1, jj) + p_fld(ji + 2, jj) * zsurfmsk(ji + 2, jj) + p_fld(ji, jj + 1) * zsurfmsk(ji, jj + 1) + p_fld(ji + 1, jj + 1) * zsurfmsk(ji + 1, jj + 1) + p_fld(ji + 2, jj + 1) * zsurfmsk(ji + 2, jj + 1) + p_fld(ji, jj + 2) * zsurfmsk(ji, jj + 2) + p_fld(ji + 1, jj + 2) * zsurfmsk(ji + 1, jj + 2) + p_fld(ji + 2, jj + 2) * zsurfmsk(ji + 2, jj + 2)
             p_fld_crs(ii, ij) = zflcrs
           END DO
         END DO
@@ -1020,18 +913,15 @@ MODULE crsdom
         !$ACC KERNELS
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
-          zflcrs = p_fld(ji, ijje) * zsurfmsk(ji, ijje) + p_fld(ji + 1, ijje) * zsurfmsk(ji + 1, ijje) + p_fld(ji + 2, ijje) * &
-&zsurfmsk(ji + 2, ijje)
+          zflcrs = p_fld(ji, ijje) * zsurfmsk(ji, ijje) + p_fld(ji + 1, ijje) * zsurfmsk(ji + 1, ijje) + p_fld(ji + 2, ijje) * zsurfmsk(ji + 2, ijje)
           p_fld_crs(ii, 2) = zflcrs
         END DO
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = njstr, njend, nn_facty
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
             ijje = mje_crs(ij)
-            zflcrs = p_fld(ji, ijje) * zsurfmsk(ji, ijje) + p_fld(ji + 1, ijje) * zsurfmsk(ji + 1, ijje) + p_fld(ji + 2, ijje) * &
-&zsurfmsk(ji + 2, ijje)
+            zflcrs = p_fld(ji, ijje) * zsurfmsk(ji, ijje) + p_fld(ji + 1, ijje) * zsurfmsk(ji + 1, ijje) + p_fld(ji + 2, ijje) * zsurfmsk(ji + 2, ijje)
             p_fld_crs(ii, ij) = zflcrs
           END DO
         END DO
@@ -1055,21 +945,18 @@ MODULE crsdom
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ijie = mie_crs(ii)
-            zflcrs = p_fld(ijie, je_2) * zsurfmsk(ijie, je_2) + p_fld(ijie, je_2 + 1) * zsurfmsk(ijie, je_2 + 1) + p_fld(ijie, &
-&je_2 + 2) * zsurfmsk(ijie, je_2 + 2)
+            zflcrs = p_fld(ijie, je_2) * zsurfmsk(ijie, je_2) + p_fld(ijie, je_2 + 1) * zsurfmsk(ijie, je_2 + 1) + p_fld(ijie, je_2 + 2) * zsurfmsk(ijie, je_2 + 2)
             p_fld_crs(ii, 2) = zflcrs
           END DO
           !$ACC END KERNELS
         END IF
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = njstr, njend, nn_facty
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
             ijie = mie_crs(ii)
-            zflcrs = p_fld(ijie, jj) * zsurfmsk(ijie, jj) + p_fld(ijie, jj + 1) * zsurfmsk(ijie, jj + 1) + p_fld(ijie, jj + 2) * &
-&zsurfmsk(ijie, jj + 2)
+            zflcrs = p_fld(ijie, jj) * zsurfmsk(ijie, jj) + p_fld(ijie, jj + 1) * zsurfmsk(ijie, jj + 1) + p_fld(ijie, jj + 2) * zsurfmsk(ijie, jj + 2)
             p_fld_crs(ii, ij) = zflcrs
           END DO
         END DO
@@ -1090,9 +977,7 @@ MODULE crsdom
             je_2 = mje_crs(2)
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
-              zflcrs = MAX(p_fld(ji, je_2) * p_mask(ji, je_2, 1) - (1. - p_mask(ji, je_2, 1)) * r_inf, p_fld(ji + 1, je_2) * &
-&p_mask(ji + 1, je_2, 1) - (1. - p_mask(ji + 1, je_2, 1)) * r_inf, p_fld(ji + 2, je_2) * p_mask(ji + 2, je_2, 1) - (1. - p_mask(ji &
-&+ 2, je_2, 1)) * r_inf)
+              zflcrs = MAX(p_fld(ji, je_2) * p_mask(ji, je_2, 1) - (1. - p_mask(ji, je_2, 1)) * r_inf, p_fld(ji + 1, je_2) * p_mask(ji + 1, je_2, 1) - (1. - p_mask(ji + 1, je_2, 1)) * r_inf, p_fld(ji + 2, je_2) * p_mask(ji + 2, je_2, 1) - (1. - p_mask(ji + 2, je_2, 1)) * r_inf)
               p_fld_crs(ii, 2) = zflcrs
             END DO
             !$ACC END KERNELS
@@ -1100,29 +985,16 @@ MODULE crsdom
         ELSE
           CALL profile_psy_data2 % PreStart('crs_dom_ope_2d', 'r2', 0, 0)
           je_2 = mjs_crs(2)
-          zflcrs = MAX(p_fld(ji, je_2) * p_mask(ji, je_2, 1) - (1. - p_mask(ji, je_2, 1)) * r_inf, p_fld(ji + 1, je_2) * p_mask(ji &
-&+ 1, je_2, 1) - (1. - p_mask(ji + 1, je_2, 1)) * r_inf, p_fld(ji + 2, je_2) * p_mask(ji + 2, je_2, 1) - (1. - p_mask(ji + 2, &
-&je_2, 1)) * r_inf, p_fld(ji, je_2 + 1) * p_mask(ji, je_2 + 1, 1) - (1. - p_mask(ji, je_2 + 1, 1)) * r_inf, p_fld(ji + 1, je_2 + &
-&1) * p_mask(ji + 1, je_2 + 1, 1) - (1. - p_mask(ji + 1, je_2 + 1, 1)) * r_inf, p_fld(ji + 2, je_2 + 1) * p_mask(ji + 2, je_2 + 1, &
-&1) - (1. - p_mask(ji + 2, je_2 + 1, 1)) * r_inf, p_fld(ji, je_2 + 2) * p_mask(ji, je_2 + 2, 1) - (1. - p_mask(ji, je_2 + 2, 1)) * &
-&r_inf, p_fld(ji + 1, je_2 + 2) * p_mask(ji + 1, je_2 + 2, 1) - (1. - p_mask(ji + 1, je_2 + 2, 1)) * r_inf, p_fld(ji + 2, je_2 + &
-&2) * p_mask(ji + 2, je_2 + 2, 1) - (1. - p_mask(ji + 2, je_2 + 2, 1)) * r_inf)
+          zflcrs = MAX(p_fld(ji, je_2) * p_mask(ji, je_2, 1) - (1. - p_mask(ji, je_2, 1)) * r_inf, p_fld(ji + 1, je_2) * p_mask(ji + 1, je_2, 1) - (1. - p_mask(ji + 1, je_2, 1)) * r_inf, p_fld(ji + 2, je_2) * p_mask(ji + 2, je_2, 1) - (1. - p_mask(ji + 2, je_2, 1)) * r_inf, p_fld(ji, je_2 + 1) * p_mask(ji, je_2 + 1, 1) - (1. - p_mask(ji, je_2 + 1, 1)) * r_inf, p_fld(ji + 1, je_2 + 1) * p_mask(ji + 1, je_2 + 1, 1) - (1. - p_mask(ji + 1, je_2 + 1, 1)) * r_inf, p_fld(ji + 2, je_2 + 1) * p_mask(ji + 2, je_2 + 1, 1) - (1. - p_mask(ji + 2, je_2 + 1, 1)) * r_inf, p_fld(ji, je_2 + 2) * p_mask(ji, je_2 + 2, 1) - (1. - p_mask(ji, je_2 + 2, 1)) * r_inf, p_fld(ji + 1, je_2 + 2) * p_mask(ji + 1, je_2 + 2, 1) - (1. - p_mask(ji + 1, je_2 + 2, 1)) * r_inf, p_fld(ji + 2, je_2 + 2) * p_mask(ji + 2, je_2 + 2, 1) - (1. - p_mask(ji + 2, je_2 + 2, 1)) * r_inf)
           p_fld_crs(ii, 2) = zflcrs
           CALL profile_psy_data2 % PostEnd
         END IF
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = njstr, njend, nn_facty
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
-            zflcrs = MAX(p_fld(ji, jj) * p_mask(ji, jj, 1) - (1. - p_mask(ji, jj, 1)) * r_inf, p_fld(ji + 1, jj) * p_mask(ji + 1, &
-&jj, 1) - (1. - p_mask(ji + 1, jj, 1)) * r_inf, p_fld(ji + 2, jj) * p_mask(ji + 2, jj, 1) - (1. - p_mask(ji + 2, jj, 1)) * r_inf, &
-&p_fld(ji, jj + 1) * p_mask(ji, jj + 1, 1) - (1. - p_mask(ji, jj + 1, 1)) * r_inf, p_fld(ji + 1, jj + 1) * p_mask(ji + 1, jj + 1, &
-&1) - (1. - p_mask(ji + 1, jj + 1, 1)) * r_inf, p_fld(ji + 2, jj + 1) * p_mask(ji + 2, jj + 1, 1) - (1. - p_mask(ji + 2, jj + 1, &
-&1)) * r_inf, p_fld(ji, jj + 2) * p_mask(ji, jj + 2, 1) - (1. - p_mask(ji, jj + 2, 1)) * r_inf, p_fld(ji + 1, jj + 2) * p_mask(ji &
-&+ 1, jj + 2, 1) - (1. - p_mask(ji + 1, jj + 2, 1)) * r_inf, p_fld(ji + 2, jj + 2) * p_mask(ji + 2, jj + 2, 1) - (1. - p_mask(ji + &
-&2, jj + 2, 1)) * r_inf)
+            zflcrs = MAX(p_fld(ji, jj) * p_mask(ji, jj, 1) - (1. - p_mask(ji, jj, 1)) * r_inf, p_fld(ji + 1, jj) * p_mask(ji + 1, jj, 1) - (1. - p_mask(ji + 1, jj, 1)) * r_inf, p_fld(ji + 2, jj) * p_mask(ji + 2, jj, 1) - (1. - p_mask(ji + 2, jj, 1)) * r_inf, p_fld(ji, jj + 1) * p_mask(ji, jj + 1, 1) - (1. - p_mask(ji, jj + 1, 1)) * r_inf, p_fld(ji + 1, jj + 1) * p_mask(ji + 1, jj + 1, 1) - (1. - p_mask(ji + 1, jj + 1, 1)) * r_inf, p_fld(ji + 2, jj + 1) * p_mask(ji + 2, jj + 1, 1) - (1. - p_mask(ji + 2, jj + 1, 1)) * r_inf, p_fld(ji, jj + 2) * p_mask(ji, jj + 2, 1) - (1. - p_mask(ji, jj + 2, 1)) * r_inf, p_fld(ji + 1, jj + 2) * p_mask(ji + 1, jj + 2, 1) - (1. - p_mask(ji + 1, jj + 2, 1)) * r_inf, p_fld(ji + 2, jj + 2) * p_mask(ji + 2, jj + 2, 1) - (1. - p_mask(ji + 2, jj + 2, 1)) * r_inf)
             p_fld_crs(ii, ij) = zflcrs
           END DO
         END DO
@@ -1140,20 +1012,15 @@ MODULE crsdom
         !$ACC KERNELS
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
-          zflcrs = MAX(p_fld(ji, ijje) * p_mask(ji, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 1, ijje) * p_mask(ji &
-&+ 1, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 2, ijje) * p_mask(ji + 2, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * &
-&r_inf)
+          zflcrs = MAX(p_fld(ji, ijje) * p_mask(ji, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 1, ijje) * p_mask(ji + 1, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 2, ijje) * p_mask(ji + 2, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf)
           p_fld_crs(ii, 2) = zflcrs
         END DO
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = njstr, njend, nn_facty
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
             ijje = mje_crs(ij)
-            zflcrs = MAX(p_fld(ji, ijje) * p_mask(ji, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 1, ijje) * &
-&p_mask(ji + 1, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 2, ijje) * p_mask(ji + 2, ijje, 1) - (1. - p_mask(ji, &
-&ijje, 1)) * r_inf)
+            zflcrs = MAX(p_fld(ji, ijje) * p_mask(ji, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 1, ijje) * p_mask(ji + 1, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 2, ijje) * p_mask(ji + 2, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf)
             p_fld_crs(ii, ij) = zflcrs
           END DO
         END DO
@@ -1177,23 +1044,18 @@ MODULE crsdom
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ijie = mie_crs(ii)
-            zflcrs = MAX(p_fld(ijie, je_2) * p_mask(ijie, je_2, 1) - (1. - p_mask(ijie, je_2, 1)) * r_inf, p_fld(ijie, je_2 + 1) * &
-&p_mask(ijie, je_2 + 1, 1) - (1. - p_mask(ijie, je_2, 1)) * r_inf, p_fld(ijie, je_2 + 2) * p_mask(ijie, je_2 + 2, 1) - (1. - &
-&p_mask(ijie, je_2, 1)) * r_inf)
+            zflcrs = MAX(p_fld(ijie, je_2) * p_mask(ijie, je_2, 1) - (1. - p_mask(ijie, je_2, 1)) * r_inf, p_fld(ijie, je_2 + 1) * p_mask(ijie, je_2 + 1, 1) - (1. - p_mask(ijie, je_2, 1)) * r_inf, p_fld(ijie, je_2 + 2) * p_mask(ijie, je_2 + 2, 1) - (1. - p_mask(ijie, je_2, 1)) * r_inf)
             p_fld_crs(ii, 2) = zflcrs
           END DO
           !$ACC END KERNELS
         END IF
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = njstr, njend, nn_facty
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
             ijie = mie_crs(ii)
-            zflcrs = MAX(p_fld(ijie, jj) * p_mask(ijie, jj, 1) - (1. - p_mask(ijie, jj, 1)) * r_inf, p_fld(ijie, jj + 1) * &
-&p_mask(ijie, jj + 1, 1) - (1. - p_mask(ijie, jj, 1)) * r_inf, p_fld(ijie, jj + 2) * p_mask(ijie, jj + 2, 1) - (1. - p_mask(ijie, &
-&jj, 1)) * r_inf)
+            zflcrs = MAX(p_fld(ijie, jj) * p_mask(ijie, jj, 1) - (1. - p_mask(ijie, jj, 1)) * r_inf, p_fld(ijie, jj + 1) * p_mask(ijie, jj + 1, 1) - (1. - p_mask(ijie, jj, 1)) * r_inf, p_fld(ijie, jj + 2) * p_mask(ijie, jj + 2, 1) - (1. - p_mask(ijie, jj, 1)) * r_inf)
             p_fld_crs(ii, ij) = zflcrs
           END DO
         END DO
@@ -1208,9 +1070,7 @@ MODULE crsdom
             je_2 = mje_crs(2)
             DO ji = nistr, niend, nn_factx
               ii = (ji - mis_crs(2)) * rfactx_r + 2
-              zflcrs = MIN(p_fld(ji, je_2) * p_mask(ji, je_2, 1) + (1. - p_mask(ji, je_2, 1)) * r_inf, p_fld(ji + 1, je_2) * &
-&p_mask(ji + 1, je_2, 1) + (1. - p_mask(ji + 1, je_2, 1)) * r_inf, p_fld(ji + 2, je_2) * p_mask(ji + 2, je_2, 1) + (1. - p_mask(ji &
-&+ 2, je_2, 1)) * r_inf)
+              zflcrs = MIN(p_fld(ji, je_2) * p_mask(ji, je_2, 1) + (1. - p_mask(ji, je_2, 1)) * r_inf, p_fld(ji + 1, je_2) * p_mask(ji + 1, je_2, 1) + (1. - p_mask(ji + 1, je_2, 1)) * r_inf, p_fld(ji + 2, je_2) * p_mask(ji + 2, je_2, 1) + (1. - p_mask(ji + 2, je_2, 1)) * r_inf)
               p_fld_crs(ii, 2) = zflcrs
             END DO
             !$ACC END KERNELS
@@ -1218,29 +1078,16 @@ MODULE crsdom
         ELSE
           CALL profile_psy_data4 % PreStart('crs_dom_ope_2d', 'r4', 0, 0)
           je_2 = mjs_crs(2)
-          zflcrs = MIN(p_fld(ji, je_2) * p_mask(ji, je_2, 1) + (1. - p_mask(ji, je_2, 1)) * r_inf, p_fld(ji + 1, je_2) * p_mask(ji &
-&+ 1, je_2, 1) + (1. - p_mask(ji + 1, je_2, 1)) * r_inf, p_fld(ji + 2, je_2) * p_mask(ji + 2, je_2, 1) + (1. - p_mask(ji + 2, &
-&je_2, 1)) * r_inf, p_fld(ji, je_2 + 1) * p_mask(ji, je_2 + 1, 1) + (1. - p_mask(ji, je_2 + 1, 1)) * r_inf, p_fld(ji + 1, je_2 + &
-&1) * p_mask(ji + 1, je_2 + 1, 1) + (1. - p_mask(ji + 1, je_2 + 1, 1)) * r_inf, p_fld(ji + 2, je_2 + 1) * p_mask(ji + 2, je_2 + 1, &
-&1) + (1. - p_mask(ji + 2, je_2 + 1, 1)) * r_inf, p_fld(ji, je_2 + 2) * p_mask(ji, je_2 + 2, 1) + (1. - p_mask(ji, je_2 + 2, 1)) * &
-&r_inf, p_fld(ji + 1, je_2 + 2) * p_mask(ji + 1, je_2 + 2, 1) + (1. - p_mask(ji + 1, je_2 + 2, 1)) * r_inf, p_fld(ji + 2, je_2 + &
-&2) * p_mask(ji + 2, je_2 + 2, 1) + (1. - p_mask(ji + 2, je_2 + 2, 1)) * r_inf)
+          zflcrs = MIN(p_fld(ji, je_2) * p_mask(ji, je_2, 1) + (1. - p_mask(ji, je_2, 1)) * r_inf, p_fld(ji + 1, je_2) * p_mask(ji + 1, je_2, 1) + (1. - p_mask(ji + 1, je_2, 1)) * r_inf, p_fld(ji + 2, je_2) * p_mask(ji + 2, je_2, 1) + (1. - p_mask(ji + 2, je_2, 1)) * r_inf, p_fld(ji, je_2 + 1) * p_mask(ji, je_2 + 1, 1) + (1. - p_mask(ji, je_2 + 1, 1)) * r_inf, p_fld(ji + 1, je_2 + 1) * p_mask(ji + 1, je_2 + 1, 1) + (1. - p_mask(ji + 1, je_2 + 1, 1)) * r_inf, p_fld(ji + 2, je_2 + 1) * p_mask(ji + 2, je_2 + 1, 1) + (1. - p_mask(ji + 2, je_2 + 1, 1)) * r_inf, p_fld(ji, je_2 + 2) * p_mask(ji, je_2 + 2, 1) + (1. - p_mask(ji, je_2 + 2, 1)) * r_inf, p_fld(ji + 1, je_2 + 2) * p_mask(ji + 1, je_2 + 2, 1) + (1. - p_mask(ji + 1, je_2 + 2, 1)) * r_inf, p_fld(ji + 2, je_2 + 2) * p_mask(ji + 2, je_2 + 2, 1) + (1. - p_mask(ji + 2, je_2 + 2, 1)) * r_inf)
           p_fld_crs(ii, 2) = zflcrs
           CALL profile_psy_data4 % PostEnd
         END IF
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = njstr, njend, nn_facty
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
-            zflcrs = MIN(p_fld(ji, jj) * p_mask(ji, jj, 1) + (1. - p_mask(ji, jj, 1)) * r_inf, p_fld(ji + 1, jj) * p_mask(ji + 1, &
-&jj, 1) + (1. - p_mask(ji + 1, jj, 1)) * r_inf, p_fld(ji + 2, jj) * p_mask(ji + 2, jj, 1) + (1. - p_mask(ji + 2, jj, 1)) * r_inf, &
-&p_fld(ji, jj + 1) * p_mask(ji, jj + 1, 1) + (1. - p_mask(ji, jj + 1, 1)) * r_inf, p_fld(ji + 1, jj + 1) * p_mask(ji + 1, jj + 1, &
-&1) + (1. - p_mask(ji + 1, jj + 1, 1)) * r_inf, p_fld(ji + 2, jj + 1) * p_mask(ji + 2, jj + 1, 1) + (1. - p_mask(ji + 2, jj + 1, &
-&1)) * r_inf, p_fld(ji, jj + 2) * p_mask(ji, jj + 2, 1) + (1. - p_mask(ji, jj + 2, 1)) * r_inf, p_fld(ji + 1, jj + 2) * p_mask(ji &
-&+ 1, jj + 2, 1) + (1. - p_mask(ji + 1, jj + 2, 1)) * r_inf, p_fld(ji + 2, jj + 2) * p_mask(ji + 2, jj + 2, 1) + (1. - p_mask(ji + &
-&2, jj + 2, 1)) * r_inf)
+            zflcrs = MIN(p_fld(ji, jj) * p_mask(ji, jj, 1) + (1. - p_mask(ji, jj, 1)) * r_inf, p_fld(ji + 1, jj) * p_mask(ji + 1, jj, 1) + (1. - p_mask(ji + 1, jj, 1)) * r_inf, p_fld(ji + 2, jj) * p_mask(ji + 2, jj, 1) + (1. - p_mask(ji + 2, jj, 1)) * r_inf, p_fld(ji, jj + 1) * p_mask(ji, jj + 1, 1) + (1. - p_mask(ji, jj + 1, 1)) * r_inf, p_fld(ji + 1, jj + 1) * p_mask(ji + 1, jj + 1, 1) + (1. - p_mask(ji + 1, jj + 1, 1)) * r_inf, p_fld(ji + 2, jj + 1) * p_mask(ji + 2, jj + 1, 1) + (1. - p_mask(ji + 2, jj + 1, 1)) * r_inf, p_fld(ji, jj + 2) * p_mask(ji, jj + 2, 1) + (1. - p_mask(ji, jj + 2, 1)) * r_inf, p_fld(ji + 1, jj + 2) * p_mask(ji + 1, jj + 2, 1) + (1. - p_mask(ji + 1, jj + 2, 1)) * r_inf, p_fld(ji + 2, jj + 2) * p_mask(ji + 2, jj + 2, 1) + (1. - p_mask(ji + 2, jj + 2, 1)) * r_inf)
             p_fld_crs(ii, ij) = zflcrs
           END DO
         END DO
@@ -1258,20 +1105,15 @@ MODULE crsdom
         !$ACC KERNELS
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
-          zflcrs = MIN(p_fld(ji, ijje) * p_mask(ji, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 1, ijje) * p_mask(ji &
-&+ 1, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 2, ijje) * p_mask(ji + 2, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * &
-&r_inf)
+          zflcrs = MIN(p_fld(ji, ijje) * p_mask(ji, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 1, ijje) * p_mask(ji + 1, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 2, ijje) * p_mask(ji + 2, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf)
           p_fld_crs(ii, 2) = zflcrs
         END DO
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = njstr, njend, nn_facty
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
             ijje = mje_crs(ij)
-            zflcrs = MIN(p_fld(ji, ijje) * p_mask(ji, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 1, ijje) * &
-&p_mask(ji + 1, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 2, ijje) * p_mask(ji + 2, ijje, 1) + (1. - p_mask(ji, &
-&ijje, 1)) * r_inf)
+            zflcrs = MIN(p_fld(ji, ijje) * p_mask(ji, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 1, ijje) * p_mask(ji + 1, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 2, ijje) * p_mask(ji + 2, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf)
             p_fld_crs(ii, ij) = zflcrs
           END DO
         END DO
@@ -1295,30 +1137,27 @@ MODULE crsdom
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ijie = mie_crs(ii)
-            zflcrs = MIN(p_fld(ijie, je_2) * p_mask(ijie, je_2, 1) + (1. - p_mask(ijie, je_2, 1)) * r_inf, p_fld(ijie, je_2 + 1) * &
-&p_mask(ijie, je_2 + 1, 1) + (1. - p_mask(ijie, je_2, 1)) * r_inf, p_fld(ijie, je_2 + 2) * p_mask(ijie, je_2 + 2, 1) + (1. - &
-&p_mask(ijie, je_2, 1)) * r_inf)
+            zflcrs = MIN(p_fld(ijie, je_2) * p_mask(ijie, je_2, 1) + (1. - p_mask(ijie, je_2, 1)) * r_inf, p_fld(ijie, je_2 + 1) * p_mask(ijie, je_2 + 1, 1) + (1. - p_mask(ijie, je_2, 1)) * r_inf, p_fld(ijie, je_2 + 2) * p_mask(ijie, je_2 + 2, 1) + (1. - p_mask(ijie, je_2, 1)) * r_inf)
             p_fld_crs(ii, 2) = zflcrs
           END DO
           !$ACC END KERNELS
         END IF
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = njstr, njend, nn_facty
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
             ijie = mie_crs(ii)
-            zflcrs = MIN(p_fld(ijie, jj) * p_mask(ijie, jj, 1) + (1. - p_mask(ijie, jj, 1)) * r_inf, p_fld(ijie, jj + 1) * &
-&p_mask(ijie, jj + 1, 1) + (1. - p_mask(ijie, jj, 1)) * r_inf, p_fld(ijie, jj + 2) * p_mask(ijie, jj + 2, 1) + (1. - p_mask(ijie, &
-&jj, 1)) * r_inf)
+            zflcrs = MIN(p_fld(ijie, jj) * p_mask(ijie, jj, 1) + (1. - p_mask(ijie, jj, 1)) * r_inf, p_fld(ijie, jj + 1) * p_mask(ijie, jj + 1, 1) + (1. - p_mask(ijie, jj, 1)) * r_inf, p_fld(ijie, jj + 2) * p_mask(ijie, jj + 2, 1) + (1. - p_mask(ijie, jj, 1)) * r_inf)
             p_fld_crs(ii, ij) = zflcrs
           END DO
         END DO
         !$ACC END KERNELS
       END SELECT
     END SELECT
+    CALL profile_psy_data6 % PreStart('crs_dom_ope_2d', 'r6', 0, 0)
     CALL crs_lbc_lnk(p_fld_crs, cd_type, psgn)
+    CALL profile_psy_data6 % PostEnd
   END SUBROUTINE crs_dom_ope_2d
   SUBROUTINE crs_dom_e3(p_e1, p_e2, p_e3, p_sfc_crs, cd_type, p_mask, p_e3_crs, p_e3_max_crs)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -1359,11 +1198,9 @@ MODULE crsdom
         DO jk = 1, jpk
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
-            ze3crs = zsurf(ji, je_2, jk) * zmask(ji, je_2, jk) + zsurf(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) + zsurf(ji + 2, &
-&je_2, jk) * zmask(ji + 2, je_2, jk)
+            ze3crs = zsurf(ji, je_2, jk) * zmask(ji, je_2, jk) + zsurf(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) + zsurf(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk)
             p_e3_crs(ii, 2, jk) = ze3crs / p_sfc_crs(ii, ij, jk)
-            ze3crs = MAX(p_e3(ji, je_2, jk) * zmask(ji, je_2, jk), p_e3(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk), p_e3(ji + 2, &
-&je_2, jk) * zmask(ji + 2, je_2, jk))
+            ze3crs = MAX(p_e3(ji, je_2, jk) * zmask(ji, je_2, jk), p_e3(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk), p_e3(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk))
             p_e3_max_crs(ii, 2, jk) = ze3crs
           END DO
         END DO
@@ -1375,15 +1212,9 @@ MODULE crsdom
       DO jk = 1, jpk
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
-          ze3crs = zsurf(ji, je_2, jk) * zmask(ji, je_2, jk) + zsurf(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) + zsurf(ji + 2, &
-&je_2, jk) * zmask(ji + 2, je_2, jk) + zsurf(ji, je_2 + 1, jk) * zmask(ji, je_2 + 1, jk) + zsurf(ji + 1, je_2 + 1, jk) * zmask(ji &
-&+ 1, je_2 + 1, jk) + zsurf(ji + 2, je_2 + 1, jk) * zmask(ji + 2, je_2 + 1, jk) + zsurf(ji, je_2 + 2, jk) * zmask(ji, je_2 + 2, &
-&jk) + zsurf(ji + 1, je_2 + 2, jk) * zmask(ji + 1, je_2 + 2, jk) + zsurf(ji + 2, je_2 + 2, jk) * zmask(ji + 2, je_2 + 2, jk)
+          ze3crs = zsurf(ji, je_2, jk) * zmask(ji, je_2, jk) + zsurf(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk) + zsurf(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk) + zsurf(ji, je_2 + 1, jk) * zmask(ji, je_2 + 1, jk) + zsurf(ji + 1, je_2 + 1, jk) * zmask(ji + 1, je_2 + 1, jk) + zsurf(ji + 2, je_2 + 1, jk) * zmask(ji + 2, je_2 + 1, jk) + zsurf(ji, je_2 + 2, jk) * zmask(ji, je_2 + 2, jk) + zsurf(ji + 1, je_2 + 2, jk) * zmask(ji + 1, je_2 + 2, jk) + zsurf(ji + 2, je_2 + 2, jk) * zmask(ji + 2, je_2 + 2, jk)
           p_e3_crs(ii, 2, jk) = ze3crs / p_sfc_crs(ii, 2, jk)
-          ze3crs = MAX(p_e3(ji, je_2, jk) * zmask(ji, je_2, jk), p_e3(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk), p_e3(ji + 2, &
-&je_2, jk) * zmask(ji + 2, je_2, jk), p_e3(ji, je_2 + 1, jk) * zmask(ji, je_2 + 1, jk), p_e3(ji + 1, je_2 + 1, jk) * zmask(ji + 1, &
-&je_2 + 1, jk), p_e3(ji + 2, je_2 + 1, jk) * zmask(ji + 2, je_2 + 1, jk), p_e3(ji, je_2 + 2, jk) * zmask(ji, je_2 + 2, jk), &
-&p_e3(ji + 1, je_2 + 2, jk) * zmask(ji + 1, je_2 + 2, jk), p_e3(ji + 2, je_2 + 2, jk) * zmask(ji + 2, je_2 + 2, jk))
+          ze3crs = MAX(p_e3(ji, je_2, jk) * zmask(ji, je_2, jk), p_e3(ji + 1, je_2, jk) * zmask(ji + 1, je_2, jk), p_e3(ji + 2, je_2, jk) * zmask(ji + 2, je_2, jk), p_e3(ji, je_2 + 1, jk) * zmask(ji, je_2 + 1, jk), p_e3(ji + 1, je_2 + 1, jk) * zmask(ji + 1, je_2 + 1, jk), p_e3(ji + 2, je_2 + 1, jk) * zmask(ji + 2, je_2 + 1, jk), p_e3(ji, je_2 + 2, jk) * zmask(ji, je_2 + 2, jk), p_e3(ji + 1, je_2 + 2, jk) * zmask(ji + 1, je_2 + 2, jk), p_e3(ji + 2, je_2 + 2, jk) * zmask(ji + 2, je_2 + 2, jk))
           p_e3_max_crs(ii, 2, jk) = ze3crs
         END DO
       END DO
@@ -1391,20 +1222,13 @@ MODULE crsdom
     END IF
     !$ACC KERNELS
     DO jk = 1, jpk
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = njstr, njend, nn_facty
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
           ij = (jj - njstr) * rfacty_r + 3
-          ze3crs = zsurf(ji, jj, jk) * zmask(ji, jj, jk) + zsurf(ji + 1, jj, jk) * zmask(ji + 1, jj, jk) + zsurf(ji + 2, jj, jk) * &
-&zmask(ji + 2, jj, jk) + zsurf(ji, jj + 1, jk) * zmask(ji, jj + 1, jk) + zsurf(ji + 1, jj + 1, jk) * zmask(ji + 1, jj + 1, jk) + &
-&zsurf(ji + 2, jj + 1, jk) * zmask(ji + 2, jj + 1, jk) + zsurf(ji, jj + 2, jk) * zmask(ji, jj + 2, jk) + zsurf(ji + 1, jj + 2, jk) &
-&* zmask(ji + 1, jj + 2, jk) + zsurf(ji + 2, jj + 2, jk) * zmask(ji + 2, jj + 2, jk)
+          ze3crs = zsurf(ji, jj, jk) * zmask(ji, jj, jk) + zsurf(ji + 1, jj, jk) * zmask(ji + 1, jj, jk) + zsurf(ji + 2, jj, jk) * zmask(ji + 2, jj, jk) + zsurf(ji, jj + 1, jk) * zmask(ji, jj + 1, jk) + zsurf(ji + 1, jj + 1, jk) * zmask(ji + 1, jj + 1, jk) + zsurf(ji + 2, jj + 1, jk) * zmask(ji + 2, jj + 1, jk) + zsurf(ji, jj + 2, jk) * zmask(ji, jj + 2, jk) + zsurf(ji + 1, jj + 2, jk) * zmask(ji + 1, jj + 2, jk) + zsurf(ji + 2, jj + 2, jk) * zmask(ji + 2, jj + 2, jk)
           p_e3_crs(ii, ij, jk) = ze3crs / p_sfc_crs(ii, ij, jk)
-          ze3crs = MAX(p_e3(ji, jj, jk) * zmask(ji, jj, jk), p_e3(ji + 1, jj, jk) * zmask(ji + 1, jj, jk), p_e3(ji + 2, jj, jk) * &
-&zmask(ji + 2, jj, jk), p_e3(ji, jj + 1, jk) * zmask(ji, jj + 1, jk), p_e3(ji + 1, jj + 1, jk) * zmask(ji + 1, jj + 1, jk), &
-&p_e3(ji + 2, jj + 1, jk) * zmask(ji + 2, jj + 1, jk), p_e3(ji, jj + 2, jk) * zmask(ji, jj + 2, jk), p_e3(ji + 1, jj + 2, jk) * &
-&zmask(ji + 1, jj + 2, jk), p_e3(ji + 2, jj + 2, jk) * zmask(ji + 2, jj + 2, jk))
+          ze3crs = MAX(p_e3(ji, jj, jk) * zmask(ji, jj, jk), p_e3(ji + 1, jj, jk) * zmask(ji + 1, jj, jk), p_e3(ji + 2, jj, jk) * zmask(ji + 2, jj, jk), p_e3(ji, jj + 1, jk) * zmask(ji, jj + 1, jk), p_e3(ji + 1, jj + 1, jk) * zmask(ji + 1, jj + 1, jk), p_e3(ji + 2, jj + 1, jk) * zmask(ji + 2, jj + 1, jk), p_e3(ji, jj + 2, jk) * zmask(ji, jj + 2, jk), p_e3(ji + 1, jj + 2, jk) * zmask(ji + 1, jj + 2, jk), p_e3(ji + 2, jj + 2, jk) * zmask(ji + 2, jj + 2, jk))
           p_e3_max_crs(ii, ij, jk) = ze3crs
         END DO
       END DO
@@ -1467,8 +1291,7 @@ MODULE crsdom
         DO jk = 1, jpk
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
-            p_surf_crs(ii, 2, jk) = zsurf(ji, je_2, jk) + zsurf(ji + 1, je_2, jk) + zsurf(ji + 2, je_2, jk) + zsurf(ji, je_2 - 1, &
-&jk) + zsurf(ji + 1, je_2 - 1, jk) + zsurf(ji + 2, je_2 - 1, jk)
+            p_surf_crs(ii, 2, jk) = zsurf(ji, je_2, jk) + zsurf(ji + 1, je_2, jk) + zsurf(ji + 2, je_2, jk) + zsurf(ji, je_2 - 1, jk) + zsurf(ji + 1, je_2 - 1, jk) + zsurf(ji + 2, je_2 - 1, jk)
             p_surf_crs_msk(ii, 2, jk) = zsurfmsk(ji, je_2, jk) + zsurfmsk(ji + 1, je_2, jk) + zsurfmsk(ji + 2, je_2, jk)
           END DO
         END DO
@@ -1480,29 +1303,20 @@ MODULE crsdom
       DO jk = 1, jpk
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
-          p_surf_crs(ii, 2, jk) = zsurf(ji, je_2, jk) + zsurf(ji + 1, je_2, jk) + zsurf(ji + 2, je_2, jk) + zsurf(ji, je_2 + 1, &
-&jk) + zsurf(ji + 1, je_2 + 1, jk) + zsurf(ji + 2, je_2 + 1, jk) + zsurf(ji, je_2 + 2, jk) + zsurf(ji + 1, je_2 + 2, jk) + &
-&zsurf(ji + 2, je_2 + 2, jk)
-          p_surf_crs_msk(ii, 2, jk) = zsurfmsk(ji, je_2, jk) + zsurfmsk(ji + 1, je_2, jk) + zsurfmsk(ji + 2, je_2, jk) + &
-&zsurfmsk(ji, je_2 + 1, jk) + zsurfmsk(ji + 1, je_2 + 1, jk) + zsurfmsk(ji + 2, je_2 + 1, jk) + zsurfmsk(ji, je_2 + 2, jk) + &
-&zsurfmsk(ji + 1, je_2 + 2, jk) + zsurfmsk(ji + 2, je_2 + 2, jk)
+          p_surf_crs(ii, 2, jk) = zsurf(ji, je_2, jk) + zsurf(ji + 1, je_2, jk) + zsurf(ji + 2, je_2, jk) + zsurf(ji, je_2 + 1, jk) + zsurf(ji + 1, je_2 + 1, jk) + zsurf(ji + 2, je_2 + 1, jk) + zsurf(ji, je_2 + 2, jk) + zsurf(ji + 1, je_2 + 2, jk) + zsurf(ji + 2, je_2 + 2, jk)
+          p_surf_crs_msk(ii, 2, jk) = zsurfmsk(ji, je_2, jk) + zsurfmsk(ji + 1, je_2, jk) + zsurfmsk(ji + 2, je_2, jk) + zsurfmsk(ji, je_2 + 1, jk) + zsurfmsk(ji + 1, je_2 + 1, jk) + zsurfmsk(ji + 2, je_2 + 1, jk) + zsurfmsk(ji, je_2 + 2, jk) + zsurfmsk(ji + 1, je_2 + 2, jk) + zsurfmsk(ji + 2, je_2 + 2, jk)
         END DO
       END DO
       !$ACC END KERNELS
     END IF
     !$ACC KERNELS
     DO jk = 1, jpk
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = njstr, njend, nn_facty
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
           ij = (jj - njstr) * rfacty_r + 3
-          p_surf_crs(ii, ij, jk) = zsurf(ji, jj, jk) + zsurf(ji + 1, jj, jk) + zsurf(ji + 2, jj, jk) + zsurf(ji, jj + 1, jk) + &
-&zsurf(ji + 1, jj + 1, jk) + zsurf(ji + 2, jj + 1, jk) + zsurf(ji, jj + 2, jk) + zsurf(ji + 1, jj + 2, jk) + zsurf(ji + 2, jj + 2, &
-&jk)
-          p_surf_crs_msk(ii, ij, jk) = zsurfmsk(ji, jj, jk) + zsurfmsk(ji + 1, jj, jk) + zsurfmsk(ji + 2, jj, jk) + zsurfmsk(ji, &
-&jj + 1, jk) + zsurfmsk(ji + 1, jj + 1, jk) + zsurfmsk(ji + 2, jj + 1, jk) + zsurfmsk(ji, jj + 2, jk) + zsurfmsk(ji + 1, jj + 2, &
-&jk) + zsurfmsk(ji + 2, jj + 2, jk)
+          p_surf_crs(ii, ij, jk) = zsurf(ji, jj, jk) + zsurf(ji + 1, jj, jk) + zsurf(ji + 2, jj, jk) + zsurf(ji, jj + 1, jk) + zsurf(ji + 1, jj + 1, jk) + zsurf(ji + 2, jj + 1, jk) + zsurf(ji, jj + 2, jk) + zsurf(ji + 1, jj + 2, jk) + zsurf(ji + 2, jj + 2, jk)
+          p_surf_crs_msk(ii, ij, jk) = zsurfmsk(ji, jj, jk) + zsurfmsk(ji + 1, jj, jk) + zsurfmsk(ji + 2, jj, jk) + zsurfmsk(ji, jj + 1, jk) + zsurfmsk(ji + 1, jj + 1, jk) + zsurfmsk(ji + 2, jj + 1, jk) + zsurfmsk(ji, jj + 2, jk) + zsurfmsk(ji + 1, jj + 2, jk) + zsurfmsk(ji + 2, jj + 2, jk)
         END DO
       END DO
     END DO
@@ -1567,8 +1381,7 @@ MODULE crsdom
       DO jn = 1, jpnij, jpni
         CALL profile_psy_data3 % PreStart('crs_dom_def', 'r3', 0, 0)
         IF (jn < (jpnij - jpni + 1)) THEN
-          nlejt_crs(jn) = AINT(REAL((jpjglo - (njmppt(jn) - 1)) / nn_facty, wp)) - AINT(REAL((jpjglo - (njmppt(jn + jpni) - 1)) / &
-&nn_facty, wp))
+          nlejt_crs(jn) = AINT(REAL((jpjglo - (njmppt(jn) - 1)) / nn_facty, wp)) - AINT(REAL((jpjglo - (njmppt(jn + jpni) - 1)) / nn_facty, wp))
         ELSE
           nlejt_crs(jn) = AINT(REAL(nlejt(jn) / nn_facty, wp)) + 1
         END IF
@@ -1617,8 +1430,7 @@ MODULE crsdom
         IF (jn == 1) THEN
           nleit_crs(jn) = AINT(REAL((nimppt(jn) - 1 + nlcit(jn)) / nn_factx, wp))
         ELSE
-          nleit_crs(jn) = AINT(REAL((nimppt(jn) - 1 + nlcit(jn)) / nn_factx, wp)) - AINT(REAL((nimppt(jn - 1) - 1 + nlcit(jn - 1)) &
-&/ nn_factx, wp))
+          nleit_crs(jn) = AINT(REAL((nimppt(jn) - 1 + nlcit(jn)) / nn_factx, wp)) - AINT(REAL((nimppt(jn - 1) - 1 + nlcit(jn - 1)) / nn_factx, wp))
         END IF
         SELECT CASE (ibonit(jn))
         CASE (- 1)
@@ -1698,26 +1510,26 @@ MODULE crsdom
     CALL profile_psy_data6 % PreStart('crs_dom_def', 'r6', 0, 0)
     CALL dom_grid_crs
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'crs_init : coarse grid dimensions'
-      WRITE(numout, FMT = *) '~~~~~~~   coarse domain global j-dimension           jpjglo = ', jpjglo
-      WRITE(numout, FMT = *) '~~~~~~~   coarse domain global i-dimension           jpiglo = ', jpiglo
-      WRITE(numout, FMT = *) '~~~~~~~   coarse domain local  i-dimension              jpi = ', jpi
-      WRITE(numout, FMT = *) '~~~~~~~   coarse domain local  j-dimension              jpj = ', jpj
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) ' nproc  = ', nproc
-      WRITE(numout, FMT = *) ' nlci   = ', nlci
-      WRITE(numout, FMT = *) ' nlcj   = ', nlcj
-      WRITE(numout, FMT = *) ' nldi   = ', nldi
-      WRITE(numout, FMT = *) ' nldj   = ', nldj
-      WRITE(numout, FMT = *) ' nlei   = ', nlei
-      WRITE(numout, FMT = *) ' nlej   = ', nlej
-      WRITE(numout, FMT = *) ' nlei_full=', nlei_full
-      WRITE(numout, FMT = *) ' nldi_full=', nldi_full
-      WRITE(numout, FMT = *) ' nimpp  = ', nimpp
-      WRITE(numout, FMT = *) ' njmpp  = ', njmpp
-      WRITE(numout, FMT = *) ' njmpp_full  = ', njmpp_full
-      WRITE(numout, FMT = *)
+      WRITE(numout, *)
+      WRITE(numout, *) 'crs_init : coarse grid dimensions'
+      WRITE(numout, *) '~~~~~~~   coarse domain global j-dimension           jpjglo = ', jpjglo
+      WRITE(numout, *) '~~~~~~~   coarse domain global i-dimension           jpiglo = ', jpiglo
+      WRITE(numout, *) '~~~~~~~   coarse domain local  i-dimension              jpi = ', jpi
+      WRITE(numout, *) '~~~~~~~   coarse domain local  j-dimension              jpj = ', jpj
+      WRITE(numout, *)
+      WRITE(numout, *) ' nproc  = ', nproc
+      WRITE(numout, *) ' nlci   = ', nlci
+      WRITE(numout, *) ' nlcj   = ', nlcj
+      WRITE(numout, *) ' nldi   = ', nldi
+      WRITE(numout, *) ' nldj   = ', nldj
+      WRITE(numout, *) ' nlei   = ', nlei
+      WRITE(numout, *) ' nlej   = ', nlej
+      WRITE(numout, *) ' nlei_full=', nlei_full
+      WRITE(numout, *) ' nldi_full=', nldi_full
+      WRITE(numout, *) ' nimpp  = ', nimpp
+      WRITE(numout, *) ' njmpp  = ', njmpp
+      WRITE(numout, *) ' njmpp_full  = ', njmpp_full
+      WRITE(numout, *)
     END IF
     CALL dom_grid_glo
     mxbinctr = INT(nn_factx * 0.5)
@@ -1772,7 +1584,7 @@ MODULE crsdom
         END DO
         !$ACC END KERNELS
       CASE (2)
-        WRITE(numout, FMT = *) 'crs_init, jperio=2 not supported'
+        WRITE(numout, *) 'crs_init, jperio=2 not supported'
       CASE (5, 6)
         !$ACC KERNELS
         DO ji = 2, jpiglo_crsm1
@@ -1804,11 +1616,11 @@ MODULE crsdom
         END DO
         !$ACC END KERNELS
       CASE DEFAULT
-        WRITE(numout, FMT = *) 'crs_init. Only jperio = 0, 1, 3, 4, 5, 6 supported'
+        WRITE(numout, *) 'crs_init. Only jperio = 0, 1, 3, 4, 5, 6 supported'
       END SELECT
     CASE (1)
       CALL profile_psy_data9 % PreStart('crs_dom_def', 'r9', 0, 0)
-      WRITE(numout, FMT = *) 'crs_init.  Equator-centered bins option not yet available'
+      WRITE(numout, *) 'crs_init.  Equator-centered bins option not yet available'
       CALL profile_psy_data9 % PostEnd
     END SELECT
     CALL profile_psy_data10 % PreStart('crs_dom_def', 'r10', 0, 0)
@@ -1855,6 +1667,9 @@ MODULE crsdom
     REAL(KIND = wp), DIMENSION(jpi_crs, jpj_crs) :: zmbk
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     !$ACC KERNELS
     mbathy_crs(:, :) = jpkm1
     mbkt_crs(:, :) = 1
@@ -1876,18 +1691,20 @@ MODULE crsdom
     zmbk(:, :) = 0.0
     zmbk(:, :) = REAL(mbathy_crs(:, :), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('crs_dom_bat', 'r1', 0, 0)
     CALL crs_lbc_lnk(zmbk, 'T', 1.0)
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     mbathy_crs(:, :) = NINT(zmbk(:, :))
     !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('crs_dom_bat', 'r1', 0, 0)
-    IF (lwp) WRITE(numout, FMT = *)
-    IF (lwp) WRITE(numout, FMT = *) '    crsini : mbkt is ocean bottom k-index of T-, U-, V- and W-levels '
-    IF (lwp) WRITE(numout, FMT = *) '    ~~~~~~~~~~~~~'
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data2 % PreStart('crs_dom_bat', 'r2', 0, 0)
+    IF (lwp) WRITE(numout, *)
+    IF (lwp) WRITE(numout, *) '    crsini : mbkt is ocean bottom k-index of T-, U-, V- and W-levels '
+    IF (lwp) WRITE(numout, *) '    ~~~~~~~~~~~~~'
+    CALL profile_psy_data2 % PostEnd
     !$ACC KERNELS
     mbkt_crs(:, :) = MAX(mbathy_crs(:, :), 1)
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj_crsm1
       DO ji = 1, jpi_crsm1
         mbku_crs(ji, jj) = MIN(mbkt_crs(ji + 1, jj), mbkt_crs(ji, jj))
@@ -1897,12 +1714,16 @@ MODULE crsdom
     zmbk(:, :) = 1.E0
     zmbk(:, :) = REAL(mbku_crs(:, :), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data3 % PreStart('crs_dom_bat', 'r3', 0, 0)
     CALL crs_lbc_lnk(zmbk, 'U', 1.0)
+    CALL profile_psy_data3 % PostEnd
     !$ACC KERNELS
     mbku_crs(:, :) = MAX(NINT(zmbk(:, :)), 1)
     zmbk(:, :) = REAL(mbkv_crs(:, :), wp)
     !$ACC END KERNELS
+    CALL profile_psy_data4 % PreStart('crs_dom_bat', 'r4', 0, 0)
     CALL crs_lbc_lnk(zmbk, 'V', 1.0)
+    CALL profile_psy_data4 % PostEnd
     !$ACC KERNELS
     mbkv_crs(:, :) = MAX(NINT(zmbk(:, :)), 1)
     !$ACC END KERNELS

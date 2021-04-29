@@ -51,32 +51,25 @@ MODULE bdytra
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE bdy_tra
   SUBROUTINE bdy_rnf(idx, pta, jpa)
-    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     TYPE(OBC_INDEX), INTENT(IN) :: idx
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk), INTENT(INOUT) :: pta
     INTEGER, INTENT(IN) :: jpa
     REAL(KIND = wp) :: zwgt
     INTEGER :: ib, ik, igrd
     INTEGER :: ii, ij, ip, jp
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    CALL profile_psy_data0 % PreStart('bdy_rnf', 'r0', 0, 0)
+    !$ACC KERNELS
     igrd = 1
-    CALL profile_psy_data0 % PostEnd
     DO ib = 1, idx % nblenrim(igrd)
-      CALL profile_psy_data1 % PreStart('bdy_rnf', 'r1', 0, 0)
       ii = idx % nbi(ib, igrd)
       ij = idx % nbj(ib, igrd)
-      CALL profile_psy_data1 % PostEnd
-      !$ACC KERNELS
       DO ik = 1, jpkm1
         ip = bdytmask(ii + 1, ij) - bdytmask(ii - 1, ij)
         jp = bdytmask(ii, ij + 1) - bdytmask(ii, ij - 1)
         IF (jpa == jp_tem) pta(ii, ij, ik) = pta(ii + ip, ij + jp, ik) * tmask(ii, ij, ik)
         IF (jpa == jp_sal) pta(ii, ij, ik) = 0.1 * tmask(ii, ij, ik)
       END DO
-      !$ACC END KERNELS
     END DO
+    !$ACC END KERNELS
   END SUBROUTINE bdy_rnf
   SUBROUTINE bdy_tra_dmp(kt)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -87,10 +80,13 @@ MODULE bdytra
     INTEGER :: ii, ij
     INTEGER :: ib_bdy
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     CALL profile_psy_data0 % PreStart('bdy_tra_dmp', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('bdy_tra_dmp')
+    CALL profile_psy_data0 % PostEnd
     DO ib_bdy = 1, nb_bdy
       IF (ln_tra_dmp(ib_bdy)) THEN
+        !$ACC KERNELS
         igrd = 1
         DO ib = 1, idx_bdy(ib_bdy) % nblen(igrd)
           ii = idx_bdy(ib_bdy) % nbi(ib, igrd)
@@ -103,9 +99,11 @@ MODULE bdytra
             tsa(ii, ij, ik, jp_sal) = tsa(ii, ij, ik, jp_sal) + zsa
           END DO
         END DO
+        !$ACC END KERNELS
       END IF
     END DO
+    CALL profile_psy_data1 % PreStart('bdy_tra_dmp', 'r1', 0, 0)
     IF (ln_timing) CALL timing_stop('bdy_tra_dmp')
-    CALL profile_psy_data0 % PostEnd
+    CALL profile_psy_data1 % PostEnd
   END SUBROUTINE bdy_tra_dmp
 END MODULE bdytra

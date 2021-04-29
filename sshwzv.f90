@@ -33,9 +33,9 @@ MODULE sshwzv
     CALL profile_psy_data0 % PreStart('ssh_nxt', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('ssh_nxt')
     IF (kt == nit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'ssh_nxt : after sea surface height'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~ '
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'ssh_nxt : after sea surface height'
+      IF (lwp) WRITE(numout, *) '~~~~~~~ '
     END IF
     z2dt = 2._wp * rdt
     IF (neuler == 0 .AND. kt == nit000) z2dt = rdt
@@ -71,47 +71,51 @@ MODULE sshwzv
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :, :) :: zhdiv
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
+    CALL profile_psy_data0 % PreStart('wzv', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('wzv')
+    CALL profile_psy_data0 % PostEnd
     IF (kt == nit000) THEN
-      CALL profile_psy_data0 % PreStart('wzv', 'r0', 0, 0)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'wzv : now vertical velocity '
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~ '
-      CALL profile_psy_data0 % PostEnd
+      CALL profile_psy_data1 % PreStart('wzv', 'r1', 0, 0)
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'wzv : now vertical velocity '
+      IF (lwp) WRITE(numout, *) '~~~~~ '
+      CALL profile_psy_data1 % PostEnd
       !$ACC KERNELS
       wn(:, :, jpk) = 0._wp
       !$ACC END KERNELS
     END IF
-    CALL profile_psy_data1 % PreStart('wzv', 'r1', 0, 0)
+    CALL profile_psy_data2 % PreStart('wzv', 'r2', 0, 0)
     z1_2dt = 1. / (2. * rdt)
     IF (neuler == 0 .AND. kt == nit000) z1_2dt = 1. / rdt
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data2 % PostEnd
     IF (ln_vvl_ztilde .OR. ln_vvl_layer) THEN
       ALLOCATE(zhdiv(jpi, jpj, jpk))
       !$ACC KERNELS
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zhdiv(ji, jj, jk) = r1_e1e2t(ji, jj) * (un_td(ji, jj, jk) - un_td(ji - 1, jj, jk) + vn_td(ji, jj, jk) - vn_td(ji, jj - &
-&1, jk))
+            zhdiv(ji, jj, jk) = r1_e1e2t(ji, jj) * (un_td(ji, jj, jk) - un_td(ji - 1, jj, jk) + vn_td(ji, jj, jk) - vn_td(ji, jj - 1, jk))
           END DO
         END DO
       END DO
       !$ACC END KERNELS
+      CALL profile_psy_data3 % PreStart('wzv', 'r3', 0, 0)
       CALL lbc_lnk('sshwzv', zhdiv, 'T', 1.)
+      CALL profile_psy_data3 % PostEnd
       !$ACC KERNELS
       DO jk = jpkm1, 1, - 1
-        wn(:, :, jk) = wn(:, :, jk + 1) - (e3t_n(:, :, jk) * hdivn(:, :, jk) + zhdiv(:, :, jk) + z1_2dt * (e3t_a(:, :, jk) - &
-&e3t_b(:, :, jk))) * tmask(:, :, jk)
+        wn(:, :, jk) = wn(:, :, jk + 1) - (e3t_n(:, :, jk) * hdivn(:, :, jk) + zhdiv(:, :, jk) + z1_2dt * (e3t_a(:, :, jk) - e3t_b(:, :, jk))) * tmask(:, :, jk)
       END DO
       !$ACC END KERNELS
       DEALLOCATE(zhdiv)
     ELSE
       !$ACC KERNELS
       DO jk = jpkm1, 1, - 1
-        wn(:, :, jk) = wn(:, :, jk + 1) - (e3t_n(:, :, jk) * hdivn(:, :, jk) + z1_2dt * (e3t_a(:, :, jk) - e3t_b(:, :, jk))) * &
-&tmask(:, :, jk)
+        wn(:, :, jk) = wn(:, :, jk + 1) - (e3t_n(:, :, jk) * hdivn(:, :, jk) + z1_2dt * (e3t_a(:, :, jk) - e3t_b(:, :, jk))) * tmask(:, :, jk)
       END DO
       !$ACC END KERNELS
     END IF
@@ -122,7 +126,9 @@ MODULE sshwzv
       END DO
       !$ACC END KERNELS
     END IF
+    CALL profile_psy_data4 % PreStart('wzv', 'r4', 0, 0)
     IF (ln_timing) CALL timing_stop('wzv')
+    CALL profile_psy_data4 % PostEnd
   END SUBROUTINE wzv
   SUBROUTINE ssh_swp(kt)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -133,9 +139,9 @@ MODULE sshwzv
     CALL profile_psy_data0 % PreStart('ssh_swp', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('ssh_swp')
     IF (kt == nit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'ssh_swp : Asselin time filter and swap of sea surface height'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~ '
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'ssh_swp : Asselin time filter and swap of sea surface height'
+      IF (lwp) WRITE(numout, *) '~~~~~~~ '
     END IF
     CALL profile_psy_data0 % PostEnd
     IF (neuler == 0 .AND. kt == nit000) THEN
@@ -149,8 +155,7 @@ MODULE sshwzv
       IF (.NOT. ln_linssh) THEN
         !$ACC KERNELS
         zcoef = atfp * rdt * r1_rau0
-        sshb(:, :) = sshb(:, :) - zcoef * (emp_b(:, :) - emp(:, :) - rnf_b(:, :) + rnf(:, :) + fwfisf_b(:, :) - fwfisf(:, :)) * &
-&ssmask(:, :)
+        sshb(:, :) = sshb(:, :) - zcoef * (emp_b(:, :) - emp(:, :) - rnf_b(:, :) + rnf(:, :) + fwfisf_b(:, :) - fwfisf(:, :)) * ssmask(:, :)
         !$ACC END KERNELS
       END IF
       !$ACC KERNELS
@@ -177,21 +182,18 @@ MODULE sshwzv
     CALL profile_psy_data0 % PreStart('waimp', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('wAimp')
     IF (kt == nit000) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'wAimp : Courant number-based partitioning of now vertical velocity '
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~ '
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'wAimp : Courant number-based partitioning of now vertical velocity '
+      IF (lwp) WRITE(numout, *) '~~~~~ '
     END IF
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     DO jk = 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           z1_e3w = 1._wp / e3w_n(ji, jj, jk)
-          Cu_adv(ji, jj, jk) = 2._wp * rdt * ((MAX(wn(ji, jj, jk), 0._wp) - MIN(wn(ji, jj, jk + 1), 0._wp)) + (MAX(e2u(ji, jj) * &
-&e3uw_n(ji, jj, jk) * un(ji, jj, jk), 0._wp) - MIN(e2u(ji - 1, jj) * e3uw_n(ji - 1, jj, jk) * un(ji - 1, jj, jk), 0._wp)) * &
-&r1_e1e2t(ji, jj) + (MAX(e1v(ji, jj) * e3vw_n(ji, jj, jk) * vn(ji, jj, jk), 0._wp) - MIN(e1v(ji, jj - 1) * e3vw_n(ji, jj - 1, jk) &
-&* vn(ji, jj - 1, jk), 0._wp)) * r1_e1e2t(ji, jj)) * z1_e3w
+          Cu_adv(ji, jj, jk) = 2._wp * rdt * ((MAX(wn(ji, jj, jk), 0._wp) - MIN(wn(ji, jj, jk + 1), 0._wp)) + (MAX(e2u(ji, jj) * e3uw_n(ji, jj, jk) * un(ji, jj, jk), 0._wp) - MIN(e2u(ji - 1, jj) * e3uw_n(ji - 1, jj, jk) * un(ji - 1, jj, jk), 0._wp)) * r1_e1e2t(ji, jj) + (MAX(e1v(ji, jj) * e3vw_n(ji, jj, jk) * vn(ji, jj, jk), 0._wp) - MIN(e1v(ji, jj - 1) * e3vw_n(ji, jj - 1, jk) * vn(ji, jj - 1, jk), 0._wp)) * r1_e1e2t(ji, jj)) * z1_e3w
         END DO
       END DO
     END DO
@@ -203,7 +205,7 @@ MODULE sshwzv
     !$ACC KERNELS
     IF (MAXVAL(Cu_adv(:, :, :)) > Cu_min) THEN
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zCu = MAX(Cu_adv(ji, jj, jk), Cu_adv(ji, jj, jk + 1))

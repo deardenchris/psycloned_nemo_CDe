@@ -28,6 +28,7 @@ MODULE trdglo
   REAL(KIND = wp), DIMENSION(jptot_dyn) :: hke
   CONTAINS
   SUBROUTINE trd_glo(ptrdx, ptrdy, ktrd, ctype, kt)
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(INOUT) :: ptrdx
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(INOUT) :: ptrdy
     INTEGER, INTENT(IN) :: ktrd
@@ -37,12 +38,13 @@ MODULE trdglo
     INTEGER :: ikbu, ikbv
     REAL(KIND = wp) :: zvm, zvt, zvs, z1_2rau0
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: ztswu, ztswv, z2dx, z2dy
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     IF (MOD(kt, nn_trd) == 0 .OR. kt == nit000 .OR. kt == nitend) THEN
       SELECT CASE (ctype)
       CASE ('TRA')
         !$ACC KERNELS
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               zvm = e1e2t(ji, jj) * e3t_n(ji, jj, jk) * tmask(ji, jj, jk) * tmask_i(ji, jj)
@@ -63,7 +65,9 @@ MODULE trdglo
         END IF
         !$ACC END KERNELS
         IF (ktrd == jptra_atf) THEN
+          CALL profile_psy_data0 % PreStart('trd_glo', 'r0', 0, 0)
           CALL glo_tra_wri(kt)
+          CALL profile_psy_data0 % PostEnd
           !$ACC KERNELS
           tmo(:) = 0._wp
           smo(:) = 0._wp
@@ -74,13 +78,11 @@ MODULE trdglo
       CASE ('DYN')
         !$ACC KERNELS
         DO jk = 1, jpkm1
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
-              zvt = ptrdx(ji, jj, jk) * tmask_i(ji + 1, jj) * tmask_i(ji, jj) * umask(ji, jj, jk) * e1e2u(ji, jj) * e3u_n(ji, jj, &
-&jk)
-              zvs = ptrdy(ji, jj, jk) * tmask_i(ji, jj + 1) * tmask_i(ji, jj) * vmask(ji, jj, jk) * e1e2v(ji, jj) * e3u_n(ji, jj, &
-&jk)
+              zvt = ptrdx(ji, jj, jk) * tmask_i(ji + 1, jj) * tmask_i(ji, jj) * umask(ji, jj, jk) * e1e2u(ji, jj) * e3u_n(ji, jj, jk)
+              zvs = ptrdy(ji, jj, jk) * tmask_i(ji, jj + 1) * tmask_i(ji, jj) * vmask(ji, jj, jk) * e1e2v(ji, jj) * e3u_n(ji, jj, jk)
               umo(ktrd) = umo(ktrd) + zvt
               vmo(ktrd) = vmo(ktrd) + zvs
               hke(ktrd) = hke(ktrd) + un(ji, jj, jk) * zvt + vn(ji, jj, jk) * zvs
@@ -89,13 +91,11 @@ MODULE trdglo
         END DO
         IF (ktrd == jpdyn_zdf) THEN
           z1_2rau0 = 0.5_wp / rau0
-          !$ACC LOOP INDEPENDENT COLLAPSE(2)
+          !$ACC loop independent collapse(2)
           DO jj = 1, jpjm1
             DO ji = 1, jpim1
-              zvt = (utau_b(ji, jj) + utau(ji, jj)) * tmask_i(ji + 1, jj) * tmask_i(ji, jj) * umask(ji, jj, jk) * z1_2rau0 * &
-&e1e2u(ji, jj)
-              zvs = (vtau_b(ji, jj) + vtau(ji, jj)) * tmask_i(ji, jj + 1) * tmask_i(ji, jj) * vmask(ji, jj, jk) * z1_2rau0 * &
-&e1e2v(ji, jj)
+              zvt = (utau_b(ji, jj) + utau(ji, jj)) * tmask_i(ji + 1, jj) * tmask_i(ji, jj) * umask(ji, jj, jk) * z1_2rau0 * e1e2u(ji, jj)
+              zvs = (vtau_b(ji, jj) + vtau(ji, jj)) * tmask_i(ji, jj + 1) * tmask_i(ji, jj) * vmask(ji, jj, jk) * z1_2rau0 * e1e2v(ji, jj)
               umo(jpdyn_tau) = umo(jpdyn_tau) + zvt
               vmo(jpdyn_tau) = vmo(jpdyn_tau) + zvs
               hke(jpdyn_tau) = hke(jpdyn_tau) + un(ji, jj, 1) * zvt + vn(ji, jj, 1) * zvs
@@ -113,6 +113,7 @@ MODULE trdglo
     REAL(KIND = wp) :: zcof
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zkx, zky, zkz, zkepe
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     IF (MOD(kt, nn_trd) == 0 .OR. kt == nit000 .OR. kt == nitend) THEN
       !$ACC KERNELS
       zkx(:, :, :) = 0._wp
@@ -120,7 +121,9 @@ MODULE trdglo
       zkz(:, :, :) = 0._wp
       zkepe(:, :, :) = 0._wp
       !$ACC END KERNELS
+      CALL profile_psy_data0 % PreStart('glo_dyn_wri', 'r0', 0, 0)
       CALL eos(tsn, rhd, rhop)
+      CALL profile_psy_data0 % PostEnd
       !$ACC KERNELS
       zcof = 0.5_wp / rau0
       zkz(:, :, 1) = 0._wp
@@ -129,7 +132,7 @@ MODULE trdglo
       END DO
       zcof = 0.5_wp / rau0
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpjm1
           DO ji = 1, jpim1
             zkx(ji, jj, jk) = zcof * e2u(ji, jj) * e3u_n(ji, jj, jk) * un(ji, jj, jk) * (rhop(ji, jj, jk) + rhop(ji + 1, jj, jk))
@@ -138,11 +141,10 @@ MODULE trdglo
         END DO
       END DO
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 2, jpjm1
           DO ji = 2, jpim1
-            zkepe(ji, jj, jk) = - (zkz(ji, jj, jk) - zkz(ji, jj, jk + 1) + zkx(ji, jj, jk) - zkx(ji - 1, jj, jk) + zky(ji, jj, jk) &
-&- zky(ji, jj - 1, jk)) / (e1e2t(ji, jj) * e3t_n(ji, jj, jk)) * tmask(ji, jj, jk) * tmask_i(ji, jj)
+            zkepe(ji, jj, jk) = - (zkz(ji, jj, jk) - zkz(ji, jj, jk + 1) + zkx(ji, jj, jk) - zkx(ji - 1, jj, jk) + zky(ji, jj, jk) - zky(ji, jj - 1, jk)) / (e1e2t(ji, jj) * e3t_n(ji, jj, jk)) * tmask(ji, jj, jk) * tmask_i(ji, jj)
           END DO
         END DO
       END DO
@@ -152,7 +154,7 @@ MODULE trdglo
       END DO
       peke = grav * peke
       !$ACC END KERNELS
-      CALL profile_psy_data0 % PreStart('glo_dyn_wri', 'r0', 0, 0)
+      CALL profile_psy_data1 % PreStart('glo_dyn_wri', 'r1', 0, 0)
       IF (lk_mpp) THEN
         CALL mpp_sum('trdglo', peke)
         CALL mpp_sum('trdglo', umo, jptot_dyn)
@@ -160,8 +162,8 @@ MODULE trdglo
         CALL mpp_sum('trdglo', hke, jptot_dyn)
       END IF
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *)
+        WRITE(numout, *)
+        WRITE(numout, *)
         WRITE(numout, 9500) kt
         WRITE(numout, 9501) umo(jpdyn_hpg) / tvolu, vmo(jpdyn_hpg) / tvolv
         WRITE(numout, 9502) umo(jpdyn_keg) / tvolu, vmo(jpdyn_keg) / tvolv
@@ -174,9 +176,7 @@ MODULE trdglo
         WRITE(numout, 9509) umo(jpdyn_bfr) / tvolu, vmo(jpdyn_bfr) / tvolv
         WRITE(numout, 9510) umo(jpdyn_atf) / tvolu, vmo(jpdyn_atf) / tvolv
         WRITE(numout, 9511)
-        WRITE(numout, 9512) (umo(jpdyn_hpg) + umo(jpdyn_keg) + umo(jpdyn_rvo) + umo(jpdyn_pvo) + umo(jpdyn_zad) + umo(jpdyn_ldf) + &
-&umo(jpdyn_zdf) + umo(jpdyn_spg) + umo(jpdyn_bfr) + umo(jpdyn_atf)) / tvolu, (vmo(jpdyn_hpg) + vmo(jpdyn_keg) + vmo(jpdyn_rvo) + &
-&vmo(jpdyn_pvo) + vmo(jpdyn_zad) + vmo(jpdyn_ldf) + vmo(jpdyn_zdf) + vmo(jpdyn_spg) + vmo(jpdyn_bfr) + vmo(jpdyn_atf)) / tvolv
+        WRITE(numout, 9512) (umo(jpdyn_hpg) + umo(jpdyn_keg) + umo(jpdyn_rvo) + umo(jpdyn_pvo) + umo(jpdyn_zad) + umo(jpdyn_ldf) + umo(jpdyn_zdf) + umo(jpdyn_spg) + umo(jpdyn_bfr) + umo(jpdyn_atf)) / tvolu, (vmo(jpdyn_hpg) + vmo(jpdyn_keg) + vmo(jpdyn_rvo) + vmo(jpdyn_pvo) + vmo(jpdyn_zad) + vmo(jpdyn_ldf) + vmo(jpdyn_zdf) + vmo(jpdyn_spg) + vmo(jpdyn_bfr) + vmo(jpdyn_atf)) / tvolv
         WRITE(numout, 9513) umo(jpdyn_tau) / tvolu, vmo(jpdyn_tau) / tvolv
       END IF
 9500  FORMAT(' momentum trend at it= ', I6, ' :', /, ' ==============================')
@@ -195,8 +195,8 @@ MODULE trdglo
 9513  FORMAT(' incl. surface wind stress  u= ', E20.13, '    v= ', E20.13)
 9514  FORMAT('       bottom stress        u= ', E20.13, '    v= ', E20.13)
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *)
+        WRITE(numout, *)
+        WRITE(numout, *)
         WRITE(numout, 9520) kt
         WRITE(numout, 9521) hke(jpdyn_hpg) / tvolt
         WRITE(numout, 9522) hke(jpdyn_keg) / tvolt
@@ -209,8 +209,7 @@ MODULE trdglo
         WRITE(numout, 9529) hke(jpdyn_bfr) / tvolt
         WRITE(numout, 9530) hke(jpdyn_atf) / tvolt
         WRITE(numout, 9531)
-        WRITE(numout, 9532) (hke(jpdyn_hpg) + hke(jpdyn_keg) + hke(jpdyn_rvo) + hke(jpdyn_pvo) + hke(jpdyn_zad) + hke(jpdyn_ldf) + &
-&hke(jpdyn_zdf) + hke(jpdyn_spg) + hke(jpdyn_bfr) + hke(jpdyn_atf)) / tvolt
+        WRITE(numout, 9532) (hke(jpdyn_hpg) + hke(jpdyn_keg) + hke(jpdyn_rvo) + hke(jpdyn_pvo) + hke(jpdyn_zad) + hke(jpdyn_ldf) + hke(jpdyn_zdf) + hke(jpdyn_spg) + hke(jpdyn_bfr) + hke(jpdyn_atf)) / tvolt
         WRITE(numout, 9533) hke(jpdyn_tau) / tvolt
       END IF
 9520  FORMAT(' kinetic energy trend at it= ', I6, ' :', /, ' ====================================')
@@ -229,8 +228,8 @@ MODULE trdglo
 9533  FORMAT(' incl. surface wind stress u2= ', E20.13)
 9534  FORMAT('       bottom stress       u2= ', E20.13)
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *)
+        WRITE(numout, *)
+        WRITE(numout, *)
         WRITE(numout, 9540) kt
         WRITE(numout, 9541) (hke(jpdyn_keg) + hke(jpdyn_rvo) + hke(jpdyn_zad)) / tvolt
         WRITE(numout, 9542) (hke(jpdyn_keg) + hke(jpdyn_zad)) / tvolt
@@ -240,8 +239,8 @@ MODULE trdglo
         WRITE(numout, 9546) (hke(jpdyn_ldf)) / tvolt
         WRITE(numout, 9547) (hke(jpdyn_zdf)) / tvolt
         WRITE(numout, 9548) (hke(jpdyn_hpg)) / tvolt, rpktrd / tvolt
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *)
+        WRITE(numout, *)
+        WRITE(numout, *)
       END IF
 9540  FORMAT(' energetic consistency at it= ', I6, ' :', /, ' =========================================')
 9541  FORMAT(' 0 = non linear term (true if KE conserved)                : ', E20.13)
@@ -253,7 +252,7 @@ MODULE trdglo
 9547  FORMAT(' 0 < vertical diffusion                                    : ', E20.13)
 9548  FORMAT(' pressure gradient u2 = - 1/rau0 u.dz(rhop)                : ', E20.13, '  u.dz(rhop) =', E20.13)
       rpktrd = peke
-      CALL profile_psy_data0 % PostEnd
+      CALL profile_psy_data1 % PostEnd
     END IF
   END SUBROUTINE glo_dyn_wri
   SUBROUTINE glo_tra_wri(kt)
@@ -270,8 +269,8 @@ MODULE trdglo
         CALL mpp_sum('trdglo', s2, jptot_tra)
       END IF
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *)
+        WRITE(numout, *)
+        WRITE(numout, *)
         WRITE(numout, 9400) kt
         WRITE(numout, 9401) tmo(jptra_xad) / tvolt, smo(jptra_xad) / tvolt
         WRITE(numout, 9411) tmo(jptra_yad) / tvolt, smo(jptra_yad) / tvolt
@@ -283,9 +282,7 @@ MODULE trdglo
         WRITE(numout, 9407) tmo(jptra_qsr) / tvolt
         WRITE(numout, 9408) tmo(jptra_nsr) / tvolt, smo(jptra_nsr) / tvolt
         WRITE(numout, 9409)
-        WRITE(numout, 9410) (tmo(jptra_xad) + tmo(jptra_yad) + tmo(jptra_zad) + tmo(jptra_ldf) + tmo(jptra_zdf) + tmo(jptra_npc) + &
-&tmo(jptra_dmp) + tmo(jptra_qsr) + tmo(jptra_nsr)) / tvolt, (smo(jptra_xad) + smo(jptra_yad) + smo(jptra_zad) + smo(jptra_ldf) + &
-&smo(jptra_zdf) + smo(jptra_npc) + smo(jptra_dmp) + smo(jptra_nsr)) / tvolt
+        WRITE(numout, 9410) (tmo(jptra_xad) + tmo(jptra_yad) + tmo(jptra_zad) + tmo(jptra_ldf) + tmo(jptra_zdf) + tmo(jptra_npc) + tmo(jptra_dmp) + tmo(jptra_qsr) + tmo(jptra_nsr)) / tvolt, (smo(jptra_xad) + smo(jptra_yad) + smo(jptra_zad) + smo(jptra_ldf) + smo(jptra_zdf) + smo(jptra_npc) + smo(jptra_dmp) + smo(jptra_nsr)) / tvolt
       END IF
 9400  FORMAT(' tracer trend at it= ', I6, ' :     temperature', '              salinity', /, ' ============================')
 9401  FORMAT(' zonal      advection        ', E20.13, '     ', E20.13)
@@ -300,8 +297,8 @@ MODULE trdglo
 9409  FORMAT(' -------------------------------------------------------------------------')
 9410  FORMAT(' total trend                 ', E20.13, '     ', E20.13)
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *)
+        WRITE(numout, *)
+        WRITE(numout, *)
         WRITE(numout, 9420) kt
         WRITE(numout, 9421) t2(jptra_xad) / tvolt, s2(jptra_xad) / tvolt
         WRITE(numout, 9431) t2(jptra_yad) / tvolt, s2(jptra_yad) / tvolt
@@ -313,12 +310,9 @@ MODULE trdglo
         WRITE(numout, 9427) t2(jptra_qsr) / tvolt
         WRITE(numout, 9428) t2(jptra_nsr) / tvolt, s2(jptra_nsr) / tvolt
         WRITE(numout, 9429)
-        WRITE(numout, 9430) (t2(jptra_xad) + t2(jptra_yad) + t2(jptra_zad) + t2(jptra_ldf) + t2(jptra_zdf) + t2(jptra_npc) + &
-&t2(jptra_dmp) + t2(jptra_qsr) + t2(jptra_nsr)) / tvolt, (s2(jptra_xad) + s2(jptra_yad) + s2(jptra_zad) + s2(jptra_ldf) + &
-&s2(jptra_zdf) + s2(jptra_npc) + s2(jptra_dmp) + s2(jptra_nsr)) / tvolt
+        WRITE(numout, 9430) (t2(jptra_xad) + t2(jptra_yad) + t2(jptra_zad) + t2(jptra_ldf) + t2(jptra_zdf) + t2(jptra_npc) + t2(jptra_dmp) + t2(jptra_qsr) + t2(jptra_nsr)) / tvolt, (s2(jptra_xad) + s2(jptra_yad) + s2(jptra_zad) + s2(jptra_ldf) + s2(jptra_zdf) + s2(jptra_npc) + s2(jptra_dmp) + s2(jptra_nsr)) / tvolt
       END IF
-9420  FORMAT(' tracer**2 trend at it= ', I6, ' :      temperature', '               salinity', /, ' &
-&===============================')
+9420  FORMAT(' tracer**2 trend at it= ', I6, ' :      temperature', '               salinity', /, ' ===============================')
 9421  FORMAT(' zonal      advection      * t   ', E20.13, '     ', E20.13)
 9431  FORMAT(' meridional advection      * t   ', E20.13, '     ', E20.13)
 9422  FORMAT(' vertical advection        * t   ', E20.13, '     ', E20.13)
@@ -331,23 +325,20 @@ MODULE trdglo
 9429  FORMAT(' -----------------------------------------------------------------------------')
 9430  FORMAT(' total trend                *t = ', E20.13, '  *s = ', E20.13)
       IF (lwp) THEN
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *)
+        WRITE(numout, *)
+        WRITE(numout, *)
         WRITE(numout, 9440) kt
-        WRITE(numout, 9441) (tmo(jptra_xad) + tmo(jptra_yad) + tmo(jptra_zad)) / tvolt, (smo(jptra_xad) + smo(jptra_yad) + &
-&smo(jptra_zad)) / tvolt
+        WRITE(numout, 9441) (tmo(jptra_xad) + tmo(jptra_yad) + tmo(jptra_zad)) / tvolt, (smo(jptra_xad) + smo(jptra_yad) + smo(jptra_zad)) / tvolt
         WRITE(numout, 9442) tmo(jptra_sad) / tvolt, smo(jptra_sad) / tvolt
         WRITE(numout, 9443) tmo(jptra_ldf) / tvolt, smo(jptra_ldf) / tvolt
         WRITE(numout, 9444) tmo(jptra_zdf) / tvolt, smo(jptra_zdf) / tvolt
         WRITE(numout, 9445) tmo(jptra_npc) / tvolt, smo(jptra_npc) / tvolt
-        WRITE(numout, 9446) (t2(jptra_xad) + t2(jptra_yad) + t2(jptra_zad)) / tvolt, (s2(jptra_xad) + s2(jptra_yad) + &
-&s2(jptra_zad)) / tvolt
+        WRITE(numout, 9446) (t2(jptra_xad) + t2(jptra_yad) + t2(jptra_zad)) / tvolt, (s2(jptra_xad) + s2(jptra_yad) + s2(jptra_zad)) / tvolt
         WRITE(numout, 9447) t2(jptra_ldf) / tvolt, s2(jptra_ldf) / tvolt
         WRITE(numout, 9448) t2(jptra_zdf) / tvolt, s2(jptra_zdf) / tvolt
         WRITE(numout, 9449) t2(jptra_npc) / tvolt, s2(jptra_npc) / tvolt
       END IF
-9440  FORMAT(' tracer consistency at it= ', I6, ' :         temperature', '                salinity', /, ' &
-&==================================')
+9440  FORMAT(' tracer consistency at it= ', I6, ' :         temperature', '                salinity', /, ' ==================================')
 9441  FORMAT(' 0 = horizontal+vertical advection +    ', E20.13, '       ', E20.13)
 9442  FORMAT('     1st lev vertical advection         ', E20.13, '       ', E20.13)
 9443  FORMAT(' 0 = horizontal diffusion               ', E20.13, '       ', E20.13)
@@ -363,9 +354,9 @@ MODULE trdglo
   SUBROUTINE trd_glo_init
     INTEGER :: ji, jj, jk
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'trd_glo_init : integral constraints properties trends'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~~'
+      WRITE(numout, *)
+      WRITE(numout, *) 'trd_glo_init : integral constraints properties trends'
+      WRITE(numout, *) '~~~~~~~~~~~~~'
     END IF
     !$ACC KERNELS
     tvolt = 0._wp
@@ -374,13 +365,13 @@ MODULE trdglo
     END DO
     !$ACC END KERNELS
     CALL mpp_sum('trdglo', tvolt)
-    IF (lwp) WRITE(numout, FMT = *) '                total ocean volume at T-point   tvolt = ', tvolt
+    IF (lwp) WRITE(numout, *) '                total ocean volume at T-point   tvolt = ', tvolt
     !$ACC KERNELS
     rpktrd = 0._wp
     tvolu = 0._wp
     tvolv = 0._wp
     DO jk = 1, jpk
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           tvolu = tvolu + e1u(ji, jj) * e2u(ji, jj) * e3u_n(ji, jj, jk) * tmask_i(ji + 1, jj) * tmask_i(ji, jj) * umask(ji, jj, jk)
@@ -392,8 +383,8 @@ MODULE trdglo
     CALL mpp_sum('trdglo', tvolu)
     CALL mpp_sum('trdglo', tvolv)
     IF (lwp) THEN
-      WRITE(numout, FMT = *) '                total ocean volume at U-point   tvolu = ', tvolu
-      WRITE(numout, FMT = *) '                total ocean volume at V-point   tvolv = ', tvolv
+      WRITE(numout, *) '                total ocean volume at U-point   tvolu = ', tvolu
+      WRITE(numout, *) '                total ocean volume at V-point   tvolv = ', tvolv
     END IF
   END SUBROUTINE trd_glo_init
 END MODULE trdglo

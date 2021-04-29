@@ -43,20 +43,21 @@ MODULE zdftmx
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpk) :: zav_tide
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     !$ACC KERNELS
     zav_tide(:, :, :) = MIN(60.E-4, az_tmx(:, :, :) / MAX(rn_n2min, rn2(:, :, :)))
     zkz(:, :) = 0.E0
     DO jk = 2, jpkm1
       zkz(:, :) = zkz(:, :) + e3w_n(:, :, jk) * MAX(0.E0, rn2(:, :, jk)) * rau0 * zav_tide(:, :, jk) * wmask(:, :, jk)
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         IF (zkz(ji, jj) /= 0.E0) zkz(ji, jj) = en_tmx(ji, jj) / zkz(ji, jj)
       END DO
     END DO
     DO jk = 2, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           zav_tide(ji, jj, jk) = zav_tide(ji, jj, jk) * MIN(zkz(ji, jj), 30. / 6.) * wmask(ji, jj, jk)
@@ -68,25 +69,26 @@ MODULE zdftmx
       !$ACC KERNELS
       ztpc = 0.E0
       DO jk = 1, jpk
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
-            ztpc = ztpc + e3w_n(ji, jj, jk) * e1t(ji, jj) * e2t(ji, jj) * MAX(0.E0, rn2(ji, jj, jk)) * zav_tide(ji, jj, jk) * &
-&tmask(ji, jj, jk) * tmask_i(ji, jj)
+            ztpc = ztpc + e3w_n(ji, jj, jk) * e1t(ji, jj) * e2t(ji, jj) * MAX(0.E0, rn2(ji, jj, jk)) * zav_tide(ji, jj, jk) * tmask(ji, jj, jk) * tmask_i(ji, jj)
           END DO
         END DO
       END DO
       ztpc = rau0 / (rn_tfe * rn_me) * ztpc
       !$ACC END KERNELS
       CALL profile_psy_data0 % PreStart('zdf_tmx', 'r0', 0, 0)
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) '          N Total power consumption by av_tide    : ztpc = ', ztpc * 1.E-12, 'TW'
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '          N Total power consumption by av_tide    : ztpc = ', ztpc * 1.E-12, 'TW'
       CALL profile_psy_data0 % PostEnd
     END IF
+    CALL profile_psy_data1 % PreStart('zdf_tmx', 'r1', 0, 0)
     IF (ln_tmx_itf) CALL tmx_itf(kt, zav_tide)
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     DO jk = 2, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           p_avt(ji, jj, jk) = p_avt(ji, jj, jk) + zav_tide(ji, jj, jk) * wmask(ji, jj, jk)
@@ -96,10 +98,10 @@ MODULE zdftmx
       END DO
     END DO
     !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('zdf_tmx', 'r1', 0, 0)
+    CALL profile_psy_data2 % PreStart('zdf_tmx', 'r2', 0, 0)
     CALL iom_put("av_tmx", zav_tide)
     IF (ln_ctl) CALL prt_ctl(tab3d_1 = zav_tide, clinfo1 = ' tmx - av_tide: ', tab3d_2 = p_avt, clinfo2 = ' p_avt: ', kdim = jpk)
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE zdf_tmx
   SUBROUTINE tmx_itf(kt, pav)
     INTEGER, INTENT(IN) :: kt
@@ -115,27 +117,19 @@ MODULE zdftmx
     zdn2dz(:, :, jpk) = 0.E0
     zempba_3d_1(:, :, jpk) = 0.E0
     zempba_3d_2(:, :, jpk) = 0.E0
-    !$ACC END KERNELS
     DO jk = 1, jpkm1
-      !$ACC KERNELS
       zdn2dz(:, :, jk) = rn2(:, :, jk) - rn2(:, :, jk + 1)
       zempba_3d_1(:, :, jk) = SQRT(MAX(0.E0, rn2(:, :, jk)))
       zempba_3d_2(:, :, jk) = MAX(0.E0, rn2(:, :, jk))
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
     zsum(:, :) = 0.E0
     zsum1(:, :) = 0.E0
     zsum2(:, :) = 0.E0
-    !$ACC END KERNELS
     DO jk = 2, jpk
-      !$ACC KERNELS
       zsum1(:, :) = zsum1(:, :) + zempba_3d_1(:, :, jk) * e3w_n(:, :, jk) * tmask(:, :, jk) * tmask(:, :, jk - 1)
       zsum2(:, :) = zsum2(:, :) + zempba_3d_2(:, :, jk) * e3w_n(:, :, jk) * tmask(:, :, jk) * tmask(:, :, jk - 1)
-      !$ACC END KERNELS
     END DO
-    !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         IF (zsum1(ji, jj) /= 0.E0) zsum1(ji, jj) = 1.E0 / zsum1(ji, jj)
@@ -143,7 +137,7 @@ MODULE zdftmx
       END DO
     END DO
     DO jk = 1, jpk
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           zcoef = 0.5 - SIGN(0.5, zdn2dz(ji, jj, jk))
@@ -153,7 +147,7 @@ MODULE zdftmx
         END DO
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         IF (zsum(ji, jj) > 0.E0) zsum(ji, jj) = 1.E0 / zsum(ji, jj)
@@ -161,15 +155,13 @@ MODULE zdftmx
     END DO
     zcoef = rn_tfe_itf / (rn_tfe * rau0)
     DO jk = 1, jpk
-      zavt_itf(:, :, jk) = MIN(10.E-4, zcoef * en_tmx(:, :) * zsum(:, :) * zempba_3d(:, :, jk) / MAX(rn_n2min, rn2(:, :, jk)) * &
-&tmask(:, :, jk))
+      zavt_itf(:, :, jk) = MIN(10.E-4, zcoef * en_tmx(:, :) * zsum(:, :) * zempba_3d(:, :, jk) / MAX(rn_n2min, rn2(:, :, jk)) * tmask(:, :, jk))
     END DO
     zkz(:, :) = 0.E0
     DO jk = 2, jpkm1
-      zkz(:, :) = zkz(:, :) + e3w_n(:, :, jk) * MAX(0.E0, rn2(:, :, jk)) * rau0 * zavt_itf(:, :, jk) * tmask(:, :, jk) * tmask(:, &
-&:, jk - 1)
+      zkz(:, :) = zkz(:, :) + e3w_n(:, :, jk) * MAX(0.E0, rn2(:, :, jk)) * rau0 * zavt_itf(:, :, jk) * tmask(:, :, jk) * tmask(:, :, jk - 1)
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         IF (zkz(ji, jj) /= 0.E0) zkz(ji, jj) = en_tmx(ji, jj) * rn_tfe_itf / rn_tfe / zkz(ji, jj)
@@ -183,17 +175,16 @@ MODULE zdftmx
       !$ACC KERNELS
       ztpc = 0.E0
       DO jk = 1, jpk
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
-            ztpc = ztpc + e1t(ji, jj) * e2t(ji, jj) * e3w_n(ji, jj, jk) * MAX(0.E0, rn2(ji, jj, jk)) * zavt_itf(ji, jj, jk) * &
-&tmask(ji, jj, jk) * tmask_i(ji, jj)
+            ztpc = ztpc + e1t(ji, jj) * e2t(ji, jj) * e3w_n(ji, jj, jk) * MAX(0.E0, rn2(ji, jj, jk)) * zavt_itf(ji, jj, jk) * tmask(ji, jj, jk) * tmask_i(ji, jj)
           END DO
         END DO
       END DO
       ztpc = rau0 * ztpc / (rn_me * rn_tfe_itf)
       !$ACC END KERNELS
-      IF (lwp) WRITE(numout, FMT = *) '          N Total power consumption by zavt_itf: ztpc = ', ztpc * 1.E-12, 'TW'
+      IF (lwp) WRITE(numout, *) '          N Total power consumption by zavt_itf: ztpc = ', ztpc * 1.E-12, 'TW'
     END IF
     !$ACC KERNELS
     DO jk = 2, jpkm1
@@ -221,16 +212,16 @@ MODULE zdftmx
 902 IF (ios /= 0) CALL ctl_nam(ios, 'namzdf_tmx in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namzdf_tmx)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'zdf_tmx_init : tidal mixing'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namzdf_tmx : set tidal mixing parameters'
-      WRITE(numout, FMT = *) '      Vertical decay scale for turbulence   = ', rn_htmx
-      WRITE(numout, FMT = *) '      Brunt-Vaisala frequency threshold     = ', rn_n2min
-      WRITE(numout, FMT = *) '      Tidal dissipation efficiency          = ', rn_tfe
-      WRITE(numout, FMT = *) '      Mixing efficiency                     = ', rn_me
-      WRITE(numout, FMT = *) '      ITF specific parameterisation         = ', ln_tmx_itf
-      WRITE(numout, FMT = *) '      ITF tidal dissipation efficiency      = ', rn_tfe_itf
+      WRITE(numout, *)
+      WRITE(numout, *) 'zdf_tmx_init : tidal mixing'
+      WRITE(numout, *) '~~~~~~~~~~~~'
+      WRITE(numout, *) '   Namelist namzdf_tmx : set tidal mixing parameters'
+      WRITE(numout, *) '      Vertical decay scale for turbulence   = ', rn_htmx
+      WRITE(numout, *) '      Brunt-Vaisala frequency threshold     = ', rn_n2min
+      WRITE(numout, *) '      Tidal dissipation efficiency          = ', rn_tfe
+      WRITE(numout, *) '      Mixing efficiency                     = ', rn_me
+      WRITE(numout, *) '      ITF specific parameterisation         = ', ln_tmx_itf
+      WRITE(numout, *) '      ITF tidal dissipation efficiency      = ', rn_tfe_itf
     END IF
     IF (zdf_tmx_alloc() /= 0) CALL ctl_stop('STOP', 'zdf_tmx_init : unable to allocate tmx arrays')
     IF (ln_tmx_itf) THEN
@@ -246,7 +237,7 @@ MODULE zdftmx
     CALL iom_close(inum)
     !$ACC KERNELS
     en_tmx(:, :) = - rn_tfe * rn_me * (zem2(:, :) * 1.25 + zek1(:, :)) * ssmask(:, :)
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zhdep(ji, jj) = gdepw_0(ji, jj, mbkt(ji, jj) + 1)
@@ -255,7 +246,7 @@ MODULE zdftmx
       END DO
     END DO
     DO jk = 1, jpk
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           az_tmx(ji, jj, jk) = zfact(ji, jj) * EXP(- (zhdep(ji, jj) - gdepw_0(ji, jj, jk)) / rn_htmx) * tmask(ji, jj, jk)
@@ -272,7 +263,7 @@ MODULE zdftmx
       ztpc = 0.E0
       zpc(:, :, :) = MAX(rn_n2min, rn2(:, :, :)) * zav_tide(:, :, :)
       DO jk = 2, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             ztpc = ztpc + e3w_0(ji, jj, jk) * e1t(ji, jj) * e2t(ji, jj) * zpc(ji, jj, jk) * wmask(ji, jj, jk) * tmask_i(ji, jj)
@@ -281,21 +272,20 @@ MODULE zdftmx
       END DO
       ztpc = rau0 * 1 / (rn_tfe * rn_me) * ztpc
       !$ACC END KERNELS
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '          Total power consumption of the tidally driven part of Kz : ztpc = ', ztpc * 1.E-12, 'TW'
+      WRITE(numout, *)
+      WRITE(numout, *) '          Total power consumption of the tidally driven part of Kz : ztpc = ', ztpc * 1.E-12, 'TW'
       !$ACC KERNELS
       zav_tide(:, :, :) = MIN(zav_tide(:, :, :), 60.E-4)
       zkz(:, :) = 0.E0
       DO jk = 2, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
-            zkz(ji, jj) = zkz(ji, jj) + e3w_0(ji, jj, jk) * MAX(0.E0, rn2(ji, jj, jk)) * rau0 * zav_tide(ji, jj, jk) * wmask(ji, &
-&jj, jk)
+            zkz(ji, jj) = zkz(ji, jj) + e3w_0(ji, jj, jk) * MAX(0.E0, rn2(ji, jj, jk)) * rau0 * zav_tide(ji, jj, jk) * wmask(ji, jj, jk)
           END DO
         END DO
       END DO
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           IF (zkz(ji, jj) /= 0.E0) THEN
@@ -304,7 +294,7 @@ MODULE zdftmx
         END DO
       END DO
       ztpc = 1.E50
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           IF (zkz(ji, jj) /= 0.E0) THEN
@@ -313,10 +303,10 @@ MODULE zdftmx
         END DO
       END DO
       !$ACC END KERNELS
-      WRITE(numout, FMT = *) '          Min de zkz ', ztpc, ' Max = ', MAXVAL(zkz(:, :))
+      WRITE(numout, *) '          Min de zkz ', ztpc, ' Max = ', MAXVAL(zkz(:, :))
       !$ACC KERNELS
       DO jk = 2, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zav_tide(ji, jj, jk) = zav_tide(ji, jj, jk) * MIN(zkz(ji, jj), 30. / 6.) * wmask(ji, jj, jk)
@@ -326,7 +316,7 @@ MODULE zdftmx
       ztpc = 0.E0
       zpc(:, :, :) = MAX(0.E0, rn2(:, :, :)) * zav_tide(:, :, :)
       DO jk = 1, jpk
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             ztpc = ztpc + e3w_0(ji, jj, jk) * e1t(ji, jj) * e2t(ji, jj) * zpc(ji, jj, jk) * wmask(ji, jj, jk) * tmask_i(ji, jj)
@@ -335,47 +325,42 @@ MODULE zdftmx
       END DO
       ztpc = rau0 * 1 / (rn_tfe * rn_me) * ztpc
       !$ACC END KERNELS
-      WRITE(numout, FMT = *) '          2 Total power consumption of the tidally driven part of Kz : ztpc = ', ztpc * 1.E-12, 'TW'
+      WRITE(numout, *) '          2 Total power consumption of the tidally driven part of Kz : ztpc = ', ztpc * 1.E-12, 'TW'
       DO jk = 1, jpk
         !$ACC KERNELS
-        ze_z = SUM(e1t(:, :) * e2t(:, :) * zav_tide(:, :, jk) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, &
-&:, jk) * tmask_i(:, :)))
+        ze_z = SUM(e1t(:, :) * e2t(:, :) * zav_tide(:, :, jk) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * tmask_i(:, :)))
         ztpc = 1.E50
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             IF (zav_tide(ji, jj, jk) /= 0.E0) ztpc = MIN(ztpc, zav_tide(ji, jj, jk))
           END DO
         END DO
         !$ACC END KERNELS
-        WRITE(numout, FMT = *) '            N2 min - jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s min= ', ztpc * 1.E4, 'max= ', &
-&MAXVAL(zav_tide(:, :, jk)) * 1.E4, ' cm2/s'
+        WRITE(numout, *) '            N2 min - jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s min= ', ztpc * 1.E4, 'max= ', MAXVAL(zav_tide(:, :, jk)) * 1.E4, ' cm2/s'
       END DO
-      WRITE(numout, FMT = *) '          e_tide : ', SUM(e1t * e2t * en_tmx) / (rn_tfe * rn_me) * 1.E-12, 'TW'
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) '          Initial profile of tidal vertical mixing'
+      WRITE(numout, *) '          e_tide : ', SUM(e1t * e2t * en_tmx) / (rn_tfe * rn_me) * 1.E-12, 'TW'
+      WRITE(numout, *)
+      WRITE(numout, *) '          Initial profile of tidal vertical mixing'
       DO jk = 1, jpk
         !$ACC KERNELS
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC loop independent collapse(2)
         DO jj = 1, jpj
           DO ji = 1, jpi
             zkz(ji, jj) = az_tmx(ji, jj, jk) / MAX(rn_n2min, rn2(ji, jj, jk))
           END DO
         END DO
-        ze_z = SUM(e1t(:, :) * e2t(:, :) * zkz(:, :) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * &
-&tmask_i(:, :)))
+        ze_z = SUM(e1t(:, :) * e2t(:, :) * zkz(:, :) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * tmask_i(:, :)))
         !$ACC END KERNELS
-        WRITE(numout, FMT = *) '                jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s'
+        WRITE(numout, *) '                jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s'
       END DO
       DO jk = 1, jpk
         !$ACC KERNELS
         zkz(:, :) = az_tmx(:, :, jk) / rn_n2min
-        ze_z = SUM(e1t(:, :) * e2t(:, :) * zkz(:, :) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * &
-&tmask_i(:, :)))
+        ze_z = SUM(e1t(:, :) * e2t(:, :) * zkz(:, :) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * tmask_i(:, :)))
         !$ACC END KERNELS
-        WRITE(numout, FMT = *)
-        WRITE(numout, FMT = *) '          N2 min - jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s min= ', MINVAL(zkz) * 1.E4, 'max= ', &
-&MAXVAL(zkz) * 1.E4, ' cm2/s'
+        WRITE(numout, *)
+        WRITE(numout, *) '          N2 min - jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s min= ', MINVAL(zkz) * 1.E4, 'max= ', MAXVAL(zkz) * 1.E4, ' cm2/s'
       END DO
     END IF
   END SUBROUTINE zdf_tmx_init

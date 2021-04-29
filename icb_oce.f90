@@ -89,18 +89,13 @@ MODULE icb_oce
     icb_alloc = 0
     ALLOCATE(berg_grid, STAT = ill)
     icb_alloc = icb_alloc + ill
-    ALLOCATE(berg_grid % calving(jpi, jpj), berg_grid % calving_hflx(jpi, jpj), berg_grid % stored_heat(jpi, jpj), berg_grid % &
-&floating_melt(jpi, jpj), berg_grid % maxclass(jpi, jpj), berg_grid % stored_ice(jpi, jpj, nclasses), berg_grid % tmp(jpi, jpj), &
-&STAT = ill)
+    ALLOCATE(berg_grid % calving(jpi, jpj), berg_grid % calving_hflx(jpi, jpj), berg_grid % stored_heat(jpi, jpj), berg_grid % floating_melt(jpi, jpj), berg_grid % maxclass(jpi, jpj), berg_grid % stored_ice(jpi, jpj, nclasses), berg_grid % tmp(jpi, jpj), STAT = ill)
     icb_alloc = icb_alloc + ill
-    ALLOCATE(uo_e(0 : jpi + 1, 0 : jpj + 1), ua_e(0 : jpi + 1, 0 : jpj + 1), vo_e(0 : jpi + 1, 0 : jpj + 1), va_e(0 : jpi + 1, 0 : &
-&jpj + 1), ff_e(0 : jpi + 1, 0 : jpj + 1), fr_e(0 : jpi + 1, 0 : jpj + 1), tt_e(0 : jpi + 1, 0 : jpj + 1), ssh_e(0 : jpi + 1, 0 : &
-&jpj + 1), first_width(nclasses), first_length(nclasses), src_calving(jpi, jpj), src_calving_hflx(jpi, jpj), STAT = ill)
+    ALLOCATE(uo_e(0 : jpi + 1, 0 : jpj + 1), ua_e(0 : jpi + 1, 0 : jpj + 1), vo_e(0 : jpi + 1, 0 : jpj + 1), va_e(0 : jpi + 1, 0 : jpj + 1), ff_e(0 : jpi + 1, 0 : jpj + 1), fr_e(0 : jpi + 1, 0 : jpj + 1), tt_e(0 : jpi + 1, 0 : jpj + 1), ssh_e(0 : jpi + 1, 0 : jpj + 1), first_width(nclasses), first_length(nclasses), src_calving(jpi, jpj), src_calving_hflx(jpi, jpj), STAT = ill)
     icb_alloc = icb_alloc + ill
     ALLOCATE(tmask_e(0 : jpi + 1, 0 : jpj + 1), umask_e(0 : jpi + 1, 0 : jpj + 1), vmask_e(0 : jpi + 1, 0 : jpj + 1), STAT = ill)
     icb_alloc = icb_alloc + ill
-    ALLOCATE(nicbfldpts(jpi), nicbflddest(jpi), nicbfldproc(jpni), nicbfldnsend(jpni), nicbfldexpect(jpni), nicbfldreq(jpni), STAT &
-&= ill)
+    ALLOCATE(nicbfldpts(jpi), nicbflddest(jpi), nicbfldproc(jpni), nicbfldnsend(jpni), nicbfldexpect(jpni), nicbfldreq(jpni), STAT = ill)
     icb_alloc = icb_alloc + ill
     ALLOCATE(griddata(jpi, jpj, 1), STAT = ill)
     icb_alloc = icb_alloc + ill

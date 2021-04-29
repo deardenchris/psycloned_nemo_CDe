@@ -40,13 +40,12 @@ MODULE mppini
     l_Iperio = jpni == 1 .AND. (jperio == 1 .OR. jperio == 4 .OR. jperio == 6 .OR. jperio == 7)
     l_Jperio = jpnj == 1 .AND. (jperio == 2 .OR. jperio == 7)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'mpp_init : NO massively parallel processing'
-      WRITE(numout, FMT = *) '~~~~~~~~ '
-      WRITE(numout, FMT = *) '   l_Iperio = ', l_Iperio, '    l_Jperio = ', l_Jperio
-      WRITE(numout, FMT = *) '     npolj  = ', npolj, '      njmpp  = ', njmpp
+      WRITE(numout, *)
+      WRITE(numout, *) 'mpp_init : NO massively parallel processing'
+      WRITE(numout, *) '~~~~~~~~ '
+      WRITE(numout, *) '   l_Iperio = ', l_Iperio, '    l_Jperio = ', l_Jperio
+      WRITE(numout, *) '     npolj  = ', npolj, '      njmpp  = ', njmpp
     END IF
-    IF (jpni /= 1 .OR. jpnj /= 1 .OR. jpnij /= 1) CALL ctl_stop('mpp_init: equality  jpni = jpnj = jpnij = 1 is not satisfied', &
-&'the domain is lay out for distributed memory computing!')
+    IF (jpni /= 1 .OR. jpnj /= 1 .OR. jpnij /= 1) CALL ctl_stop('mpp_init: equality  jpni = jpnj = jpnij = 1 is not satisfied', 'the domain is lay out for distributed memory computing!')
   END SUBROUTINE mpp_init
 END MODULE mppini

@@ -28,16 +28,16 @@ MODULE crsini
 902 IF (ios > 0) CALL ctl_nam(ios, 'namcrs in configuration namelist', lwp)
     IF (lwm) WRITE(numond, namcrs)
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'crs_init : Initializing the grid coarsening module'
-      WRITE(numout, FMT = *) '~~~~~~~~'
-      WRITE(numout, FMT = *) '   Namelist namcrs '
-      WRITE(numout, FMT = *) '      coarsening factor in i-direction      nn_factx   = ', nn_factx
-      WRITE(numout, FMT = *) '      coarsening factor in j-direction      nn_facty   = ', nn_facty
-      WRITE(numout, FMT = *) '      bin centering preference              nn_binref  = ', nn_binref
-      WRITE(numout, FMT = *) '      create a mesh file (=T)               ln_msh_crs = ', ln_msh_crs
-      WRITE(numout, FMT = *) '      type of Kz coarsening (0,1,2)         nn_crs_kz  = ', nn_crs_kz
-      WRITE(numout, FMT = *) '      wn coarsened or computed using hdivn  ln_crs_wn  = ', ln_crs_wn
+      WRITE(numout, *)
+      WRITE(numout, *) 'crs_init : Initializing the grid coarsening module'
+      WRITE(numout, *) '~~~~~~~~'
+      WRITE(numout, *) '   Namelist namcrs '
+      WRITE(numout, *) '      coarsening factor in i-direction      nn_factx   = ', nn_factx
+      WRITE(numout, *) '      coarsening factor in j-direction      nn_facty   = ', nn_facty
+      WRITE(numout, *) '      bin centering preference              nn_binref  = ', nn_binref
+      WRITE(numout, *) '      create a mesh file (=T)               ln_msh_crs = ', ln_msh_crs
+      WRITE(numout, *) '      type of Kz coarsening (0,1,2)         nn_crs_kz  = ', nn_crs_kz
+      WRITE(numout, *) '      wn coarsened or computed using hdivn  ln_crs_wn  = ', ln_crs_wn
     END IF
     rfactx_r = 1. / nn_factx
     rfacty_r = 1. / nn_facty

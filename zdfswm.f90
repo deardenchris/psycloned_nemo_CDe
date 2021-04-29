@@ -20,7 +20,7 @@ MODULE zdfswm
     !$ACC KERNELS
     zcoef = 1._wp * 0.353553_wp
     DO jk = 2, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC loop independent collapse(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
           zqb = zcoef * hsw(ji, jj) * tsd2d(ji, jj) * EXP(- 3. * wnum(ji, jj) * gdepw_n(ji, jj, jk)) * wmask(ji, jj, jk)
@@ -34,9 +34,9 @@ MODULE zdfswm
   END SUBROUTINE zdf_swm
   SUBROUTINE zdf_swm_init
     IF (lwp) THEN
-      WRITE(numout, FMT = *)
-      WRITE(numout, FMT = *) 'zdf_swm_init : surface wave-driven mixing'
-      WRITE(numout, FMT = *) '~~~~~~~~~~~~'
+      WRITE(numout, *)
+      WRITE(numout, *) 'zdf_swm_init : surface wave-driven mixing'
+      WRITE(numout, *) '~~~~~~~~~~~~'
     END IF
     IF (.NOT. ln_wave .OR. .NOT. ln_sdw) CALL ctl_stop('zdf_swm_init: ln_zdfswm=T but ln_wave and ln_sdw /= T')
   END SUBROUTINE zdf_swm_init

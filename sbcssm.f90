@@ -27,7 +27,7 @@ MODULE sbcssm
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC loop independent collapse(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zts(ji, jj, jp_tem) = tsn(ji, jj, mikt(ji, jj), jp_tem)
@@ -68,9 +68,9 @@ MODULE sbcssm
     ELSE
       IF (kt == nit000 .AND. .NOT. l_ssm_mean) THEN
         CALL profile_psy_data1 % PreStart('sbc_ssm', 'r1', 0, 0)
-        IF (lwp) WRITE(numout, FMT = *)
-        IF (lwp) WRITE(numout, FMT = *) 'sbc_ssm : mean fields initialised to instantaneous values'
-        IF (lwp) WRITE(numout, FMT = *) '~~~~~~~   '
+        IF (lwp) WRITE(numout, *)
+        IF (lwp) WRITE(numout, *) 'sbc_ssm : mean fields initialised to instantaneous values'
+        IF (lwp) WRITE(numout, *) '~~~~~~~   '
         CALL profile_psy_data1 % PostEnd
         !$ACC KERNELS
         zcoef = REAL(nn_fsbc - 1, wp)
@@ -154,10 +154,9 @@ MODULE sbcssm
       !$ACC END KERNELS
       CALL profile_psy_data4 % PreStart('sbc_ssm', 'r4', 0, 0)
       IF (lrst_oce) THEN
-        IF (lwp) WRITE(numout, FMT = *)
-        IF (lwp) WRITE(numout, FMT = *) 'sbc_ssm : sea surface mean fields written in ocean restart file ', 'at it= ', kt, ' date= &
-&', ndastp
-        IF (lwp) WRITE(numout, FMT = *) '~~~~~~~'
+        IF (lwp) WRITE(numout, *)
+        IF (lwp) WRITE(numout, *) 'sbc_ssm : sea surface mean fields written in ocean restart file ', 'at it= ', kt, ' date= ', ndastp
+        IF (lwp) WRITE(numout, *) '~~~~~~~'
         zf_sbc = REAL(nn_fsbc, wp)
         IF (lwxios) CALL iom_swap(cwxios_context)
         CALL iom_rstput(kt, nitrst, numrow, 'nn_fsbc', zf_sbc, ldxios = lwxios)
@@ -187,13 +186,13 @@ MODULE sbcssm
   SUBROUTINE sbc_ssm_init
     REAL(KIND = wp) :: zcoef, zf_sbc
     IF (nn_fsbc == 1) THEN
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'sbc_ssm_init : sea surface mean fields, nn_fsbc=1 : instantaneous values'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~ '
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'sbc_ssm_init : sea surface mean fields, nn_fsbc=1 : instantaneous values'
+      IF (lwp) WRITE(numout, *) '~~~~~~~~~~~ '
     ELSE
-      IF (lwp) WRITE(numout, FMT = *)
-      IF (lwp) WRITE(numout, FMT = *) 'sbc_ssm_init : sea surface mean fields'
-      IF (lwp) WRITE(numout, FMT = *) '~~~~~~~~~~~~ '
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'sbc_ssm_init : sea surface mean fields'
+      IF (lwp) WRITE(numout, *) '~~~~~~~~~~~~ '
       IF (ln_rstart .AND. iom_varid(numror, 'nn_fsbc', ldstop = .FALSE.) > 0) THEN
         l_ssm_mean = .TRUE.
         CALL iom_get(numror, 'nn_fsbc', zf_sbc, ldxios = lrxios)
@@ -211,7 +210,7 @@ MODULE sbcssm
           !$ACC END KERNELS
         END IF
         IF (zf_sbc /= REAL(nn_fsbc, wp)) THEN
-          IF (lwp) WRITE(numout, FMT = *) '   restart with a change in the frequency of mean from ', zf_sbc, ' to ', nn_fsbc
+          IF (lwp) WRITE(numout, *) '   restart with a change in the frequency of mean from ', zf_sbc, ' to ', nn_fsbc
           !$ACC KERNELS
           zcoef = REAL(nn_fsbc - 1, wp) / zf_sbc
           ssu_m(:, :) = zcoef * ssu_m(:, :)
@@ -223,12 +222,12 @@ MODULE sbcssm
           frq_m(:, :) = zcoef * frq_m(:, :)
           !$ACC END KERNELS
         ELSE
-          IF (lwp) WRITE(numout, FMT = *) '   mean fields read in the ocean restart file'
+          IF (lwp) WRITE(numout, *) '   mean fields read in the ocean restart file'
         END IF
       END IF
     END IF
     IF (.NOT. l_ssm_mean) THEN
-      IF (lwp) WRITE(numout, FMT = *) '   default initialisation of ss._m arrays'
+      IF (lwp) WRITE(numout, *) '   default initialisation of ss._m arrays'
       !$ACC KERNELS
       ssu_m(:, :) = ub(:, :, 1)
       ssv_m(:, :) = vb(:, :, 1)
@@ -247,9 +246,7 @@ MODULE sbcssm
       frq_m(:, :) = 1._wp
       !$ACC END KERNELS
     END IF
-    !$ACC KERNELS
     IF (.NOT. ln_traqsr) fraqsr_1lev(:, :) = 1._wp
-    !$ACC END KERNELS
     IF (lwxios .AND. nn_fsbc > 1) THEN
       CALL iom_set_rstw_var_active('nn_fsbc')
       CALL iom_set_rstw_var_active('ssu_m')
