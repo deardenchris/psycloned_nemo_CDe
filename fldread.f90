@@ -84,7 +84,7 @@ MODULE fldread
     LOGICAL, INTENT(IN), OPTIONAL :: fvl
     INTEGER :: itmp
     INTEGER :: imf
-    INTEGER :: jf
+    INTEGER :: jf, ji, jj, jk ! CDe added ji, jj, jk
     INTEGER :: isecend
     INTEGER :: isecsbc
     INTEGER :: it_offset
@@ -107,11 +107,13 @@ MODULE fldread
     END IF
     IF (PRESENT(kt_offset)) it_offset = kt_offset
     imap % ptr => NULL()
+    !$ACC KERNELS ! CDe
     IF (PRESENT(kit)) THEN
       isecsbc = nsec_year + nsec1jan000 + (kit + it_offset) * NINT(rdt / REAL(nn_baro, wp))
     ELSE
       isecsbc = nsec_year + nsec1jan000 + NINT(0.5 * REAL(kn_fsbc - 1, wp) * rdt) + it_offset * NINT(rdt)
     END IF
+    !$ACC END KERNELS
     imf = SIZE(sd)
     IF (ll_firstcall) THEN
       DO jf = 1, imf
@@ -128,36 +130,59 @@ MODULE fldread
       DO jf = 1, imf
         IF (isecsbc > sd(jf) % nrec_a(2) .OR. ll_firstcall) THEN
           IF (PRESENT(map)) imap = map(jf)
+          !$ACC KERNELS ! CDe added
           sd(jf) % nrec_b(:) = sd(jf) % nrec_a(:)
           sd(jf) % rotn(1) = sd(jf) % rotn(2)
-          IF (sd(jf) % ln_tint) sd(jf) % fdta(:, :, :, 1) = sd(jf) % fdta(:, :, :, 2)
+          !$ACC END KERNELS
+          IF (sd(jf) % ln_tint) THEN 
+            !$ACC KERNELS ! CDe      
+            !$ACC LOOP INDEPENDENT COLLAPSE(3) ! CDe Invoked
+            DO jk = 1, SIZE(sd(jf) % fdta, 3) ! CDe re-write as explicit loops 
+              DO jj = 1, SIZE(sd(jf) % fdta, 2)
+                DO ji = 1, SIZE(sd(jf) % fdta, 1)
+                  sd(jf) % fdta(ji, jj, jk, 1) = sd(jf) % fdta(ji, jj, jk, 2)
+                END DO
+              END DO
+            END DO
+            !$ACC END KERNELS
+          END IF
           CALL fld_rec(kn_fsbc, sd(jf), kt_offset = it_offset, kit = kit)
           IF (.NOT. ll_firstcall .AND. sd(jf) % ln_tint .AND. sd(jf) % nrec_b(1) /= sd(jf) % nreclast .AND. MOD(sd(jf) % &
 &nrec_a(1), sd(jf) % nreclast) == 1) THEN
+            !$ACC KERNELS ! CDe
             itmp = sd(jf) % nrec_a(1)
             sd(jf) % nrec_a(1) = sd(jf) % nreclast
+            !$ACC END KERNELS
             CALL fld_get(sd(jf), imap)
+            !$ACC KERNELS ! CDe
             sd(jf) % fdta(:, :, :, 1) = sd(jf) % fdta(:, :, :, 2)
             sd(jf) % nrec_b(1) = sd(jf) % nrec_a(1)
             sd(jf) % nrec_b(2) = sd(jf) % nrec_a(2) - NINT(sd(jf) % nfreqh * 3600)
             sd(jf) % rotn(1) = sd(jf) % rotn(2)
             sd(jf) % nrec_a(1) = itmp
+            !$ACC END KERNELS
           END IF
           CALL fld_clopn(sd(jf))
           IF (sd(jf) % ln_tint) THEN
             IF (.NOT. ll_firstcall .AND. MOD(sd(jf) % nrec_a(1), sd(jf) % nreclast) /= 1 .AND. sd(jf) % nrec_b(1) /= sd(jf) % &
 &nrec_a(1) - 1) THEN
+              !$ACC KERNELS ! CDe
               sd(jf) % nrec_a(1) = sd(jf) % nrec_a(1) - 1
+              !$ACC END KERNELS
               CALL fld_get(sd(jf), imap)
+              !$ACC KERNELS ! CDe
               sd(jf) % fdta(:, :, :, 1) = sd(jf) % fdta(:, :, :, 2)
               sd(jf) % nrec_b(1) = sd(jf) % nrec_a(1)
               sd(jf) % nrec_b(2) = sd(jf) % nrec_a(2) - NINT(sd(jf) % nfreqh * 3600)
               sd(jf) % rotn(1) = sd(jf) % rotn(2)
               sd(jf) % nrec_a(1) = sd(jf) % nrec_a(1) + 1
+              !$ACC END KERNELS
             END IF
           END IF
           IF (sd(jf) % nrec_a(1) > sd(jf) % nreclast) THEN
+            !$ACC KERNELS ! CDe      
             sd(jf) % nrec_a(1) = sd(jf) % nrec_a(1) - sd(jf) % nreclast
+            !$ACC END KERNELS
             IF (.NOT. (sd(jf) % ln_clim .AND. sd(jf) % cltype == 'yearly')) THEN
               llnxtmth = sd(jf) % cltype == 'monthly' .OR. nday == nmonth_len(nmonth)
               llnxtyr = sd(jf) % cltype == 'yearly' .OR. (nmonth == 12 .AND. llnxtmth)
@@ -169,7 +194,9 @@ MODULE fldread
                 CALL ctl_warn('next year/month/week/day file: ' // TRIM(sd(jf) % clname) // ' not present -> back to current &
 &year/month/day')
                 CALL fld_clopn(sd(jf))
+                !$ACC KERNELS ! CDe
                 sd(jf) % nrec_a(1) = sd(jf) % nreclast
+                !$ACC END KERNELS
               END IF
             END IF
           END IF
@@ -192,7 +219,16 @@ MODULE fldread
           END IF
           ztinta = REAL(isecsbc - sd(jf) % nrec_b(2), wp) / REAL(sd(jf) % nrec_a(2) - sd(jf) % nrec_b(2), wp)
           ztintb = 1. - ztinta
-          sd(jf) % fnow(:, :, :) = ztintb * sd(jf) % fdta(:, :, :, 1) + ztinta * sd(jf) % fdta(:, :, :, 2)
+          !$ACC KERNELS ! CDe
+          !$ACC LOOP INDEPENDENT COLLAPSE(3) ! CDe enforce parallelism
+          DO jk = 1, SIZE(sd(jf) % fnow, 3) ! CDe re-write as explicit loops 
+            DO jj = 1, SIZE(sd(jf) % fnow, 2)
+              DO ji = 1, SIZE(sd(jf) % fnow, 1)
+                sd(jf) % fnow(ji, jj, jk) = ztintb * sd(jf) % fdta(ji, jj, jk, 1) + ztinta * sd(jf) % fdta(ji, jj, jk, 2)
+              END DO
+            END DO
+          END DO
+          !$ACC END KERNELS 
         ELSE
           IF (lwp .AND. kt - nit000 <= 100) THEN
             clfmt = "('   fld_read: var ', a, ' kt = ', i8,' (', f9.4,' days), Y/M/D = ', i4.4,'/', i2.2,'/', i2.2," // "', &
@@ -891,8 +927,10 @@ MODULE fldread
                 ELSE
                   CALL rot_rep(sd(ju) % fnow(:, :, jk), sd(iv) % fnow(:, :, jk), 'T', 'en->i', utmp(:, :))
                   CALL rot_rep(sd(ju) % fnow(:, :, jk), sd(iv) % fnow(:, :, jk), 'T', 'en->j', vtmp(:, :))
+                  !$ACC KERNELS ! CDe
                   sd(ju) % fnow(:, :, jk) = utmp(:, :)
                   sd(iv) % fnow(:, :, jk) = vtmp(:, :)
+                  !$ACC END KERNELS
                 END IF
               END DO
               sd(ju) % rotn(jn) = .TRUE.
