@@ -201,6 +201,8 @@ MODULE sbcblk
     REAL(KIND = wp), INTENT(IN), DIMENSION(:, :) :: pv
     INTEGER :: ji, jj
     REAL(KIND = wp) :: zztmp
+    REAL(KIND = wp) :: ze_sat, ztmp ! CDe added to allow inline calculation of q_sat
+    REAL(KIND = wp) :: zrv, ziRT ! CDe added to allow inline calculation of gamma_moist
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zwnd_i, zwnd_j
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zsq
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zqlw, zqsb
@@ -235,7 +237,7 @@ MODULE sbcblk
     zztmp = 1. - albo
     !$ACC END KERNELS
     !CALL profile_psy_data1 % PreStart('blk_oce', 'r1', 0, 0)
-    IF (ln_dm2dc) THEN
+    IF (ln_dm2dc) THEN ! CDe invoked
     !  qsr(:, :) = zztmp * sbc_dcy(sf(jp_qsr) % fnow(:, :, 1)) * tmask(:, :, 1)
     qsr(:, :) = sbc_dcy(sf(jp_qsr) % fnow(:, :, 1))
     !$ACC KERNELS ! CDe
@@ -249,15 +251,28 @@ MODULE sbcblk
     !$ACC KERNELS ! CDe
     zqlw(:, :) = (sf(jp_qlw) % fnow(:, :, 1) - Stef * zst(:, :) * zst(:, :) * zst(:, :) * zst(:, :)) * tmask(:, :, 1)
 !    zsq(:, :) = 0.98 * q_sat(zst(:, :), sf(jp_slp) % fnow(:, :, 1))
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    ! CDe inline q_sat function to offload calculation of zsq on GPU
+    DO jj = 1, jpj
+      DO ji = 1, jpi
+       ztmp = rt0 / zst(ji, jj)
+        ze_sat = 10. ** (10.79574 * (1. - ztmp) - 5.028 * LOG10(zst(ji, jj) / rt0) + 1.50475 * 10. ** (- 4) * (1. - 10. ** (- &
+ &8.2969 * (zst(ji, jj) / rt0 - 1.))) + 0.42873 * 10. ** (- 3) * (10. ** (4.76955 * (1. - ztmp)) - 1.) + 0.78614)
+        zsq(ji, jj) = 0.98 * reps0 * ze_sat / (0.01_wp * sf(jp_slp) % fnow(ji, jj, 1) - (1._wp - reps0) * ze_sat)
+      END DO
+    END DO
 !    ztpot = sf(jp_tair) % fnow(:, :, 1) + gamma_moist(sf(jp_tair) % fnow(:, :, 1), sf(jp_humi) % fnow(:, :, 1)) * rn_zqt
-    !$ACC END KERNELS
-    zsq(:, :) = q_sat(zst(:, :), sf(jp_slp) % fnow(:, :, 1))
-    !$ACC KERNELS ! CDe added
-    zsq(:, :) = 0.98 * zsq(:,:)
-    !$ACC END KERNELS
-    ztpot(:,:) = gamma_moist(sf(jp_tair) % fnow(:, :, 1), sf(jp_humi) % fnow(:, :, 1))
-    !$ACC KERNELS ! CDe added
-    ztpot(:,:) = sf(jp_tair) % fnow(:, :, 1) + ztpot(:,:) * rn_zqt
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    ! CDe inline gamma_moist function to offload calculation onto GPU
+    DO jj = 1, jpj
+      DO ji = 1, jpi
+        zrv = sf(jp_humi) % fnow(ji, jj, 1) / (1. - sf(jp_humi) % fnow(ji, jj, 1))
+        ziRT = 1. / (R_dry * sf(jp_tair) % fnow(ji, jj, 1))
+        ztpot(ji, jj) = grav * (1. + rLevap * zrv * ziRT) / (Cp_dry + rLevap * rLevap * zrv * reps0 * ziRT / &
+                                                                   sf(jp_tair) % fnow(ji, jj, 1)) ! gamma_moist inlined
+        ztpot(ji, jj) = sf(jp_tair) % fnow(ji, jj, 1) + ztpot(ji, jj) * rn_zqt
+      END DO
+    END DO
     !$ACC END KERNELS
     CALL profile_psy_data1 % PreStart('blk_oce', 'r1', 0, 0)
     SELECT CASE (nblk)
@@ -276,13 +291,16 @@ MODULE sbcblk
     CASE DEFAULT
       CALL ctl_stop('STOP', 'sbc_oce: non-existing bulk formula selected')
     END SELECT
-    IF (ABS(rn_zu - rn_zqt) > 0.01) THEN
-      zrhoa(:, :) = rho_air(t_zu(:, :), q_zu(:, :), sf(jp_slp) % fnow(:, :, 1))
-    ELSE
-      zrhoa(:, :) = rho_air(sf(jp_tair) % fnow(:, :, 1), sf(jp_humi) % fnow(:, :, 1), sf(jp_slp) % fnow(:, :, 1))
-    END IF
     CALL profile_psy_data1 % PostEnd
-    !$ACC KERNELS
+    !$ACC KERNELS ! CDe
+    IF (ABS(rn_zu - rn_zqt) > 0.01) THEN
+!      zrhoa(:, :) = rho_air(t_zu(:, :), q_zu(:, :), sf(jp_slp) % fnow(:, :, 1))
+       zrhoa(:, :) = sf(jp_slp) % fnow(:, :, 1) / (R_dry * t_zu(:, :) * (1._wp + rctv0 * q_zu(:, :))) ! CDe inline rho_air function
+    ELSE
+      ! zrhoa(:, :) = rho_air(sf(jp_tair) % fnow(:, :, 1), sf(jp_humi) % fnow(:, :, 1), sf(jp_slp) % fnow(:, :, 1))
+       zrhoa(:, :) = sf(jp_slp) % fnow(:, :, 1) / (R_dry * sf(jp_tair) % fnow(:, :, 1) * & 
+                                                  (1._wp + rctv0 * sf(jp_humi) % fnow(:, :, 1))) ! CDe inline rho_air function
+    END IF
     !$ACC LOOP INDEPENDENT COLLAPSE(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
@@ -292,8 +310,6 @@ MODULE sbcblk
         zwnd_j(ji, jj) = zztmp * zwnd_j(ji, jj)
       END DO
     END DO
-    !$ACC END KERNELS
-    !$ACC KERNELS ! CDe
     IF (lhftau) taum(:, :) = taum(:, :) + sf(jp_tdif) % fnow(:, :, 1)
     !$ACC END KERNELS
     CALL profile_psy_data2 % PreStart('blk_oce', 'r2', 0, 0)
@@ -313,37 +329,19 @@ MODULE sbcblk
     CALL lbc_lnk_multi('sbcblk', utau, 'U', - 1., vtau, 'V', - 1.)
     !$ACC KERNELS
     zqla(:, :) = zrhoa(:, :) * zU_zu(:, :) * tmask(:, :, 1)
-    !$ACC END KERNELS
     IF (ABS(rn_zu - rn_zqt) < 0.01_wp) THEN
-      !$ACC KERNELS ! CDe
       zevap(:, :) = rn_efac * MAX(0._wp, zqla(:, :) * Ce_atm(:, :) * (zsq(:, :) - sf(jp_humi) % fnow(:, :, 1)))
-      !CALL profile_psy_data3 % PreStart('blk_oce', 'r3', 0, 0)
-      !$ACC END KERNELS
-      !zqsb(:, :) = cp_air(sf(jp_humi) % fnow(:, :, 1)) * zqla(:, :) * Ch_atm(:, :) * (zst(:, :) - ztpot(:, :))
-      !CALL profile_psy_data3 % PostEnd
-      zqsb(:, :) = cp_air(sf(jp_humi) % fnow(:, :, 1))
-      !$ACC KERNELS ! CDe added
-      zqsb(:, :) = zqsb(:,:) * zqla(:, :) * Ch_atm(:, :) * (zst(:, :) - ztpot(:, :))
-      !$ACC END KERNELS
-      !CALL profile_psy_data3 % PostEnd
+      ! CDe inlined cp_air function call
+      zqsb(:, :) = (Cp_dry + Cp_vap * sf(jp_humi) % fnow(:, :, 1)) * zqla(:, :) * Ch_atm(:, :) * (zst(:, :) - ztpot(:, :))
     ELSE
-      !$ACC KERNELS
       zevap(:, :) = rn_efac * MAX(0._wp, zqla(:, :) * Ce_atm(:, :) * (zsq(:, :) - q_zu(:, :)))
-      !$ACC END KERNELS
-      !CALL profile_psy_data4 % PreStart('blk_oce', 'r4', 0, 0)
-      zqsb(:, :) = cp_air(sf(jp_humi) % fnow(:, :, 1))
-      !$ACC KERNELS ! CDe added
-      zqsb(:, :) = zqsb(:,:) * zqla(:, :) * Ch_atm(:, :) * (zst(:, :) - t_zu(:, :))
-      !$ACC END KERNELS
-      !CALL profile_psy_data4 % PostEnd
+      ! CDe inlined cp_air function call
+      zqsb(:, :) = (Cp_dry + Cp_vap * sf(jp_humi) % fnow(:, :, 1)) * zqla(:, :) * Ch_atm(:, :) * (zst(:, :) - t_zu(:, :))
     END IF
-    !CALL profile_psy_data5 % PreStart('blk_oce', 'r5', 0, 0)
-    zqla(:, :) = L_vap(zst(:, :))
-    !$ACC KERNELS ! CDe added
-    zqla(:, :) = zqla(:,:) * zevap(:, :)
+    ! CDe inlined L_vap function call
+    zqla(:, :) = (2.501 - 0.00237 * (zst(:, :) - rt0)) * 1.E6 * zevap(:, :)
     !$ACC END KERNELS
     CALL profile_psy_data5 % PreStart('blk_oce', 'r5', 0, 0)
-    !zqla(:, :) = L_vap(zst(:, :)) * zevap(:, :)
     IF (ln_ctl) THEN
       CALL prt_ctl(tab2d_1 = zqla, clinfo1 = ' blk_oce: zqla   : ', tab2d_2 = Ce_atm, clinfo2 = ' Ce_oce  : ')
       CALL prt_ctl(tab2d_1 = zqsb, clinfo1 = ' blk_oce: zqsb   : ', tab2d_2 = Ch_atm, clinfo2 = ' Ch_oce  : ')
