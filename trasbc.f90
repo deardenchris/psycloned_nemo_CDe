@@ -140,6 +140,7 @@ MODULE trasbc
     CALL profile_psy_data4 % PreStart('tra_sbc', 'r4', 0, 0)
     IF (ln_rnf) THEN
       zfact = 0.5_wp
+      !$ACC KERNELS ! CDe
       DO jj = 2, jpj
         DO ji = 2, jpim1
           IF (rnf(ji, jj) /= 0._wp) THEN
@@ -151,6 +152,7 @@ MODULE trasbc
           END IF
         END DO
       END DO
+      !$ACC END KERNELS
     END IF
     IF (iom_use('rnf_x_sst')) CALL iom_put("rnf_x_sst", rnf * tsn(:, :, 1, jp_tem))
     IF (iom_use('rnf_x_sss')) CALL iom_put("rnf_x_sss", rnf * tsn(:, :, 1, jp_sal))

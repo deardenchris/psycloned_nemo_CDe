@@ -67,7 +67,9 @@ MODULE sbcrnf
     CALL profile_psy_data0 % PostEnd
     IF (MOD(kt - 1, nn_fsbc) == 0) THEN
       CALL profile_psy_data1 % PreStart('sbc_rnf', 'r1', 0, 0)
+      !$ACC KERNELS ! CDe
       IF (.NOT. l_rnfcpl) rnf(:, :) = rn_rfact * (sf_rnf(1) % fnow(:, :, 1)) * tmask(:, :, 1)
+      !$ACC END KERNELS
       CALL profile_psy_data1 % PostEnd
       IF (ln_rnf_tem) THEN
         !$ACC KERNELS

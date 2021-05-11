@@ -266,10 +266,10 @@ MODULE diawri
     CALL histwrite(nid_T, "soicecov", it, fr_i, ndim_hT, ndex_hT)
     CALL histwrite(nid_T, "sowindsp", it, wndm, ndim_hT, ndex_hT)
     IF (ln_icebergs) THEN
-      CALL histwrite(nid_T, "calving", it, berg_grid % calving, ndim_hT, ndex_hT)
-      CALL histwrite(nid_T, "calving_heat", it, berg_grid % calving_hflx, ndim_hT, ndex_hT)
-      CALL histwrite(nid_T, "berg_floating_melt", it, berg_grid % floating_melt, ndim_hT, ndex_hT)
-      CALL histwrite(nid_T, "berg_stored_ice", it, berg_grid % stored_ice, ndim_bT, ndex_bT)
+      CALL histwrite(nid_T, "calving", it, berg_grid(1) % calving, ndim_hT, ndex_hT)
+      CALL histwrite(nid_T, "calving_heat", it, berg_grid(1) % calving_hflx, ndim_hT, ndex_hT)
+      CALL histwrite(nid_T, "berg_floating_melt", it, berg_grid(1) % floating_melt, ndim_hT, ndex_hT)
+      CALL histwrite(nid_T, "berg_stored_ice", it, berg_grid(1) % stored_ice, ndim_bT, ndex_bT)
       IF (ln_bergdia) THEN
         CALL histwrite(nid_T, "berg_melt", it, berg_melt, ndim_hT, ndex_hT)
         CALL histwrite(nid_T, "berg_buoy_melt", it, buoy_melt, ndim_hT, ndex_hT)

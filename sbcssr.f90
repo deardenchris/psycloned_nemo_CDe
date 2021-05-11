@@ -78,9 +78,10 @@ MODULE sbcssr
           CALL iom_put("erp", erp)
           CALL profile_psy_data2 % PostEnd
         ELSE IF (nn_sssr == 2) THEN
-          CALL profile_psy_data3 % PreStart('sbc_ssr', 'r3', 0, 0)
+          !$ACC KERNELS ! CDe      
           zsrp = rn_deds / rday
           zerp_bnd = rn_sssr_bnd / rday
+          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               zerp = zsrp * (1. - 2. * rnfmsk(ji, jj)) * (sss_m(ji, jj) - sf_sss(1) % fnow(ji, jj, 1)) / MAX(sss_m(ji, jj), 1.E-20) * tmask(ji, jj, 1)
@@ -90,8 +91,8 @@ MODULE sbcssr
               erp(ji, jj) = zerp
             END DO
           END DO
+          !$ACC END KERNELS
           CALL iom_put("erp", erp)
-          CALL profile_psy_data3 % PostEnd
         END IF
       END IF
     END IF

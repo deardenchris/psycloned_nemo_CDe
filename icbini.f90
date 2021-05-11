@@ -44,13 +44,13 @@ MODULE icbini
     berg_dt = pdt
     first_width(:) = SQRT(rn_initial_mass(:) / (rn_LoW_ratio * rn_rho_bergs * rn_initial_thickness(:)))
     first_length(:) = rn_LoW_ratio * first_width(:)
-    berg_grid % calving(:, :) = 0._wp
-    berg_grid % calving_hflx(:, :) = 0._wp
-    berg_grid % stored_heat(:, :) = 0._wp
-    berg_grid % floating_melt(:, :) = 0._wp
-    berg_grid % maxclass(:, :) = nclasses
-    berg_grid % stored_ice(:, :, :) = 0._wp
-    berg_grid % tmp(:, :) = 0._wp
+    berg_grid(1) % calving(:, :) = 0._wp
+    berg_grid(1) % calving_hflx(:, :) = 0._wp
+    berg_grid(1) % stored_heat(:, :) = 0._wp
+    berg_grid(1) % floating_melt(:, :) = 0._wp
+    berg_grid(1) % maxclass(:, :) = nclasses
+    berg_grid(1) % stored_ice(:, :, :) = 0._wp
+    berg_grid(1) % tmp(:, :) = 0._wp
     src_calving(:, :) = 0._wp
     src_calving_hflx(:, :) = 0._wp
     IF (lk_mpp .AND. jpni == 1) CALL ctl_stop('icbinit: having ONE processor in x currently does not work')
@@ -171,7 +171,7 @@ MODULE icbini
       ivar = iom_varid(inum, 'maxclass', ldstop = .FALSE.)
       IF (ivar > 0) THEN
         CALL iom_get(inum, jpdom_data, 'maxclass', src_calving)
-        berg_grid % maxclass(:, :) = INT(src_calving)
+        berg_grid(1) % maxclass(:, :) = INT(src_calving)
         src_calving(:, :) = 0._wp
       END IF
       CALL iom_close(inum)

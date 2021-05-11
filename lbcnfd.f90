@@ -141,8 +141,8 @@ MODULE lbcnfd
     INTEGER :: ji, jj, jk, jl, jh, jf
     INTEGER :: ipi, ipj, ipk, ipl, ipf
     INTEGER :: ijt, iju, ipjm1
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('lbc_nfd_2d_ptr', 'r0', 0, 0)
+!    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+!    CALL profile_psy_data0 % PreStart('lbc_nfd_2d_ptr', 'r0', 0, 0)
     ipk = 1
     ipl = 1
     ipf = kfld
@@ -184,7 +184,7 @@ MODULE lbcnfd
           END DO
           !$ACC END KERNELS
         CASE ('V')
-          !$ACC KERNELS
+          !$ACC KERNELS ! CDe      
           DO ji = 2, jpiglo
             ijt = jpiglo - ji + 2
             ptab(jf) % pt2d(ji, ipj - 1) = psgn(jf) * ptab(jf) % pt2d(ijt, ipj - 2)
@@ -193,7 +193,7 @@ MODULE lbcnfd
           ptab(jf) % pt2d(1, ipj) = psgn(jf) * ptab(jf) % pt2d(3, ipj - 3)
           !$ACC END KERNELS
         CASE ('F')
-          !$ACC KERNELS
+          !$ACC KERNELS ! CDe      
           DO ji = 1, jpiglo - 1
             iju = jpiglo - ji + 1
             ptab(jf) % pt2d(ji, ipj - 1) = psgn(jf) * ptab(jf) % pt2d(iju, ipj - 2)
@@ -226,6 +226,7 @@ MODULE lbcnfd
             ijt = jpiglo - ji + 1
             ptab(jf) % pt2d(ji, ipj) = psgn(jf) * ptab(jf) % pt2d(ijt, ipj - 2)
           END DO
+          !$ACC LOOP INDEPENDENT ! CDe forces parallelism
           DO ji = jpiglo / 2 + 1, jpiglo
             ijt = jpiglo - ji + 1
             ptab(jf) % pt2d(ji, ipjm1) = psgn(jf) * ptab(jf) % pt2d(ijt, ipjm1)
@@ -258,6 +259,7 @@ MODULE lbcnfd
         END SELECT
       END SELECT
     END DO
+!    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_nfd_2d_ptr
   SUBROUTINE lbc_nfd_2d_ext(ptab, cd_nat, psgn, kextj)
     INTEGER, INTENT(IN) :: kextj
@@ -560,41 +562,55 @@ MODULE lbcnfd
       CASE (5, 6)
         SELECT CASE (cd_nat(jf))
         CASE ('T', 'W')
-          !$ACC KERNELS
-          DO ji = 1, jpiglo
-            ijt = jpiglo - ji + 1
-            ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipj - 1, :)
+          !$ACC KERNELS ! CDe      
+          DO jk = 1, jpk
+            !$ACC LOOP INDEPENDENT ! CDe This runs OK and verifies
+            DO ji = 1, jpiglo
+              ijt = jpiglo - ji + 1
+              ptab(jf) % pt3d(ji, ipj, jk) = psgn(jf) * ptab(jf) % pt3d(ijt, ipj - 1, jk)
+            END DO
           END DO
           !$ACC END KERNELS
         CASE ('U')
-          !$ACC KERNELS
-          DO ji = 1, jpiglo - 1
-            iju = jpiglo - ji
-            ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(iju, ipj - 1, :)
+          !$ACC KERNELS ! CDe
+          DO jk = 1, jpk
+            !$ACC LOOP INDEPENDENT ! CDe verifies
+            DO ji = 1, jpiglo - 1
+              iju = jpiglo - ji
+              ptab(jf) % pt3d(ji, ipj, jk) = psgn(jf) * ptab(jf) % pt3d(iju, ipj - 1, jk)
+            END DO
           END DO
-          ptab(jf) % pt3d(jpiglo, ipj, :) = psgn(jf) * ptab(jf) % pt3d(jpiglo - 2, ipj - 1, :)
+          DO jk = 1, jpk
+            ptab(jf) % pt3d(jpiglo, ipj, jk) = psgn(jf) * ptab(jf) % pt3d(jpiglo - 2, ipj - 1, jk)
+          END DO
           !$ACC END KERNELS
         CASE ('V')
-          !$ACC KERNELS
-          DO ji = 1, jpiglo
-            ijt = jpiglo - ji + 1
-            ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipj - 2, :)
-          END DO
-          DO ji = jpiglo / 2 + 1, jpiglo
-            ijt = jpiglo - ji + 1
-            ptab(jf) % pt3d(ji, ipjm1, :) = psgn(jf) * ptab(jf) % pt3d(ijt, ipjm1, :)
+          !$ACC KERNELS ! CDe
+          DO jk = 1, jpk
+            !$ACC LOOP INDEPENDENT ! CDe verifies
+            DO ji = 1, jpiglo
+              ijt = jpiglo - ji + 1
+              ptab(jf) % pt3d(ji, ipj, jk) = psgn(jf) * ptab(jf) % pt3d(ijt, ipj - 2, jk)
+            END DO
+            !$ACC LOOP INDEPENDENT ! CDe verifies
+            DO ji = jpiglo / 2 + 1, jpiglo
+              ijt = jpiglo - ji + 1
+              ptab(jf) % pt3d(ji, ipjm1, jk) = psgn(jf) * ptab(jf) % pt3d(ijt, ipjm1, jk)
+            END DO
           END DO
           !$ACC END KERNELS
-        CASE ('F')
+        CASE ('F')      
           !$ACC KERNELS
-          DO ji = 1, jpiglo - 1
-            iju = jpiglo - ji
-            ptab(jf) % pt3d(ji, ipj, :) = psgn(jf) * ptab(jf) % pt3d(iju, ipj - 2, :)
-          END DO
-          ptab(jf) % pt3d(jpiglo, ipj, :) = psgn(jf) * ptab(jf) % pt3d(jpiglo - 2, ipj - 2, :)
-          DO ji = jpiglo / 2 + 1, jpiglo - 1
-            iju = jpiglo - ji
-            ptab(jf) % pt3d(ji, ipjm1, :) = psgn(jf) * ptab(jf) % pt3d(iju, ipjm1, :)
+          DO jk =1, jpk      
+            DO ji = 1, jpiglo - 1
+              iju = jpiglo - ji
+              ptab(jf) % pt3d(ji, ipj, jk) = psgn(jf) * ptab(jf) % pt3d(iju, ipj - 2, jk)
+            END DO
+            ptab(jf) % pt3d(jpiglo, ipj, jk) = psgn(jf) * ptab(jf) % pt3d(jpiglo - 2, ipj - 2, jk)
+            DO ji = jpiglo / 2 + 1, jpiglo - 1
+              iju = jpiglo - ji
+              ptab(jf) % pt3d(ji, ipjm1, jk) = psgn(jf) * ptab(jf) % pt3d(iju, ipjm1, jk)
+            END DO
           END DO
           !$ACC END KERNELS
         END SELECT

@@ -158,7 +158,9 @@ MODULE ldfslp
     CALL profile_psy_data2 % PostEnd
     DO jk = 2, jpkm1
       !$ACC KERNELS
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1, MAX(1, jpj - 3)
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
           uslp(ji, jj, jk) = z1_16 * (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj + 1, jk) + 2. * (zwz(ji, jj - 1, jk) + zwz(ji - 1, jj, jk) + zwz(ji + 1, jj, jk) + zwz(ji, jj + 1, jk)) + 4. * zwz(ji, jj, jk))
           vslp(ji, jj, jk) = z1_16 * (zww(ji - 1, jj - 1, jk) + zww(ji + 1, jj - 1, jk) + zww(ji - 1, jj + 1, jk) + zww(ji + 1, jj + 1, jk) + 2. * (zww(ji, jj - 1, jk) + zww(ji - 1, jj, jk) + zww(ji + 1, jj, jk) + zww(ji, jj + 1, jk)) + 4. * zww(ji, jj, jk))
@@ -205,7 +207,9 @@ MODULE ldfslp
     CALL profile_psy_data3 % PostEnd
     DO jk = 2, jpkm1
       !$ACC KERNELS
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1, MAX(1, jpj - 3)
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
           zcofw = wmask(ji, jj, jk) * z1_16
           wslpi(ji, jj, jk) = (zwz(ji - 1, jj - 1, jk) + zwz(ji + 1, jj - 1, jk) + zwz(ji - 1, jj + 1, jk) + zwz(ji + 1, jj + 1, jk) + 2. * (zwz(ji, jj - 1, jk) + zwz(ji - 1, jj, jk) + zwz(ji + 1, jj, jk) + zwz(ji, jj + 1, jk)) + 4. * zwz(ji, jj, jk)) * zcofw

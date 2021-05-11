@@ -844,7 +844,9 @@ MODULE crsdom
         !$ACC END KERNELS
       END IF
       !$ACC KERNELS
+      !$ACC LOOP INDEPENDENT ! CDe compiler bug prevents use of COLLAPSE(2) here
       DO jj = njstr, njend, nn_facty
+        !$ACC LOOP INDEPENDENT ! CDe 
         DO ji = nistr, niend, nn_factx
           ii = (ji - mis_crs(2)) * rfactx_r + 2
           ij = (jj - njstr) * rfacty_r + 3
@@ -891,7 +893,9 @@ MODULE crsdom
           !$ACC END KERNELS
         END IF
         !$ACC KERNELS
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = njstr, njend, nn_facty
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
@@ -916,7 +920,9 @@ MODULE crsdom
           zflcrs = p_fld(ji, ijje) * zsurfmsk(ji, ijje) + p_fld(ji + 1, ijje) * zsurfmsk(ji + 1, ijje) + p_fld(ji + 2, ijje) * zsurfmsk(ji + 2, ijje)
           p_fld_crs(ii, 2) = zflcrs
         END DO
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = njstr, njend, nn_facty
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
@@ -951,7 +957,9 @@ MODULE crsdom
           !$ACC END KERNELS
         END IF
         !$ACC KERNELS
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = njstr, njend, nn_facty
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
@@ -990,7 +998,9 @@ MODULE crsdom
           CALL profile_psy_data2 % PostEnd
         END IF
         !$ACC KERNELS
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = njstr, njend, nn_facty
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
@@ -1015,7 +1025,9 @@ MODULE crsdom
           zflcrs = MAX(p_fld(ji, ijje) * p_mask(ji, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 1, ijje) * p_mask(ji + 1, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 2, ijje) * p_mask(ji + 2, ijje, 1) - (1. - p_mask(ji, ijje, 1)) * r_inf)
           p_fld_crs(ii, 2) = zflcrs
         END DO
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = njstr, njend, nn_facty
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
@@ -1050,7 +1062,9 @@ MODULE crsdom
           !$ACC END KERNELS
         END IF
         !$ACC KERNELS
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = njstr, njend, nn_facty
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
@@ -1083,7 +1097,9 @@ MODULE crsdom
           CALL profile_psy_data4 % PostEnd
         END IF
         !$ACC KERNELS
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = njstr, njend, nn_facty
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
@@ -1108,7 +1124,9 @@ MODULE crsdom
           zflcrs = MIN(p_fld(ji, ijje) * p_mask(ji, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 1, ijje) * p_mask(ji + 1, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf, p_fld(ji + 2, ijje) * p_mask(ji + 2, ijje, 1) + (1. - p_mask(ji, ijje, 1)) * r_inf)
           p_fld_crs(ii, 2) = zflcrs
         END DO
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = njstr, njend, nn_facty
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3
@@ -1143,7 +1161,9 @@ MODULE crsdom
           !$ACC END KERNELS
         END IF
         !$ACC KERNELS
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = njstr, njend, nn_facty
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = nistr, niend, nn_factx
             ii = (ji - mis_crs(2)) * rfactx_r + 2
             ij = (jj - njstr) * rfacty_r + 3

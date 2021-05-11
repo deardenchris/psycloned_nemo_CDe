@@ -329,8 +329,20 @@ MODULE traadv_fct
     zrtrn = 1.E-15_wp
     zbetup(:, :, :) = 0._wp
     zbetdo(:, :, :) = 0._wp
-    zbup = MAX(pbef * tmask - zbig * (1._wp - tmask), paft * tmask - zbig * (1._wp - tmask))
-    zbdo = MIN(pbef * tmask + zbig * (1._wp - tmask), paft * tmask + zbig * (1._wp - tmask))
+    DO jk = 1, jpk ! CDe rewrite as explicit loops
+      DO jj = 1, jpj
+        DO ji = 1, jpi
+          !zbup = MAX(pbef * tmask - zbig * (1._wp - tmask), paft * tmask - zbig * (1._wp - tmask))
+          !zbdo = MIN(pbef * tmask + zbig * (1._wp - tmask), paft * tmask + zbig * (1._wp - tmask))
+          zbup(ji,jj,jk) = MAX(pbef(ji,jj,jk) * tmask(ji,jj,jk) - zbig * &
+                          (1._wp - tmask(ji,jj,jk)), paft(ji,jj,jk) * tmask(ji,jj,jk) &
+                           - zbig * (1._wp - tmask(ji,jj,jk)))
+          zbdo(ji,jj,jk) = MIN(pbef(ji,jj,jk) * tmask(ji,jj,jk) + zbig * &
+                          (1._wp - tmask(ji,jj,jk)), paft(ji,jj,jk) * tmask(ji,jj,jk) &
+                           + zbig * (1._wp - tmask(ji,jj,jk)))
+        END DO
+      END DO
+    END DO
     DO jk = 1, jpkm1
       ikm1 = MAX(jk - 1, 1)
       !$ACC loop independent collapse(2)

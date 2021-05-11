@@ -44,6 +44,7 @@ MODULE diahsb
     REAL(KIND = wp) :: z_ssh_hc, z_ssh_sc
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: z2d0, z2d1
     REAL(KIND = wp), DIMENSION(jpi, jpj, jpkm1) :: zwrk
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION (:, :) :: ztmp ! CDe
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
@@ -53,6 +54,7 @@ MODULE diahsb
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
+    ALLOCATE(ztmp(jpi, jpj)) ! CDe
     CALL profile_psy_data0 % PreStart('dia_hsb', 'r0', 0, 0)
     IF (ln_timing) CALL timing_start('dia_hsb')
     CALL profile_psy_data0 % PostEnd
@@ -63,14 +65,64 @@ MODULE diahsb
     tsb(:, :, :, 2) = tsb(:, :, :, 2) * tmask(:, :, :)
     !$ACC END KERNELS
     CALL profile_psy_data1 % PreStart('dia_hsb', 'r1', 0, 0)
-    z_frc_trd_v = r1_rau0 * glob_sum('diahsb', - (emp(:, :) - rnf(:, :) + fwfisf(:, :)) * surf(:, :))
-    z_frc_trd_t = glob_sum('diahsb', sbc_tsc(:, :, jp_tem) * surf(:, :))
-    z_frc_trd_s = glob_sum('diahsb', sbc_tsc(:, :, jp_sal) * surf(:, :))
-    IF (ln_rnf) z_frc_trd_t = z_frc_trd_t + glob_sum('diahsb', rnf_tsc(:, :, jp_tem) * surf(:, :))
-    IF (ln_rnf_sal) z_frc_trd_s = z_frc_trd_s + glob_sum('diahsb', rnf_tsc(:, :, jp_sal) * surf(:, :))
-    IF (ln_isf) z_frc_trd_t = z_frc_trd_t + glob_sum('diahsb', risf_tsc(:, :, jp_tem) * surf(:, :))
-    IF (ln_traqsr) z_frc_trd_t = z_frc_trd_t + r1_rau0_rcp * glob_sum('diahsb', qsr(:, :) * surf(:, :))
-    IF (ln_trabbc) z_frc_trd_t = z_frc_trd_t + glob_sum('diahsb', qgh_trd0(:, :) * surf(:, :))
+    !$ACC KERNELS ! CDe
+    ztmp(:,:) = 0._wp
+    ztmp(:,:) = - (emp(:, :) - rnf(:, :) + fwfisf(:, :)) * surf(:, :) ! CDe
+    !$ACC END KERNELS
+   ! z_frc_trd_v = r1_rau0 * glob_sum('diahsb', - (emp(:, :) - rnf(:, :) + fwfisf(:, :)) * surf(:, :))
+    z_frc_trd_v = r1_rau0 * glob_sum('diahsb', ztmp(:,:)) ! CDe
+    !$ACC KERNELS ! CDe
+    ztmp(:,:) = 0._wp
+    ztmp(:,:) = sbc_tsc(:, :, jp_tem) * surf(:, :)
+    !$ACC END KERNELS
+    !z_frc_trd_t = glob_sum('diahsb', sbc_tsc(:, :, jp_tem) * surf(:, :))
+    z_frc_trd_t = glob_sum('diahsb', ztmp(:,:))
+    !$ACC KERNELS ! CDe
+    ztmp(:,:) = 0._wp
+    ztmp(:,:) = sbc_tsc(:, :, jp_sal) * surf(:, :)
+    !$ACC END KERNELS
+    !z_frc_trd_s = glob_sum('diahsb', sbc_tsc(:, :, jp_sal) * surf(:, :))
+    z_frc_trd_s = glob_sum('diahsb', ztmp(:,:))
+    IF (ln_rnf) THEN
+            !$ACC KERNELS
+            ztmp(:,:) = 0._wp
+            ztmp(:,:) = rnf_tsc(:, :, jp_tem) * surf(:, :)
+            !$ACC END KERNELS
+  !          z_frc_trd_t = z_frc_trd_t + glob_sum('diahsb', rnf_tsc(:, :, jp_tem) * surf(:, :))
+            z_frc_trd_t = z_frc_trd_t + glob_sum('diahsb', ztmp(:,:))
+    END IF
+    IF (ln_rnf_sal) THEN
+            !$ACC KERNELS
+            ztmp(:,:) = 0._wp
+            ztmp(:,:) = rnf_tsc(:, :, jp_sal) * surf(:, :)
+            !$ACC END KERNELS
+  !          z_frc_trd_s = z_frc_trd_s + glob_sum('diahsb', rnf_tsc(:, :, jp_sal) * surf(:, :))
+            z_frc_trd_s = z_frc_trd_s + glob_sum('diahsb', ztmp(:,:))
+    END IF
+    IF (ln_isf) THEN
+            !$ACC KERNELS
+            ztmp(:,:) = 0._wp
+            ztmp(:,:) = risf_tsc(:, :, jp_tem) * surf(:, :)
+            !$ACC END KERNELS
+  !          z_frc_trd_t = z_frc_trd_t + glob_sum('diahsb', risf_tsc(:, :, jp_tem) * surf(:, :))
+            z_frc_trd_t = z_frc_trd_t + glob_sum('diahsb', ztmp(:,:))
+    END IF
+    IF (ln_traqsr) THEN
+            !$ACC KERNELS
+            ztmp(:,:) = 0._wp
+            ztmp(:,:) = qsr(:, :) * surf(:, :)
+            !$ACC END KERNELS
+  !          z_frc_trd_t = z_frc_trd_t + r1_rau0_rcp * glob_sum('diahsb', qsr(:, :) * surf(:, :))
+            z_frc_trd_t = z_frc_trd_t + r1_rau0_rcp * glob_sum('diahsb', ztmp(:,:))
+    END IF
+    IF (ln_trabbc) THEN
+            !$ACC KERNELS
+            ztmp(:,:) = 0._wp
+            ztmp(:,:) = qgh_trd0(:, :) * surf(:, :)
+            !$ACC END KERNELS
+  !          z_frc_trd_t = z_frc_trd_t + glob_sum('diahsb', qgh_trd0(:, :) * surf(:, :))
+            z_frc_trd_t = z_frc_trd_t + glob_sum('diahsb', ztmp(:,:))
+    END IF
     CALL profile_psy_data1 % PostEnd
     IF (ln_linssh) THEN
       IF (ln_isfcav) THEN
@@ -101,7 +153,12 @@ MODULE diahsb
       frc_wn_t = frc_wn_t + z_wn_trd_t * rdt
       frc_wn_s = frc_wn_s + z_wn_trd_s * rdt
     END IF
-    zdiff_v1 = glob_sum_full('diahsb', surf(:, :) * sshn(:, :) - surf_ini(:, :) * ssh_ini(:, :))
+    !$ACC KERNELS ! CDe
+    ztmp(:,:) = 0._wp
+    ztmp(:,:) = surf(:, :) * sshn(:, :) - surf_ini(:, :) * ssh_ini(:, :)
+    !$ACC END KERNELS
+!    zdiff_v1 = glob_sum_full('diahsb', surf(:, :) * sshn(:, :) - surf_ini(:, :) * ssh_ini(:, :))
+    zdiff_v1 = glob_sum_full('diahsb', ztmp(:,:))
     CALL profile_psy_data3 % PostEnd
     IF (ln_linssh) THEN
       IF (ln_isfcav) THEN
@@ -130,7 +187,7 @@ MODULE diahsb
     END DO
     !$ACC END KERNELS
     CALL profile_psy_data5 % PreStart('dia_hsb', 'r5', 0, 0)
-    zdiff_v2 = glob_sum_full('diahsb', zwrk(:, :, :))
+    zdiff_v2 = glob_sum_full_gpu('diahsb', zwrk(:, :, :))
     CALL profile_psy_data5 % PostEnd
     !$ACC KERNELS
     DO jk = 1, jpkm1
@@ -138,7 +195,7 @@ MODULE diahsb
     END DO
     !$ACC END KERNELS
     CALL profile_psy_data6 % PreStart('dia_hsb', 'r6', 0, 0)
-    zdiff_hc = glob_sum_full('diahsb', zwrk(:, :, :))
+    zdiff_hc = glob_sum_full_gpu('diahsb', zwrk(:, :, :))
     CALL profile_psy_data6 % PostEnd
     !$ACC KERNELS
     DO jk = 1, jpkm1
@@ -146,7 +203,7 @@ MODULE diahsb
     END DO
     !$ACC END KERNELS
     CALL profile_psy_data7 % PreStart('dia_hsb', 'r7', 0, 0)
-    zdiff_sc = glob_sum_full('diahsb', zwrk(:, :, :))
+    zdiff_sc = glob_sum_full_gpu('diahsb', zwrk(:, :, :))
     zdiff_v1 = zdiff_v1 - frc_v
     IF (.NOT. ln_linssh) zdiff_v2 = zdiff_v2 - frc_v
     zdiff_hc = zdiff_hc - frc_t
@@ -164,7 +221,7 @@ MODULE diahsb
     END DO
     !$ACC END KERNELS
     CALL profile_psy_data8 % PreStart('dia_hsb', 'r8', 0, 0)
-    zvol_tot = glob_sum_full('diahsb', zwrk(:, :, :))
+    zvol_tot = glob_sum_full_gpu('diahsb', zwrk(:, :, :))
     CALL iom_put('bgfrcvol', frc_v * 1.E-9)
     CALL iom_put('bgfrctem', frc_t * rau0 * rcp * 1.E-20)
     CALL iom_put('bgfrchfx', frc_t * rau0 * rcp / (surf_tot * kt * rdt))

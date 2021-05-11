@@ -30,14 +30,14 @@ MODULE sbcblk_algo_ncar
     REAL(KIND = wp), INTENT(OUT), DIMENSION(jpi, jpj) :: q_zu
     REAL(KIND = wp), INTENT(OUT), DIMENSION(jpi, jpj) :: U_blk
     REAL(KIND = wp), INTENT(OUT), DIMENSION(jpi, jpj) :: Cdn, Chn, Cen
-    INTEGER :: j_itt
+    INTEGER :: j_itt, ji, jj ! CDe added ji & jj
     LOGICAL :: l_zt_equal_zu = .FALSE.
     INTEGER, PARAMETER :: nb_itt = 4
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: Cx_n10
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: sqrt_Cd_n10
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zeta_u
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zpsi_h_u
-    REAL(KIND = wp), DIMENSION(jpi, jpj) :: ztmp0, ztmp1, ztmp2
+    REAL(KIND = wp), DIMENSION(jpi, jpj) :: ztmp, ztmp0, ztmp1, ztmp2 ! CDe added ztmp  
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: stab
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
@@ -45,24 +45,46 @@ MODULE sbcblk_algo_ncar
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
-    CALL profile_psy_data0 % PreStart('turb_ncar', 'r0', 0, 0)
+    !CALL profile_psy_data0 % PreStart('turb_ncar', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe added
     l_zt_equal_zu = .FALSE.
     IF (ABS(zu - zt) < 0.01) l_zt_equal_zu = .TRUE.
-    U_blk = MAX(0.5, U_zu)
-    ztmp0 = t_zt * (1. + rctv0 * q_zt) - sst * (1. + rctv0 * ssq)
-    stab = 0.5 + SIGN(0.5, ztmp0)
-    CALL profile_psy_data0 % PostEnd
+    ! CDe - refactor using explicit DO loops to enable acceleration
+    !U_blk = MAX(0.5, U_zu)
+    !ztmp0 = t_zt * (1. + rctv0 * q_zt) - sst * (1. + rctv0 * ssq)
+    !stab = 0.5 + SIGN(0.5, ztmp0)
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    DO jj = 1, jpj ! jpj = 332
+       DO ji = 1, jpi ! jpi = 182
+          U_blk(ji, jj) = MAX(0.5, U_zu(ji, jj))
+       END DO
+    END DO
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    DO jj = 1, jpj ! jpj = 332
+       DO ji = 1, jpi ! jpi = 182
+          ztmp0(ji, jj) = t_zt(ji, jj) * (1. + rctv0 * q_zt(ji, jj)) - sst(ji,jj) * (1. + rctv0 * ssq(ji, jj))
+       END DO
+    END DO
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    DO jj = 1, jpj ! jpj = 332
+       DO ji = 1, jpi ! jpi = 182
+          stab(ji, jj) = 0.5 + SIGN(0.5, ztmp0(ji, jj))
+       END DO
+    END DO
+    !$ACC END KERNELS
+    !CALL profile_psy_data0 % PostEnd
     IF (ln_cdgw) THEN
       !$ACC KERNELS
       cdn_wave(:, :) = cdn_wave(:, :) + rsmall * (1._wp - tmask(:, :, 1))
       ztmp0(:, :) = cdn_wave(:, :)
       !$ACC END KERNELS
     ELSE
-      CALL profile_psy_data1 % PreStart('turb_ncar', 'r1', 0, 0)
+      CALL profile_psy_data0 % PreStart('turb_ncar', 'r0', 0, 0)
       ztmp0 = cd_neutral_10m(U_blk)
-      CALL profile_psy_data1 % PostEnd
+      CALL profile_psy_data0 % PostEnd
     END IF
-    CALL profile_psy_data2 % PreStart('turb_ncar', 'r2', 0, 0)
+!    CALL profile_psy_data2 % PreStart('turb_ncar', 'r2', 0, 0)
+    !$ACC KERNELS ! CDe added
     sqrt_Cd_n10 = SQRT(ztmp0)
     Cd = ztmp0
     Ce = 1.E-3 * (34.6 * sqrt_Cd_n10)
@@ -72,9 +94,11 @@ MODULE sbcblk_algo_ncar
     chn = ch
     t_zu = t_zt
     q_zu = q_zt
-    CALL profile_psy_data2 % PostEnd
+    !$ACC END KERNELS
+!    CALL profile_psy_data2 % PostEnd
     DO j_itt = 1, nb_itt
-      CALL profile_psy_data3 % PreStart('turb_ncar', 'r3', 0, 0)
+      !$ACC KERNELS
+!      CALL profile_psy_data3 % PreStart('turb_ncar', 'r3', 0, 0)
       ztmp1 = t_zu - sst
       ztmp2 = q_zu - ssq
       ztmp1 = Ch / stab * ztmp1
@@ -82,20 +106,37 @@ MODULE sbcblk_algo_ncar
       ztmp0 = 1. + rctv0 * q_zu
       ztmp0 = (grav * vkarmn / (t_zu * ztmp0) * (ztmp1 * ztmp0 + rctv0 * t_zu * ztmp2)) / (Cd * U_blk * U_blk)
       zeta_u = zu * ztmp0
-      zeta_u = SIGN(MIN(ABS(zeta_u), 10.0), zeta_u)
+      !zeta_u = SIGN(MIN(ABS(zeta_u), 10.0), zeta_u)
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      DO jj = 1, jpj  ! CDe added
+        DO ji = 1, jpi ! CDe added
+          zeta_u(ji, jj) = SIGN(MIN(ABS(zeta_u(ji, jj)), 10.0), zeta_u(ji, jj))
+        END DO
+      END DO
+      !$ACC END KERNELS
+      CALL profile_psy_data1 % PreStart('turb_ncar', 'r1', 0, 0)
       zpsi_h_u = psi_h(zeta_u)
+      CALL profile_psy_data1 % PostEnd
       IF (.NOT. l_zt_equal_zu) THEN
+        !$ACC KERNELS ! CDe added      
         stab = zt * ztmp0
         stab = SIGN(MIN(ABS(stab), 10.0), stab)
+        !$ACC END KERNELS
+        CALL profile_psy_data2 % PreStart('turb_ncar', 'r2', 0, 0)
         stab = LOG(zt / zu) + zpsi_h_u - psi_h(stab)
+        CALL profile_psy_data2 % PostEnd
+        !$ACC KERNELS ! CDe added
         t_zu = t_zt - ztmp1 / vkarmn * stab
         q_zu = q_zt - ztmp2 / vkarmn * stab
         q_zu = MAX(0., q_zu)
+        !$ACC END KERNELS
       END IF
+      CALL profile_psy_data3 % PreStart('turb_ncar', 'r3', 0, 0)
       ztmp2 = psi_m(zeta_u)
       CALL profile_psy_data3 % PostEnd
       IF (ln_cdgw) THEN
-        CALL profile_psy_data4 % PreStart('turb_ncar', 'r4', 0, 0)
+        !CALL profile_psy_data4 % PreStart('turb_ncar', 'r4', 0, 0)
+        !$ACC KERNELS ! CDe added
         stab = vkarmn / (vkarmn / sqrt_Cd_n10 - ztmp2)
         Cd = stab * stab
         ztmp0 = (LOG(zu / 10.) - zpsi_h_u) / vkarmn / sqrt_Cd_n10
@@ -104,16 +145,28 @@ MODULE sbcblk_algo_ncar
         Ch = Chn * ztmp2 / ztmp1
         ztmp1 = 1. + Cen * ztmp0
         Ce = Cen * ztmp2 / ztmp1
-        CALL profile_psy_data4 % PostEnd
+        !$ACC END KERNELS
+        !CALL profile_psy_data4 % PostEnd
       ELSE
-        CALL profile_psy_data5 % PreStart('turb_ncar', 'r5', 0, 0)
-        ztmp0 = MAX(0.25, U_blk / (1. + sqrt_Cd_n10 / vkarmn * (LOG(zu / 10.) - ztmp2)))
-        ztmp0 = cd_neutral_10m(ztmp0)
-        CALL profile_psy_data5 % PostEnd
+        !CALL profile_psy_data5 % PreStart('turb_ncar', 'r5', 0, 0)
+        !$ACC KERNELS ! CDe added
+        !ztmp0 = MAX(0.25, U_blk / (1. + sqrt_Cd_n10 / vkarmn * (LOG(zu / 10.) - ztmp2)))
+        ztmp = MAX(0.25, U_blk / (1. + sqrt_Cd_n10 / vkarmn * (LOG(zu / 10.) - ztmp2)))
+        !$ACC END KERNELS
+        CALL profile_psy_data4 % PreStart('turb_ncar', 'r4', 0, 0)
+        !ztmp0 = cd_neutral_10m(ztmp0)
+        ztmp0 = cd_neutral_10m(ztmp)  ! CDe
+        CALL profile_psy_data4 % PostEnd
         !$ACC KERNELS
         Cdn(:, :) = ztmp0
         sqrt_Cd_n10 = SQRT(ztmp0)
-        stab = 0.5 + SIGN(0.5, zeta_u)
+        !stab = 0.5 + SIGN(0.5, zeta_u)
+        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        DO jj = 1, jpj   ! CDe added
+          DO ji = 1, jpi  ! CDe added
+            stab(ji, jj) = 0.5 + SIGN(0.5, zeta_u(ji, jj))
+          END DO
+        END DO
         Cx_n10 = 1.E-3 * sqrt_Cd_n10 * (18. * stab + 32.7 * (1. - stab))
         Chn(:, :) = Cx_n10
         ztmp1 = 1. + sqrt_Cd_n10 / vkarmn * (LOG(zu / 10.) - ztmp2)
@@ -134,22 +187,27 @@ MODULE sbcblk_algo_ncar
   FUNCTION cd_neutral_10m(pw10)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: pw10
-    REAL(KIND = wp), DIMENSION(jpi, jpj) :: cd_neutral_10m
+    REAL(KIND = wp), DIMENSION(jpi, jpj) :: cd_neutral_10m, ztmp ! CDe
     INTEGER :: ji, jj
     REAL(KIND = wp) :: zgt33, zw, zw6
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('cd_neutral_10m', 'r0', 0, 0)
+    !TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    !CALL profile_psy_data0 % PreStart('cd_neutral_10m', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe added
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         zw = pw10(ji, jj)
         zw6 = zw * zw * zw
         zw6 = zw6 * zw6
         zgt33 = 0.5 + SIGN(0.5, (zw - 33.))
-        cd_neutral_10m(ji, jj) = 1.E-3 * ((1. - zgt33) * (2.7 / zw + 0.142 + zw / 13.09 - 3.14807E-10 * zw6) + zgt33 * 2.34)
-        cd_neutral_10m(ji, jj) = MAX(cd_neutral_10m(ji, jj), 1.E-6)
+!        cd_neutral_10m(ji, jj) = 1.E-3 * ((1. - zgt33) * (2.7 / zw + 0.142 + zw / 13.09 - 3.14807E-10 * zw6) + zgt33 * 2.34)
+!        cd_neutral_10m(ji, jj) = MAX(cd_neutral_10m(ji, jj), 1.E-6)
+        ztmp(ji, jj) = 1.E-3 * ((1. - zgt33) * (2.7 / zw + 0.142 + zw / 13.09 - 3.14807E-10 * zw6) + zgt33 * 2.34)
+        cd_neutral_10m(ji, jj) = MAX(ztmp(ji, jj), 1.E-6)
       END DO
     END DO
-    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
+    !CALL profile_psy_data0 % PostEnd
   END FUNCTION cd_neutral_10m
   FUNCTION psi_m(pzeta)
     REAL(KIND = wp), DIMENSION(jpi, jpj), INTENT(IN) :: pzeta

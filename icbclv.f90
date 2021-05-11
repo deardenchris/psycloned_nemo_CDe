@@ -21,35 +21,61 @@ MODULE icbclv
     INTEGER :: imx
     LOGICAL, SAVE :: ll_first_call = .TRUE.
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    CALL profile_psy_data0 % PreStart('icb_clv_flx', 'r0', 0, 0)
     !$ACC KERNELS
     zfact = ((1000._wp) ** 3 / (NINT(rday) * nyear_len(1))) * rn_rho_bergs
-    berg_grid % calving(:, :) = src_calving(:, :) * zfact * tmask_i(:, :) * tmask(:, :, 1)
-    berg_grid % calving_hflx(:, :) = src_calving_hflx(:, :) * tmask_i(:, :) * tmask(:, :, 1)
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    DO jj = 1, jpj ! CDe use explicit loops instead of array syntax to force parallelism with LOOP INDEPENDENT
+      DO ji = 1, jpi
+        berg_grid(1) % calving(ji, jj) = src_calving(ji, jj) * zfact * tmask_i(ji, jj) * tmask(ji, jj, 1)
+!        berg_grid % calving_hflx(ji, jj) = src_calving_hflx(ji, jj) * tmask_i(ji, jj) * tmask(ji, jj, 1)
+      END DO
+    END DO
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    DO jj = 1, jpj ! CDe use explicit loops instead of array syntax to force parallelism with LOOP INDEPENDENT
+      DO ji = 1, jpi
+!        berg_grid % calving(ji, jj) = src_calving(ji, jj) * zfact * tmask_i(ji, jj) * tmask(ji, jj, 1)
+        berg_grid(1) % calving_hflx(ji, jj) = src_calving_hflx(ji, jj) * tmask_i(ji, jj) * tmask(ji, jj, 1)
+      END DO
+    END DO
     IF (ll_first_call .AND. .NOT. l_restarted_bergs) THEN
       ll_first_call = .FALSE.
-      !$ACC loop independent collapse(2)
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = 2, jpjm1
         DO ji = 2, jpim1
-          IF (berg_grid % calving(ji, jj) /= 0._wp) berg_grid % stored_heat(ji, jj) = SUM(berg_grid % stored_ice(ji, jj, :)) * berg_grid % calving_hflx(ji, jj) * e1e2t(ji, jj) / berg_grid % calving(ji, jj)
+          IF (berg_grid(1) % calving(ji, jj) /= 0._wp) berg_grid(1) % stored_heat(ji, jj) = SUM(berg_grid(1) % stored_ice(ji, jj, :)) * &
+&berg_grid(1) % calving_hflx(ji, jj) * e1e2t(ji, jj) / berg_grid(1) % calving(ji, jj)
         END DO
       END DO
     END IF
-    !$ACC loop independent collapse(2)
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
-        imx = berg_grid % maxclass(ji, jj)
+        imx = berg_grid(1) % maxclass(ji, jj)
         zdist = SUM(rn_distribution(1 : nclasses)) / SUM(rn_distribution(1 : imx))
         DO jn = 1, imx
-          berg_grid % stored_ice(ji, jj, jn) = berg_grid % stored_ice(ji, jj, jn) + berg_dt * berg_grid % calving(ji, jj) * rn_distribution(jn) * zdist
+          berg_grid(1) % stored_ice(ji, jj, jn) = berg_grid(1) % stored_ice(ji, jj, jn) + berg_dt * berg_grid(1) % calving(ji, jj) * &
+&rn_distribution(jn) * zdist
         END DO
       END DO
     END DO
-    zcalving_used = SUM(berg_grid % calving(:, :))
-    berg_grid % tmp(:, :) = berg_dt * berg_grid % calving_hflx(:, :) * e1e2t(:, :) * tmask_i(:, :)
-    berg_grid % stored_heat(:, :) = berg_grid % stored_heat(:, :) + berg_grid % tmp(:, :)
+    zcalving_used = SUM(berg_grid(1) % calving(:, :))
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    DO jj = 1, jpj ! CDe use explicit loops to force parallelism
+      DO ji =1, jpi
+        berg_grid(1) % tmp(ji, jj) = berg_dt * berg_grid(1) % calving_hflx(ji, jj) * e1e2t(ji, jj) * tmask_i(ji, jj)
+!        berg_grid % stored_heat(ji, jj) = berg_grid % stored_heat(ji, jj) + berg_grid % tmp(ji, jj)
+      END DO
+    END DO
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    DO jj = 1, jpj ! CDe use explicit loops to force parallelism
+      DO ji =1, jpi
+!        berg_grid % tmp(ji, jj) = berg_dt * berg_grid % calving_hflx(ji, jj) * e1e2t(ji, jj) * tmask_i(ji, jj)
+        berg_grid(1) % stored_heat(ji, jj) = berg_grid(1) % stored_heat(ji, jj) + berg_grid(1) % tmp(ji, jj)
+      END DO
+    END DO
     !$ACC END KERNELS
-    CALL profile_psy_data0 % PreStart('icb_clv_flx', 'r0', 0, 0)
-    CALL icb_dia_income(kt, zcalving_used, berg_grid % tmp)
+    CALL icb_dia_income(kt, zcalving_used, berg_grid(1) % tmp)
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_clv_flx
   SUBROUTINE icb_clv(kt)
@@ -68,7 +94,7 @@ MODULE icbclv
       DO jj = nicbdj, nicbej
         DO ji = nicbdi, nicbei
           icnt = 0
-          DO WHILE (berg_grid % stored_ice(ji, jj, jn) >= rn_initial_mass(jn) * rn_mass_scaling(jn))
+          DO WHILE (berg_grid(1) % stored_ice(ji, jj, jn) >= rn_initial_mass(jn) * rn_mass_scaling(jn))
             newpt % lon = glamt(ji, jj)
             newpt % lat = gphit(ji, jj)
             newpt % xi = REAL(mig(ji), wp)
@@ -83,14 +109,14 @@ MODULE icbclv
             newpt % mass_of_bits = 0._wp
             newpt % year = nyear
             newpt % day = zday
-            newpt % heat_density = berg_grid % stored_heat(ji, jj) / berg_grid % stored_ice(ji, jj, jn)
+            newpt % heat_density = berg_grid(1) % stored_heat(ji, jj) / berg_grid(1) % stored_ice(ji, jj, jn)
             CALL icb_utl_incr
             newberg % number(:) = num_bergs(:)
             CALL icb_utl_add(newberg, newpt)
             zcalved_to_berg = rn_initial_mass(jn) * rn_mass_scaling(jn)
             zheat_to_berg = zcalved_to_berg * newpt % heat_density
-            berg_grid % stored_heat(ji, jj) = berg_grid % stored_heat(ji, jj) - zheat_to_berg
-            berg_grid % stored_ice(ji, jj, jn) = berg_grid % stored_ice(ji, jj, jn) - zcalved_to_berg
+            berg_grid(1) % stored_heat(ji, jj) = berg_grid(1) % stored_heat(ji, jj) - zheat_to_berg
+            berg_grid(1) % stored_ice(ji, jj, jn) = berg_grid(1) % stored_ice(ji, jj, jn) - zcalved_to_berg
             icnt = icnt + 1
             CALL icb_dia_calve(ji, jj, jn, zcalved_to_berg, zheat_to_berg)
           END DO
@@ -99,7 +125,7 @@ MODULE icbclv
       END DO
     END DO
     DO jn = 1, nclasses
-      CALL lbc_lnk('icbclv', berg_grid % stored_ice(:, :, jn), 'T', 1._wp)
+      CALL lbc_lnk('icbclv', berg_grid(1) % stored_ice(:, :, jn), 'T', 1._wp)
     END DO
     CALL lbc_lnk('icbclv', berg_grid % stored_heat, 'T', 1._wp)
     IF (nn_verbose_level > 0 .AND. icntmax > 1) WRITE(numicb, *) 'icb_clv: icnt=', icnt, ' on', narea

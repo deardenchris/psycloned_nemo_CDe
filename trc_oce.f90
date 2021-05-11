@@ -27,9 +27,11 @@ MODULE trc_oce
     INTEGER :: jc
     INTEGER :: irgb
     REAL(KIND = wp) :: zchl
-    REAL(KIND = wp), DIMENSION(4, 61) :: zrgb
+    !REAL(KIND = wp), DIMENSION(4, 61) :: zrgb
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zrgb
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    ALLOCATE(zrgb(4, 61)) ! CDe
     CALL profile_psy_data0 % PreStart('trc_oce_rgb', 'r0', 0, 0)
     IF (lwp) THEN
       WRITE(numout, *)

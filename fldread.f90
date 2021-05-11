@@ -1249,6 +1249,7 @@ MODULE fldread
     REAL(KIND = wp), DIMENSION(:, :, :), ALLOCATABLE :: ztmp_fly_dta
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('fld_interp', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe
     jpimin = ref_wgts(kw) % botleft(1)
     jpjmin = ref_wgts(kw) % botleft(2)
     jpiwid = ref_wgts(kw) % jpiwgt
@@ -1263,7 +1264,9 @@ MODULE fldread
     jpj1 = 2 + rec1(2) - jpjmin
     jpi2 = jpi1 + recn(1) - 1
     jpj2 = jpj1 + recn(2) - 1
+    !$ACC END KERNELS
     IF (LEN(TRIM(lsmfile)) > 0) THEN
+      !$ACC KERNELS ! CDe
       rec1_lsm(1) = MAX(rec1(1) - nn_lsm, 1)
       rec1_lsm(2) = MAX(rec1(2) - nn_lsm, 1)
       rec1_lsm(3) = 1
@@ -1281,8 +1284,11 @@ MODULE fldread
       itmpi = jpi2_lsm - jpi1_lsm + 1
       itmpj = jpj2_lsm - jpj1_lsm + 1
       itmpz = kk
+      !$ACC END KERNELS
       ALLOCATE(ztmp_fly_dta(itmpi, itmpj, itmpz))
+      !$ACC KERNELS ! CDe
       ztmp_fly_dta(:, :, :) = 0.0
+      !$ACC END KERNELS
       SELECT CASE (SIZE(ztmp_fly_dta(jpi1_lsm : jpi2_lsm, jpj1_lsm : jpj2_lsm, :), 3))
       CASE (1)
         CALL iom_get(num, jpdom_unknown, clvar, ztmp_fly_dta(jpi1_lsm : jpi2_lsm, jpj1_lsm : jpj2_lsm, 1), nrec, rec1_lsm, recn_lsm)
@@ -1290,15 +1296,19 @@ MODULE fldread
         CALL iom_get(num, jpdom_unknown, clvar, ztmp_fly_dta(jpi1_lsm : jpi2_lsm, jpj1_lsm : jpj2_lsm, :), nrec, rec1_lsm, recn_lsm)
       END SELECT
       CALL apply_seaoverland(lsmfile, ztmp_fly_dta(jpi1_lsm : jpi2_lsm, jpj1_lsm : jpj2_lsm, :), jpi1_lsm, jpi2_lsm, jpj1_lsm, jpj2_lsm, itmpi, itmpj, itmpz, rec1_lsm, recn_lsm)
+      !$ACC KERNELS ! CDe
       ii_lsm1 = (rec1(1) - rec1_lsm(1)) + 1
       ii_lsm2 = (ii_lsm1 + recn(1)) - 1
       ij_lsm1 = (rec1(2) - rec1_lsm(2)) + 1
       ij_lsm2 = (ij_lsm1 + recn(2)) - 1
       ref_wgts(kw) % fly_dta(:, :, :) = 0.0
       ref_wgts(kw) % fly_dta(jpi1 : jpi2, jpj1 : jpj2, :) = ztmp_fly_dta(ii_lsm1 : ii_lsm2, ij_lsm1 : ij_lsm2, :)
+      !$ACC END KERNELS
       DEALLOCATE(ztmp_fly_dta)
     ELSE
+      !$ACC KERNELS ! CDe      
       ref_wgts(kw) % fly_dta(:, :, :) = 0.0
+      !$ACC END KERNELS
       SELECT CASE (SIZE(ref_wgts(kw) % fly_dta(jpi1 : jpi2, jpj1 : jpj2, :), 3))
       CASE (1)
         CALL iom_get(num, jpdom_unknown, clvar, ref_wgts(kw) % fly_dta(jpi1 : jpi2, jpj1 : jpj2, 1), nrec, rec1, recn)
@@ -1306,6 +1316,7 @@ MODULE fldread
         CALL iom_get(num, jpdom_unknown, clvar, ref_wgts(kw) % fly_dta(jpi1 : jpi2, jpj1 : jpj2, :), nrec, rec1, recn)
       END SELECT
     END IF
+    !$ACC KERNELS ! CDe
     dta(:, :, :) = 0.0
     DO jk = 1, 4
       DO jn = 1, jpj
@@ -1316,6 +1327,7 @@ MODULE fldread
         END DO
       END DO
     END DO
+    !$ACC END KERNELS
     IF (ref_wgts(kw) % numwgt .EQ. 16) THEN
       IF (jpi1 == 2) THEN
         ref_wgts(kw) % fly_dta(jpi1 - 1, :, :) = ref_wgts(kw) % fly_dta(jpi1, :, :)
@@ -1356,6 +1368,7 @@ MODULE fldread
           ref_wgts(kw) % fly_dta(jpi2 + 1, jpj1 : jpj2, :) = ref_wgts(kw) % col(1, jpj1 : jpj2, :)
         END IF
       END IF
+      !$ACC KERNELS ! CDe
       DO jk = 1, 4
         DO jn = 1, jpj
           DO jm = 1, jpi
@@ -1383,6 +1396,7 @@ MODULE fldread
           END DO
         END DO
       END DO
+      !$ACC END KERNELS
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE fld_interp
