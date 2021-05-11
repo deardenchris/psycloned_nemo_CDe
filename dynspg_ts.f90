@@ -80,6 +80,7 @@ MODULE dynspg_ts
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zcpx, zcpy
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: ztwdmask, zuwdmask, zvwdmask
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zuwdav2, zvwdav2
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zun_r1, zvn_r1 ! CDe
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
@@ -99,6 +100,7 @@ MODULE dynspg_ts
     CALL profile_psy_data0 % PreStart('dyn_spg_ts', 'r0', 0, 0)
     IF (ln_wd_il) ALLOCATE(zcpx(jpi, jpj), zcpy(jpi, jpj))
     IF (ln_wd_dl) ALLOCATE(ztwdmask(jpi, jpj), zuwdmask(jpi, jpj), zvwdmask(jpi, jpj), zuwdav2(jpi, jpj), zvwdav2(jpi, jpj))
+    ALLOCATE(zun_r1(jpi, jpj), zvn_r1(jpi, jpj)) ! CDe
     zmdi = 1.E+20
     zwdramp = r_rn_wdmin1
     IF (kt == nit000 .AND. neuler == 0) THEN
@@ -1111,13 +1113,25 @@ MODULE dynspg_ts
         vn(:, :, jk) = (vn_adv(:, :) * r1_hv_n(:, :) + zvwdav2(:, :) * (vn(:, :, jk) - vn_adv(:, :) * r1_hv_n(:, :))) * vmask(:, :, jk)
       END DO
     END IF
+    !$ACC KERNELS ! CDe
+    !CDe - do the calculation on GPU before passing to iom_put - helps to reduce managed memory page faulting
+    !$ACC LOOP GANG VECTOR COLLAPSE(2)
+    DO jj = 1, jpj
+      DO ji = 1, jpi
+        zun_r1(ji, jj) = un_adv(ji, jj) * r1_hu_n(ji, jj)
+        zvn_r1(ji, jj) = vn_adv(ji, jj) * r1_hv_n(ji, jj)
+      END DO
+    END DO
     !$ACC END KERNELS
     CALL profile_psy_data15 % PreStart('dyn_spg_ts', 'r15', 0, 0)
-    CALL iom_put("ubar", un_adv(:, :) * r1_hu_n(:, :))
-    CALL iom_put("vbar", vn_adv(:, :) * r1_hv_n(:, :))
+!    CALL iom_put("ubar", un_adv(:, :) * r1_hu_n(:, :))
+!    CALL iom_put("vbar", vn_adv(:, :) * r1_hv_n(:, :))
+    CALL iom_put("ubar", zun_r1(:,:)) ! CDe
+    CALL iom_put("vbar", zvn_r1(:,:)) ! CDe
     IF (lrst_oce .AND. ln_bt_fw) CALL ts_rst(kt, 'WRITE')
     IF (ln_wd_il) DEALLOCATE(zcpx, zcpy)
     IF (ln_wd_dl) DEALLOCATE(ztwdmask, zuwdmask, zvwdmask, zuwdav2, zvwdav2)
+    DEALLOCATE(zun_r1, zvn_r1) ! CDe
     IF (ln_diatmb) THEN
       CALL iom_put("baro_u", un_b * ssumask(:, :) + zmdi * (1. - ssumask(:, :)))
       CALL iom_put("baro_v", vn_b * ssvmask(:, :) + zmdi * (1. - ssvmask(:, :)))
