@@ -1167,8 +1167,10 @@ MODULE sbccpl
         !$ACC END KERNELS
       END IF
       CALL profile_psy_data17 % PreStart('sbc_cpl_rcv', 'r17', 0, 0)
+      !$ACC KERNELS ! CDe
       IF (srcv(jpr_sflx) % laction) sfx(:, :) = frcv(jpr_sflx) % z3(:, :, 1)
       IF (srcv(jpr_fice) % laction) fr_i(:, :) = frcv(jpr_fice) % z3(:, :, 1)
+      !$ACC END KERNELS
       CALL profile_psy_data17 % PostEnd
     END IF
   END SUBROUTINE sbc_cpl_rcv
