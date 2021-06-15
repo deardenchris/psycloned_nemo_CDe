@@ -131,10 +131,12 @@ MODULE sbcrnf
     REAL(KIND = wp) :: zfact
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('sbc_rnf_div', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe
     zfact = 0.5_wp
+    !$ACC END KERNELS
     CALL profile_psy_data0 % PostEnd
     IF (ln_rnf_depth .OR. ln_rnf_depth_ini) THEN
-      IF (ln_linssh) THEN
+      IF (ln_linssh) THEN              
         DO jj = 1, jpj
           DO ji = 1, jpi
             !$ACC KERNELS

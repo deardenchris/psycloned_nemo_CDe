@@ -510,6 +510,7 @@ MODULE sbcisf
             pgt = rn_gammat0
             pgs = rn_gammas0
           ELSE
+            !$ACC KERNELS ! CDe      
             zcoef = 0.5_wp / e3w_n(ji, jj, ikt + 1)
             zdku = zcoef * (un(ji - 1, jj, ikt) + un(ji, jj, ikt) - un(ji - 1, jj, ikt + 1) - un(ji, jj, ikt + 1))
             zdkv = zcoef * (vn(ji, jj - 1, ikt) + vn(ji, jj, ikt) - vn(ji, jj - 1, ikt + 1) - vn(ji, jj, ikt + 1))
@@ -517,7 +518,9 @@ MODULE sbcisf
             zts(jp_tem) = ttbl(ji, jj)
             zts(jp_sal) = stbl(ji, jj)
             zdep = gdepw_n(ji, jj, ikt)
+            !$ACC END KERNELS
             CALL eos_rab(zts, zdep, zab)
+            !$ACC KERNELS ! CDe
             zbuofdep = grav * (zab(jp_tem) * pqhisf(ji, jj) - zab(jp_sal) * pqwisf(ji, jj))
             zhmax = gdept_n(ji, jj, mbkt(ji, jj)) - gdepw_n(ji, jj, mikt(ji, jj)) - 0.001_wp
             zmob = zustar(ji, jj) ** 3 / (vkarmn * (zbuofdep + zeps))
@@ -527,6 +530,7 @@ MODULE sbcisf
             zgturb = 1._wp / vkarmn * LOG(zustar(ji, jj) * zxsiN * zetastar * zetastar / (ABS(ff_f(ji, jj)) * zhnu)) + 1._wp / (2 * zxsiN * zetastar) - 1._wp / vkarmn
             pgt(ji, jj) = zustar(ji, jj) / (zgturb + zgmolet)
             pgs(ji, jj) = zustar(ji, jj) / (zgturb + zgmoles)
+            !$ACC END KERNELS
           END IF
         END DO
       END DO

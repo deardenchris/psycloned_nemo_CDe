@@ -382,13 +382,19 @@ MODULE domvvl
       CALL profile_psy_data6 % PreStart('dom_vvl_sf_nxt', 'r6', 0, 0)
       CALL mpp_max('domvvl', z_tmax)
       IF (lwp) WRITE(numout, *) kt, ' MAXVAL(abs(ht_0+sshb-SUM(e3t_b))) =', z_tmax
+      !$ACC KERNELS ! CDe
       z_tmax = MAXVAL(tmask(:, :, 1) * ABS(sshb(:, :)))
+      !$ACC END KERNELS
       CALL mpp_max('domvvl', z_tmax)
       IF (lwp) WRITE(numout, *) kt, ' MAXVAL(abs(sshb))) =', z_tmax
+      !$ACC KERNELS ! CDe
       z_tmax = MAXVAL(tmask(:, :, 1) * ABS(sshn(:, :)))
+      !$ACC END KERNELS
       CALL mpp_max('domvvl', z_tmax)
       IF (lwp) WRITE(numout, *) kt, ' MAXVAL(abs(sshn))) =', z_tmax
+      !$ACC KERNELS ! CDe
       z_tmax = MAXVAL(tmask(:, :, 1) * ABS(ssha(:, :)))
+      !$ACC END KERNELS
       CALL mpp_max('domvvl', z_tmax)
       IF (lwp) WRITE(numout, *) kt, ' MAXVAL(abs(ssha))) =', z_tmax
       CALL profile_psy_data6 % PostEnd
@@ -493,11 +499,13 @@ MODULE domvvl
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('dom_vvl_interpol', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe
     IF (ln_wd_il) THEN
       zlnwd = 1.0_wp
     ELSE
       zlnwd = 0.0_wp
     END IF
+    !$ACC END KERNELS
     CALL profile_psy_data0 % PostEnd
     SELECT CASE (pout)
     CASE ('U')
@@ -689,7 +697,7 @@ MODULE domvvl
           !$ACC END KERNELS
           DO ji = 1, jpi
             DO jj = 1, jpj
-              IF (ht_0(ji, jj) .LE. 0.0 .AND. NINT(ssmask(ji, jj)) .EQ. 1) THEN
+            IF (ht_0(ji, jj) .LE. 0.0 .AND. NINT(ssmask(ji, jj)) .EQ. 1) THEN ! CDe condition evaluated on CPU...not good??
                 CALL ctl_stop('dom_vvl_rst: ht_0 must be positive at potentially wet points')
               END IF
             END DO

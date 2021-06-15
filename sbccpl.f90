@@ -1019,8 +1019,10 @@ MODULE sbccpl
       ELSE
         qsr(:, :) = zqsr(:, :)
       END IF
+      !$ACC KERNELS ! CDe
       IF (srcv(jpr_sflx) % laction) sfx(:, :) = frcv(jpr_sflx) % z3(:, :, 1)
       IF (srcv(jpr_fice) % laction) fr_i(:, :) = frcv(jpr_fice) % z3(:, :, 1)
+      !$ACC END KERNELS
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE sbc_cpl_rcv
