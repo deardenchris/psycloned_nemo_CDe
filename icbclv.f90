@@ -127,7 +127,7 @@ MODULE icbclv
     DO jn = 1, nclasses
       CALL lbc_lnk('icbclv', berg_grid(1) % stored_ice(:, :, jn), 'T', 1._wp)
     END DO
-    CALL lbc_lnk('icbclv', berg_grid % stored_heat, 'T', 1._wp)
+    CALL lbc_lnk('icbclv', berg_grid(1) % stored_heat, 'T', 1._wp)
     IF (nn_verbose_level > 0 .AND. icntmax > 1) WRITE(numicb, *) 'icb_clv: icnt=', icnt, ' on', narea
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE icb_clv

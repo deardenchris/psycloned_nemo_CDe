@@ -1113,8 +1113,7 @@ MODULE dynspg_ts
         vn(:, :, jk) = (vn_adv(:, :) * r1_hv_n(:, :) + zvwdav2(:, :) * (vn(:, :, jk) - vn_adv(:, :) * r1_hv_n(:, :))) * vmask(:, :, jk)
       END DO
     END IF
-    !$ACC KERNELS ! CDe
-    !CDe - do the calculation on GPU before passing to iom_put - helps to reduce managed memory page faulting
+    !CDe - do the calculation of zun_r1 and zvn_r1 on GPU before passing to iom_put - helps to reduce managed memory page faulting
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO jj = 1, jpj
       DO ji = 1, jpi

@@ -60,10 +60,8 @@ MODULE lbclnk
           ptab(jpi, :) = ptab(2, :)
           !$ACC END KERNELS
         ELSE
-          CALL profile_psy_data1 % PreStart('lbc_lnk_2d', 'r1', 0, 0)
-          IF (.NOT. cd_nat == 'F') ptab(1, :) = zland
-          CALL profile_psy_data1 % PostEnd
           !$ACC KERNELS
+          IF (.NOT. cd_nat == 'F') ptab(1, :) = zland
           ptab(jpi, :) = zland
           !$ACC END KERNELS
         END IF
@@ -73,15 +71,13 @@ MODULE lbclnk
           ptab(:, jpj) = ptab(:, 2)
           !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
-          CALL profile_psy_data2 % PreStart('lbc_lnk_2d', 'r2', 0, 0)
+          !$ACC KERNELS      
           IF (.NOT. cd_nat == 'F') ptab(:, 1) = zland
+          !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat, psgn)
-          CALL profile_psy_data2 % PostEnd
         ELSE
-          CALL profile_psy_data3 % PreStart('lbc_lnk_2d', 'r3', 0, 0)
-          IF (.NOT. cd_nat == 'F') ptab(:, 1) = zland
-          CALL profile_psy_data3 % PostEnd
           !$ACC KERNELS
+          IF (.NOT. cd_nat == 'F') ptab(:, 1) = zland
           ptab(:, jpj) = zland
           !$ACC END KERNELS
         END IF
@@ -192,10 +188,8 @@ MODULE lbclnk
           ptab(jpi, :, :) = ptab(2, :, :)
           !$ACC END KERNELS
         ELSE
-          CALL profile_psy_data1 % PreStart('lbc_lnk_3d', 'r1', 0, 0)
-          IF (.NOT. cd_nat == 'F') ptab(1, :, :) = zland
-          CALL profile_psy_data1 % PostEnd
           !$ACC KERNELS
+          IF (.NOT. cd_nat == 'F') ptab(1, :, :) = zland
           ptab(jpi, :, :) = zland
           !$ACC END KERNELS
         END IF
@@ -205,15 +199,13 @@ MODULE lbclnk
           ptab(:, jpj, :) = ptab(:, 2, :)
           !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
-          CALL profile_psy_data2 % PreStart('lbc_lnk_3d', 'r2', 0, 0)
+          !$ACC KERNELS 
           IF (.NOT. cd_nat == 'F') ptab(:, 1, :) = zland
+          !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat, psgn)
-          CALL profile_psy_data2 % PostEnd
         ELSE
-          CALL profile_psy_data3 % PreStart('lbc_lnk_3d', 'r3', 0, 0)
-          IF (.NOT. cd_nat == 'F') ptab(:, 1, :) = zland
-          CALL profile_psy_data3 % PostEnd
           !$ACC KERNELS
+          IF (.NOT. cd_nat == 'F') ptab(:, 1, :) = zland
           ptab(:, jpj, :) = zland
           !$ACC END KERNELS
         END IF
@@ -335,10 +327,8 @@ MODULE lbclnk
           ptab(jpi, :, :, :) = ptab(2, :, :, :)
           !$ACC END KERNELS
         ELSE
-          CALL profile_psy_data1 % PreStart('lbc_lnk_4d', 'r1', 0, 0)
-          IF (.NOT. cd_nat == 'F') ptab(1, :, :, :) = zland
-          CALL profile_psy_data1 % PostEnd
           !$ACC KERNELS
+          IF (.NOT. cd_nat == 'F') ptab(1, :, :, :) = zland
           ptab(jpi, :, :, :) = zland
           !$ACC END KERNELS
         END IF
@@ -348,15 +338,13 @@ MODULE lbclnk
           ptab(:, jpj, :, :) = ptab(:, 2, :, :)
           !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
-          CALL profile_psy_data2 % PreStart('lbc_lnk_4d', 'r2', 0, 0)
-          IF (.NOT. cd_nat == 'F') ptab(:, 1, :, :) = zland
-          CALL lbc_nfd(ptab, cd_nat, psgn)
-          CALL profile_psy_data2 % PostEnd
-        ELSE
-          CALL profile_psy_data3 % PreStart('lbc_lnk_4d', 'r3', 0, 0)
-          IF (.NOT. cd_nat == 'F') ptab(:, 1, :, :) = zland
-          CALL profile_psy_data3 % PostEnd
           !$ACC KERNELS
+          IF (.NOT. cd_nat == 'F') ptab(:, 1, :, :) = zland
+          !$ACC END KERNELS
+          CALL lbc_nfd(ptab, cd_nat, psgn)
+        ELSE
+          !$ACC KERNELS
+          IF (.NOT. cd_nat == 'F') ptab(:, 1, :, :) = zland
           ptab(:, jpj, :, :) = zland
           !$ACC END KERNELS
         END IF
@@ -399,11 +387,8 @@ MODULE lbclnk
           ptab(jf) % pt4d(jpi, :, :, :) = ptab(jf) % pt4d(2, :, :, :)
           !$ACC END KERNELS
         ELSE
-          CALL profile_psy_data1 % PreStart('lbc_lnk_4d_ptr', 'r1', 0, 0)
           !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(1, :, :, :) = zland
-          CALL profile_psy_data1 % PostEnd
-          !$ACC KERNELS
           ptab(jf) % pt4d(jpi, :, :, :) = zland
           !$ACC END KERNELS
         END IF
@@ -413,18 +398,13 @@ MODULE lbclnk
           ptab(jf) % pt4d(:, jpj, :, :) = ptab(jf) % pt4d(:, 2, :, :)
           !$ACC END KERNELS
         ELSE IF (ll_nfd) THEN
-          CALL profile_psy_data2 % PreStart('lbc_lnk_4d_ptr', 'r2', 0, 0)
           !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(:, 1, :, :) = zland
           !$ACC END KERNELS
           CALL lbc_nfd(ptab, cd_nat(:), psgn(:), ipf)
-          CALL profile_psy_data2 % PostEnd
         ELSE
-          CALL profile_psy_data3 % PreStart('lbc_lnk_4d_ptr', 'r3', 0, 0)
           !$ACC KERNELS      
           IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt4d(:, 1, :, :) = zland
-          CALL profile_psy_data3 % PostEnd
-          !$ACC KERNELS
           ptab(jf) % pt4d(:, jpj, :, :) = zland
           !$ACC END KERNELS
         END IF

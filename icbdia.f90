@@ -140,8 +140,8 @@ MODULE icbdia
     berg_melt_net = 0._wp
     bits_melt_net = 0._wp
     bits_src_net = 0._wp
-    floating_mass_start = icb_utl_mass(first_berg)
     !$ACC END KERNELS
+    floating_mass_start = icb_utl_mass(first_berg)
     bergs_mass_start = icb_utl_mass(first_berg, justbergs = .TRUE.)
     bits_mass_start = icb_utl_mass(first_berg, justbits = .TRUE.)
     IF (lk_mpp) THEN
@@ -173,7 +173,7 @@ MODULE icbdia
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     IF (.NOT. ln_bergdia) RETURN
-    CALL profile_psy_data0 % PreStart('icb_dia', 'r0', 0, 0)
+    !CALL profile_psy_data0 % PreStart('icb_dia', 'r0', 0, 0)
     !$ACC KERNELS ! CDe
     zunused_calving = SUM(berg_grid(1) % calving(:, :))
     ztmpsum = SUM(berg_grid(1) % floating_melt(:, :) * e1e2t(:, :) * tmask_i(:, :))
@@ -190,7 +190,7 @@ MODULE icbdia
     ztmpsum = SUM(berg_grid(1) % calving_hflx(:, :) * e1e2t(:, :) * tmask_i(:, :))
     calving_out_heat_net = calving_out_heat_net + ztmpsum * berg_dt
     !$ACC END KERNELS
-    CALL profile_psy_data0 % PostEnd
+    !CALL profile_psy_data0 % PostEnd
     IF (ld_budge) THEN
       CALL profile_psy_data1 % PreStart('icb_dia', 'r1', 0, 0)
       stored_end = SUM(berg_grid(1) % stored_ice(:, :, :))

@@ -171,12 +171,9 @@ MODULE dommsk
     END IF
     !$ACC KERNELS
     IF (jperio == 5 .OR. jperio == 6) THEN
-      !$ACC KERNELS      
       tpol(1 : jpiglo) = 0._wp
       fpol(jpiglo / 2 + 1 : jpiglo) = 0._wp
-      !$ACC END KERNELS
     END IF
-    !$ACC KERNELS
     tmask_i(:, :) = ssmask(:, :) * tmask_h(:, :)
     !$ACC END KERNELS
     IF (rn_shlat /= 0 .OR. ln_shlat2d) THEN

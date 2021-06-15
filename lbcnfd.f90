@@ -153,7 +153,7 @@ MODULE lbcnfd
       ipj = 4
     END SELECT
     ipjm1 = ipj - 1
-    CALL profile_psy_data0 % PostEnd
+!    CALL profile_psy_data0 % PostEnd
     DO jf = 1, ipf
       SELECT CASE (npolj)
       CASE (3, 4)
@@ -259,7 +259,6 @@ MODULE lbcnfd
         END SELECT
       END SELECT
     END DO
-!    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_nfd_2d_ptr
   SUBROUTINE lbc_nfd_2d_ext(ptab, cd_nat, psgn, kextj)
     INTEGER, INTENT(IN) :: kextj

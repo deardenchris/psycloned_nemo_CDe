@@ -32,6 +32,7 @@ MODULE stpctl
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     ALLOCATE(zmax(9)) ! CDe
     CALL profile_psy_data0 % PreStart('stp_ctl', 'r0', 0, 0)
     ll_wrtstp = (MOD(kt, sn_cfctl % ptimincr) == 0) .OR. (kt == nitend)
@@ -63,8 +64,8 @@ MODULE stpctl
           istatus = NF90_DEF_VAR(idrun, 'Cu_max', NF90_DOUBLE, (/idtime/), idc1)
         END IF
         CALL profile_psy_data2 % PostEnd
-        istatus = NF90_ENDDEF(idrun)
         !$ACC KERNELS
+        istatus = NF90_ENDDEF(idrun)
         zmax(8 : 9) = 0._wp
         !$ACC END KERNELS
       END IF
@@ -151,6 +152,6 @@ MODULE stpctl
 9300 FORMAT(' kt=', I8, '   S     min: ', 1P, G11.4, ', at  i j k: ', 3I5)
 9400 FORMAT(' kt=', I8, '   S     max: ', 1P, G11.4, ', at  i j k: ', 3I5)
 9500 FORMAT(' it :', I8, '    |ssh|_max: ', D23.16, ' |U|_max: ', D23.16, ' S_min: ', D23.16, ' S_max: ', D23.16)
-    CALL profile_psy_data3 % PostEnd
+    CALL profile_psy_data4 % PostEnd
   END SUBROUTINE stp_ctl
 END MODULE stpctl
