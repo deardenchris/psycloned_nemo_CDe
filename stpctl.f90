@@ -68,8 +68,8 @@ MODULE stpctl
           istatus = NF90_DEF_VAR(idrun, 'Cu_max', NF90_DOUBLE, (/idtime/), idc1)
         END IF
         CALL profile_psy_data2 % PostEnd
-        !$ACC KERNELS
         istatus = NF90_ENDDEF(idrun)
+        !$ACC KERNELS
         zmax(8 : 9) = 0._wp
         !$ACC END KERNELS
       END IF
