@@ -38,9 +38,6 @@ MODULE lbclnk
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('lbc_lnk_2d', 'r0', 0, 0)
     ipk = 1
     ipl = 1
@@ -97,8 +94,8 @@ MODULE lbclnk
     INTEGER :: ipi, ipj, ipk, ipl, ipf
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
-    !TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    !CALL profile_psy_data0 % PreStart('lbc_lnk_2d_ptr', 'r0', 0, 0)
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    CALL profile_psy_data0 % PreStart('lbc_lnk_2d_ptr', 'r0', 0, 0)
     ipk = 1
     ipl = 1
     ipf = kfld
@@ -108,6 +105,7 @@ MODULE lbclnk
     ELSE
       zland = 0._wp
     END IF
+    CALL profile_psy_data0 % PostEnd
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
@@ -151,7 +149,6 @@ MODULE lbclnk
         END IF
       END DO
     END IF
-    !CALL profile_psy_data0 % PostEnd
   END SUBROUTINE lbc_lnk_2d_ptr
   SUBROUTINE lbc_lnk_3d(cdname, ptab, cd_nat, psgn, cd_mpp, pval)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -166,9 +163,6 @@ MODULE lbclnk
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('lbc_lnk_3d', 'r0', 0, 0)
     ipk = SIZE(ptab, 3)
     ipl = 1
@@ -236,6 +230,7 @@ MODULE lbclnk
     ELSE
       zland = 0._wp
     END IF
+    CALL profile_psy_data0 % PostEnd
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
@@ -305,9 +300,6 @@ MODULE lbclnk
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('lbc_lnk_4d', 'r0', 0, 0)
     ipk = SIZE(ptab, 3)
     ipl = SIZE(ptab, 4)
@@ -365,9 +357,6 @@ MODULE lbclnk
     REAL(KIND = wp) :: zland
     LOGICAL :: ll_nfd
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     CALL profile_psy_data0 % PreStart('lbc_lnk_4d_ptr', 'r0', 0, 0)
     ipk = SIZE(ptab(1) % pt4d, 3)
     ipl = SIZE(ptab(1) % pt4d, 4)
