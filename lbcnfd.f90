@@ -26,7 +26,7 @@ MODULE lbcnfd
   PUBLIC :: lbc_nfd_nogather
   INTEGER, PUBLIC, PARAMETER :: jpmaxngh = 3
   INTEGER, PUBLIC :: nsndto, nfsloop, nfeloop
-  INTEGER, PUBLIC, DIMENSION(jpmaxngh) :: isendto
+  INTEGER, PUBLIC, DIMENSION(jpmaxngh) :: isendto ! CDe make allocatable, or retain on GPU via an explicit data region??
   CONTAINS
   SUBROUTINE lbc_nfd_2d(ptab, cd_nat, psgn)
     REAL(KIND = wp), INTENT(INOUT) :: ptab(:, :)
@@ -1099,16 +1099,21 @@ MODULE lbcnfd
             endloop = nlci - 1
           END IF
           CALL profile_psy_data10 % PostEnd
+          !$ACC KERNELS ! CDe
+          !$ACC LOOP SEQ ! CDe      
           DO jl = 1, ipl
-            !$ACC KERNELS
+            ! !$ACC KERNELS
+            !$ACC LOOP SEQ ! CDe
             DO jk = 1, ipk
+              !$ACC LOOP GANG VECTOR ! CDe
               DO ji = 1, endloop
                 iju = jpiglo - ji - nimpp - nfiimpp(isendto(1), jpnj) + 2
                 ptab(ji, nlcj) = psgn * ptab2(iju, ijpj, jk, jl)
               END DO
             END DO
-            !$ACC END KERNELS
+            ! !$ACC END KERNELS
           END DO
+          !$ACC END KERNELS ! CDe
           IF ((nimpp + nlci - 1) .EQ. jpiglo) THEN
             DO jl = 1, ipl
               !$ACC KERNELS

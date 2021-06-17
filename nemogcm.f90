@@ -50,6 +50,7 @@ MODULE nemogcm
     CALL nemo_init
     CALL mpp_max('nemogcm', nstop)
     IF (lwp) WRITE(numout, cform_aaa)
+    !$ACC DATA COPYIN(isendto) ! CDe
     istp = nit000
     IF (.NOT. ln_diurnal_only) THEN
       DO WHILE (istp <= nitend .AND. nstop == 0)
@@ -87,6 +88,7 @@ MODULE nemogcm
         STOP 999
       END IF
     END IF
+    !$ACC END DATA
   END SUBROUTINE nemo_gcm
   SUBROUTINE nemo_init
     INTEGER :: ji
