@@ -113,12 +113,12 @@ MODULE iom_nf90
     END IF
     CALL profile_psy_data0 % PostEnd
     IF (istop == nstop) THEN
-      !$ACC KERNELS
+      ! !$ACC KERNELS
       kiomid = 0
       DO jl = jpmax_files, 1, - 1
         IF (iom_file(jl) % nfid == 0) kiomid = jl
       END DO
-      !$ACC END KERNELS
+      ! !$ACC END KERNELS
       CALL profile_psy_data1 % PreStart('iom_nf90_open', 'r1', 0, 0)
       iom_file(kiomid) % name = TRIM(cdname)
       iom_file(kiomid) % nfid = if90id
@@ -185,10 +185,10 @@ MODULE iom_nf90
       iom_file(kiomid) % ndims(kiv) = i_nvd
       CALL iom_nf90_check(NF90_Inquire_Variable(if90id, ivarid, dimids = idimid(1 : i_nvd)), clinfo)
       CALL profile_psy_data1 % PostEnd
-      !$ACC KERNELS
+      ! !$ACC KERNELS
       iom_file(kiomid) % luld(kiv) = .FALSE.
       iom_file(kiomid) % dimsz(:, kiv) = 0
-      !$ACC END KERNELS
+      ! !$ACC END KERNELS
       CALL profile_psy_data2 % PreStart('iom_nf90_varid', 'r2', 0, 0)
       DO ji = 1, i_nvd
         CALL iom_nf90_check(NF90_Inquire_Dimension(if90id, idimid(ji), len = iom_file(kiomid) % dimsz(ji, kiv)), clinfo)
@@ -209,9 +209,9 @@ MODULE iom_nf90
       CALL profile_psy_data2 % PostEnd
       IF (PRESENT(kdimsz)) THEN
         IF (i_nvd <= SIZE(kdimsz)) THEN
-          !$ACC KERNELS
+          ! !$ACC KERNELS
           kdimsz(1 : i_nvd) = iom_file(kiomid) % dimsz(1 : i_nvd, kiv)
-          !$ACC END KERNELS
+          ! !$ACC END KERNELS
         ELSE
           CALL profile_psy_data3 % PreStart('iom_nf90_varid', 'r3', 0, 0)
           WRITE(ctmp1, *) i_nvd, SIZE(kdimsz)
