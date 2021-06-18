@@ -33,10 +33,14 @@ MODULE icbstp
     nktberg = kt
     IF (nn_test_icebergs < 0 .OR. ln_use_calving) THEN
       CALL fld_read(kt, 1, sf_icb)
+      !$ACC KERNELS
       src_calving(:, :) = sf_icb(1) % fnow(:, :, 1)
       src_calving_hflx(:, :) = 0._wp
+      !$ACC END KERNELS
     END IF
-    berg_grid % floating_melt(:, :) = 0._wp
+    !$ACC KERNELS ! CDe
+    berg_grid(1) % floating_melt(:, :) = 0._wp
+    !$ACC END KERNELS
     CALL icb_dia_step
     ll_verbose = .FALSE.
     IF (nn_verbose_write > 0 .AND. MOD(kt - 1, nn_verbose_write) == 0) ll_verbose = (nn_verbose_level >= 0)
@@ -55,9 +59,9 @@ MODULE icbstp
     ll_sample_traj = .FALSE.
     IF (nn_sample_rate > 0 .AND. MOD(kt - 1, nn_sample_rate) == 0) ll_sample_traj = .TRUE.
     IF (ll_sample_traj .AND. ASSOCIATED(first_berg)) CALL icb_trj_write(kt)
-    CALL iom_put("calving", berg_grid % calving(:, :))
-    CALL iom_put("berg_floating_melt", berg_grid % floating_melt(:, :))
-    CALL iom_put("berg_stored_ice", berg_grid % stored_ice(:, :, :))
+    CALL iom_put("calving", berg_grid(1) % calving(:, :))
+    CALL iom_put("berg_floating_melt", berg_grid(1) % floating_melt(:, :))
+    CALL iom_put("berg_stored_ice", berg_grid(1) % stored_ice(:, :, :))
     CALL icb_dia_put
     IF (nn_verbose_level >= 2) CALL icb_utl_print('icb_stp, status', kt)
     ll_budget = .FALSE.

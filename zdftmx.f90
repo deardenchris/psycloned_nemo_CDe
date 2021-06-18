@@ -337,9 +337,9 @@ MODULE zdftmx
       !$ACC END KERNELS
       WRITE(numout, FMT = *) '          2 Total power consumption of the tidally driven part of Kz : ztpc = ', ztpc * 1.E-12, 'TW'
       DO jk = 1, jpk
+        !$ACC KERNELS
         ze_z = SUM(e1t(:, :) * e2t(:, :) * zav_tide(:, :, jk) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, &
 &:, jk) * tmask_i(:, :)))
-        !$ACC KERNELS
         ztpc = 1.E50
         !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = 1, jpj
@@ -362,17 +362,17 @@ MODULE zdftmx
             zkz(ji, jj) = az_tmx(ji, jj, jk) / MAX(rn_n2min, rn2(ji, jj, jk))
           END DO
         END DO
-        !$ACC END KERNELS
         ze_z = SUM(e1t(:, :) * e2t(:, :) * zkz(:, :) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * &
 &tmask_i(:, :)))
+        !$ACC END KERNELS
         WRITE(numout, FMT = *) '                jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s'
       END DO
       DO jk = 1, jpk
         !$ACC KERNELS
         zkz(:, :) = az_tmx(:, :, jk) / rn_n2min
-        !$ACC END KERNELS
         ze_z = SUM(e1t(:, :) * e2t(:, :) * zkz(:, :) * tmask_i(:, :)) / MAX(1.E-20, SUM(e1t(:, :) * e2t(:, :) * wmask(:, :, jk) * &
 &tmask_i(:, :)))
+        !$ACC END KERNELS
         WRITE(numout, FMT = *)
         WRITE(numout, FMT = *) '          N2 min - jk= ', jk, '   ', ze_z * 1.E4, ' cm2/s min= ', MINVAL(zkz) * 1.E4, 'max= ', &
 &MAXVAL(zkz) * 1.E4, ' cm2/s'

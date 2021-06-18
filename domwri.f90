@@ -182,9 +182,9 @@ MODULE domwri
     zrxmax = 0._wp
     zr1(:) = 0._wp
     !$ACC END KERNELS
-    CALL profile_psy_data0 % PreStart('dom_stiff', 'r0', 0, 0)
     DO ji = 2, jpim1
       DO jj = 2, jpjm1
+        !$ACC KERNELS
         DO jk = 1, jpkm1
           zr1(1) = ABS((gdepw_0(ji, jj, jk) - gdepw_0(ji - 1, jj, jk) + gdepw_0(ji, jj, jk + 1) - gdepw_0(ji - 1, jj, jk + 1)) / &
 &(gdepw_0(ji, jj, jk) + gdepw_0(ji - 1, jj, jk) - gdepw_0(ji, jj, jk + 1) - gdepw_0(ji - 1, jj, jk + 1) + rsmall)) * umask(ji - 1, &
@@ -201,8 +201,10 @@ MODULE domwri
           zrxmax = MAXVAL(zr1(1 : 4))
           zx1(ji, jj) = MAX(zx1(ji, jj), zrxmax)
         END DO
+        !$ACC END KERNELS
       END DO
     END DO
+    CALL profile_psy_data0 % PreStart('dom_stiff', 'r0', 0, 0)
     CALL lbc_lnk('domwri', zx1, 'T', 1.)
     IF (PRESENT(px1)) px1 = zx1
     zrxmax = MAXVAL(zx1)

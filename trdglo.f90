@@ -28,7 +28,6 @@ MODULE trdglo
   REAL(KIND = wp), DIMENSION(jptot_dyn) :: hke
   CONTAINS
   SUBROUTINE trd_glo(ptrdx, ptrdy, ktrd, ctype, kt)
-    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(INOUT) :: ptrdx
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(INOUT) :: ptrdy
     INTEGER, INTENT(IN) :: ktrd
@@ -38,7 +37,6 @@ MODULE trdglo
     INTEGER :: ikbu, ikbv
     REAL(KIND = wp) :: zvm, zvt, zvs, z1_2rau0
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: ztswu, ztswv, z2dx, z2dy
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     IF (MOD(kt, nn_trd) == 0 .OR. kt == nit000 .OR. kt == nitend) THEN
       SELECT CASE (ctype)
       CASE ('TRA')
@@ -57,15 +55,13 @@ MODULE trdglo
             END DO
           END DO
         END DO
-        !$ACC END KERNELS
-        CALL profile_psy_data0 % PreStart('trd_glo', 'r0', 0, 0)
         IF (ln_linssh .AND. ktrd == jptra_zad) THEN
           tmo(jptra_sad) = SUM(wn(:, :, 1) * tsn(:, :, 1, jp_tem) * e1e2t(:, :) * tmask_i(:, :))
           smo(jptra_sad) = SUM(wn(:, :, 1) * tsn(:, :, 1, jp_sal) * e1e2t(:, :) * tmask_i(:, :))
           t2(jptra_sad) = SUM(wn(:, :, 1) * tsn(:, :, 1, jp_tem) * tsn(:, :, 1, jp_tem) * e1e2t(:, :) * tmask_i(:, :))
           s2(jptra_sad) = SUM(wn(:, :, 1) * tsn(:, :, 1, jp_sal) * tsn(:, :, 1, jp_sal) * e1e2t(:, :) * tmask_i(:, :))
         END IF
-        CALL profile_psy_data0 % PostEnd
+        !$ACC END KERNELS
         IF (ktrd == jptra_atf) THEN
           CALL glo_tra_wri(kt)
           !$ACC KERNELS
@@ -151,12 +147,12 @@ MODULE trdglo
         END DO
       END DO
       peke = 0._wp
-      !$ACC END KERNELS
-      CALL profile_psy_data0 % PreStart('glo_dyn_wri', 'r0', 0, 0)
       DO jk = 1, jpkm1
         peke = peke + SUM(zkepe(:, :, jk) * gdept_n(:, :, jk) * e1e2t(:, :) * e3t_n(:, :, jk))
       END DO
       peke = grav * peke
+      !$ACC END KERNELS
+      CALL profile_psy_data0 % PreStart('glo_dyn_wri', 'r0', 0, 0)
       IF (lk_mpp) THEN
         CALL mpp_sum('trdglo', peke)
         CALL mpp_sum('trdglo', umo, jptot_dyn)
@@ -371,10 +367,12 @@ MODULE trdglo
       WRITE(numout, FMT = *) 'trd_glo_init : integral constraints properties trends'
       WRITE(numout, FMT = *) '~~~~~~~~~~~~~'
     END IF
+    !$ACC KERNELS
     tvolt = 0._wp
     DO jk = 1, jpkm1
       tvolt = tvolt + SUM(e1e2t(:, :) * e3t_n(:, :, jk) * tmask(:, :, jk) * tmask_i(:, :))
     END DO
+    !$ACC END KERNELS
     CALL mpp_sum('trdglo', tvolt)
     IF (lwp) WRITE(numout, FMT = *) '                total ocean volume at T-point   tvolt = ', tvolt
     !$ACC KERNELS

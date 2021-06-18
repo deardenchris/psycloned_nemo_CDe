@@ -497,6 +497,7 @@ MODULE eosbn2
     CALL profile_psy_data0 % PreStart('rab_0d', 'r0', 0, 0)
     SELECT CASE (neos)
     CASE (np_teos10, np_eos80)
+      !$ACC KERNELS ! CDe      
       zh = pdep * r1_Z0
       zt = pts(jp_tem) * r1_T0
       zs = SQRT(ABS(pts(jp_sal) + rdeltaS) * r1_S0)
@@ -518,7 +519,9 @@ MODULE eosbn2
 &BET400) * zs + BET300) * zs + BET200) * zs + BET100) * zs + BET000
       zn = ((zn3 * zh + zn2) * zh + zn1) * zh + zn0
       pab(jp_sal) = zn / zs * r1_rau0
+      !$ACC END KERNELS
     CASE (np_seos)
+      !$ACC KERNELS ! CDe      
       zt = pts(jp_tem) - 10._wp
       zs = pts(jp_sal) - 35._wp
       zh = pdep
@@ -526,6 +529,7 @@ MODULE eosbn2
       pab(jp_tem) = zn * r1_rau0
       zn = rn_b0 * (1._wp - rn_lambda2 * zs - rn_mu2 * zh) - rn_nu * zt
       pab(jp_sal) = zn * r1_rau0
+      !$ACC END KERNELS
     CASE DEFAULT
       WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos
       CALL ctl_stop('rab_0d:', ctmp1)
@@ -625,7 +629,9 @@ MODULE eosbn2
       ptf(:, :) = (- 0.0575_wp + 1.710523E-3_wp * SQRT(psal(:, :)) - 2.154996E-4_wp * psal(:, :)) * psal(:, :)
       !$ACC END KERNELS
       CALL profile_psy_data1 % PreStart('eos_fzp_2d', 'r1', 0, 0)
+      !$ACC KERNELS ! CDe
       IF (PRESENT(pdep)) ptf(:, :) = ptf(:, :) - 7.53E-4 * pdep(:, :)
+      !$ACC END KERNELS
       CALL profile_psy_data1 % PostEnd
     CASE DEFAULT
       CALL profile_psy_data2 % PreStart('eos_fzp_2d', 'r2', 0, 0)
@@ -1149,10 +1155,12 @@ MODULE eosbn2
       WRITE(ctmp1, FMT = *) '          bad flag value for neos = ', neos, '. You should never see this error'
       CALL ctl_stop(ctmp1)
     END SELECT
+    !$ACC KERNELS ! CDe
     rau0_rcp = rau0 * rcp
     r1_rau0 = 1._wp / rau0
     r1_rcp = 1._wp / rcp
     r1_rau0_rcp = 1._wp / rau0_rcp
+    !$ACC END KERNELS
     IF (lwp) THEN
       IF (l_useCT) THEN
         WRITE(numout, FMT = *)

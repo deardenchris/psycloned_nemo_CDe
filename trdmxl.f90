@@ -148,7 +148,6 @@ MODULE trdmxl
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     !$ACC KERNELS
     ztmltrd2(:, :, :) = 0.E0
     zsmltrd2(:, :, :) = 0.E0
@@ -237,11 +236,7 @@ MODULE trdmxl
       zsmltot2(:, :) = 0.E0
       ztmlres2(:, :) = 0.E0
       zsmlres2(:, :) = 0.E0
-      !$ACC END KERNELS
-      CALL profile_psy_data2 % PreStart('trd_mxl', 'r2', 0, 0)
       zfn = REAL(nmoymltrd, wp)
-      CALL profile_psy_data2 % PostEnd
-      !$ACC KERNELS
       zfn2 = zfn * zfn
       ztmltot(:, :) = (tml(:, :) - tmlbn(:, :) + tmlb(:, :) - tmlbb(:, :)) / p2dt
       zsmltot(:, :) = (sml(:, :) - smlbn(:, :) + smlb(:, :) - smlbb(:, :)) / p2dt
@@ -277,10 +272,10 @@ MODULE trdmxl
       ztmlatf2(:, :) = ztmltrd2(:, :, jpmxl_atf) - tmltrd_sum(:, :, jpmxl_atf) + tmltrd_atf_sumb(:, :)
       zsmlatf2(:, :) = zsmltrd2(:, :, jpmxl_atf) - smltrd_sum(:, :, jpmxl_atf) + smltrd_atf_sumb(:, :)
       !$ACC END KERNELS
-      CALL profile_psy_data3 % PreStart('trd_mxl', 'r3', 0, 0)
+      CALL profile_psy_data2 % PreStart('trd_mxl', 'r2', 0, 0)
       CALL lbc_lnk_multi('trdmxl', ztmltot2, 'T', 1., zsmltot2, 'T', 1., ztmlres2, 'T', 1., zsmlres2, 'T', 1.)
       CALL lbc_lnk_multi('trdmxl', ztmltrd2(:, :, :), 'T', 1., zsmltrd2(:, :, :), 'T', 1.)
-      CALL profile_psy_data3 % PostEnd
+      CALL profile_psy_data2 % PostEnd
       !$ACC KERNELS
       tmlbb(:, :) = tmlb(:, :)
       smlbb(:, :) = smlb(:, :)
@@ -296,7 +291,7 @@ MODULE trdmxl
       smltrd_atf_sumb(:, :) = smltrd_sum(:, :, jpmxl_atf)
       hmxlbn(:, :) = hmxl(:, :)
       !$ACC END KERNELS
-      CALL profile_psy_data4 % PreStart('trd_mxl', 'r4', 0, 0)
+      CALL profile_psy_data3 % PreStart('trd_mxl', 'r3', 0, 0)
       IF (ln_ctl) THEN
         IF (ln_trdmxl_instant) THEN
           CALL prt_ctl(tab2d_1 = tmlbb, clinfo1 = ' tmlbb   -   : ', mask1 = tmask)
@@ -310,7 +305,7 @@ MODULE trdmxl
           CALL prt_ctl(tab3d_1 = tmltrd_csum_ub, clinfo1 = ' tmltrd_csum_ub  -  : ', mask1 = tmask, kdim = 1)
         END IF
       END IF
-      CALL profile_psy_data4 % PostEnd
+      CALL profile_psy_data3 % PostEnd
       !$ACC KERNELS
       ztmltot(:, :) = ztmltot(:, :) * rn_ucf / zfn
       zsmltot(:, :) = zsmltot(:, :) * rn_ucf / zfn
@@ -330,7 +325,7 @@ MODULE trdmxl
       zsmlres2(:, :) = zsmlres2(:, :) * rn_ucf / zfn2
       hmxl_sum(:, :) = hmxl_sum(:, :) / (2 * zfn)
       !$ACC END KERNELS
-      CALL profile_psy_data5 % PreStart('trd_mxl', 'r5', 0, 0)
+      CALL profile_psy_data4 % PreStart('trd_mxl', 'r4', 0, 0)
       IF (lldebug) THEN
         WRITE(numout, FMT = *)
         WRITE(numout, FMT = *) 'trd_mxl : write trends in the Mixed Layer for debugging process:'
@@ -361,9 +356,9 @@ MODULE trdmxl
         WRITE(numout, FMT = *) '          TRA zsmlres (jpi/2,jpj/2) : ', zsmlres(jpi / 2, jpj / 2)
         WRITE(numout, FMT = *) '          TRA zsmlres2(jpi/2,jpj/2) : ', zsmlres2(jpi / 2, jpj / 2)
       END IF
-      CALL profile_psy_data5 % PostEnd
+      CALL profile_psy_data4 % PostEnd
     END IF MODULO_NTRD
-    CALL profile_psy_data6 % PreStart('trd_mxl', 'r6', 0, 0)
+    CALL profile_psy_data5 % PreStart('trd_mxl', 'r5', 0, 0)
     IF (ln_trdmxl_instant) THEN
       CALL iom_put("mxl_depth", hmxl(:, :))
       CALL iom_put("tml", tml(:, :))
@@ -397,7 +392,7 @@ MODULE trdmxl
       END DO
       CALL iom_put(TRIM("sml" // ctrd(jpmxl_atf, 2)), zsmlatf2(:, :))
     END IF
-    CALL profile_psy_data6 % PostEnd
+    CALL profile_psy_data5 % PostEnd
     !$ACC KERNELS
     IF (MOD(itmod, nn_trd) == 0) THEN
       nmoymltrd = 0

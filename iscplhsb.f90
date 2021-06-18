@@ -121,9 +121,8 @@ MODULE iscplhsb
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     inpts(:) = 0
-    !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('iscpl_cons', 'r1', 0, 0)
     DO jk = 1, jpk - 1
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = 2, jpj - 1
         DO ji = 2, jpim1
           IF (ptmask_b(ji, jj, jk) == 1._wp .AND. tmask(ji, jj, jk + 1) == 0._wp .AND. tmask_h(ji, jj) == 1._wp .AND. SUM(tmask(ji &
@@ -133,6 +132,8 @@ MODULE iscplhsb
         END DO
       END DO
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('iscpl_cons', 'r1', 0, 0)
     CALL mpp_max('iscplhsb', inpts, jpnij)
     npts = SUM(inpts)
     ALLOCATE(ixpts(npts), iypts(npts), izpts(npts), zcorr_vol(npts), zcorr_sal(npts), zcorr_tem(npts), zlon(npts), zlat(npts))
@@ -146,10 +147,9 @@ MODULE iscplhsb
     zcorr_vol(:) = - 1.0E20_wp
     zcorr_sal(:) = - 1.0E20_wp
     zcorr_tem(:) = - 1.0E20_wp
-    !$ACC END KERNELS
-    CALL profile_psy_data2 % PreStart('iscpl_cons', 'r2', 0, 0)
     jpts = SUM(inpts(1 : narea - 1))
     DO jk = 1, jpk - 1
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = 2, jpj - 1
         DO ji = 2, jpim1
           IF (ptmask_b(ji, jj, jk) == 1._wp .AND. tmask(ji, jj, jk + 1) == 0._wp .AND. tmask_h(ji, jj) == 1._wp .AND. SUM(tmask(ji &
@@ -170,6 +170,8 @@ MODULE iscplhsb
         END DO
       END DO
     END DO
+    !$ACC END KERNELS
+    CALL profile_psy_data2 % PreStart('iscpl_cons', 'r2', 0, 0)
     CALL mpp_max('iscplhsb', zlat, npts)
     CALL mpp_max('iscplhsb', zlon, npts)
     CALL mpp_max('iscplhsb', izpts, npts)

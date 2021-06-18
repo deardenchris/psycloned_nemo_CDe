@@ -17,7 +17,6 @@ MODULE domngb
     REAL(KIND = wp) :: zlon, zmini
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zglam, zgphi, zmask, zdist
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     !$ACC KERNELS
     zmask(:, :) = 0._wp
     ik = 1
@@ -52,16 +51,20 @@ MODULE domngb
     zgphi(:, :) = zgphi(:, :) - plat
     zdist(:, :) = zglam(:, :) * zglam(:, :) + zgphi(:, :) * zgphi(:, :)
     !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('dom_ngb', 'r1', 0, 0)
     IF (lk_mpp) THEN
       CALL mpp_minloc('domngb', zdist(:, :), zmask, zmini, iloc)
       kii = iloc(1)
       kjj = iloc(2)
     ELSE
-      iloc(:) = MINLOC(zdist(:, :), mask = zmask(:, :) == 1.E0)
+      !$ACC KERNELS
+      !ARPDBG have to remove explicit array notation from within MINLOC call
+      ! otherwise PGI 19.4 barfs.
+      ! Update CDe 09/10/20 - still a problem at v20.7
+!      iloc(:) = MINLOC(zdist(:, :), mask = zmask(:, :) == 1.E0)
+      iloc = MINLOC(zdist, mask = zmask == 1.E0)
       kii = iloc(1) + nimpp - 1
       kjj = iloc(2) + njmpp - 1
+      !$ACC END KERNELS
     END IF
-    CALL profile_psy_data1 % PostEnd
   END SUBROUTINE dom_ngb
 END MODULE domngb

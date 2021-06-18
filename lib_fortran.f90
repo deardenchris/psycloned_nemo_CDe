@@ -8,6 +8,7 @@ MODULE lib_fortran
   PRIVATE
   PUBLIC :: glob_sum
   PUBLIC :: glob_sum_full
+  PUBLIC :: glob_sum_full_gpu ! CDe
   PUBLIC :: local_sum
   PUBLIC :: sum3x3
   PUBLIC :: DDPDD
@@ -18,6 +19,9 @@ MODULE lib_fortran
   END INTERFACE
   INTERFACE glob_sum_full
     MODULE PROCEDURE glob_sum_full_2d, glob_sum_full_3d
+  END INTERFACE
+  INTERFACE glob_sum_full_gpu ! CDe added
+    MODULE PROCEDURE glob_sum_full_gpu_3d
   END INTERFACE
   INTERFACE local_sum
     MODULE PROCEDURE local_sum_2d, local_sum_3d
@@ -48,8 +52,8 @@ MODULE lib_fortran
     !$ACC LOOP SEQ
     DO ji = 1, kdim
       CALL DDPDD(ptab(ji), ctmp)
-   END DO
-   !$ACC END LOOP
+    END DO
+    !$ACC END LOOP
     IF (ldcom) CALL mpp_sum(cdname, ctmp)
     glob_sum_c1d = REAL(ctmp, wp)
   END FUNCTION glob_sum_c1d
@@ -66,12 +70,16 @@ MODULE lib_fortran
     ipj = 1
     ipk = 1
     ctmp = CMPLX(0.E0, 0.E0, wp)
-    !$ACC LOOP SEQ
+    DO jk = 1, ipk
+      DO jj = 1, ipj
+        !$ACC LOOP SEQ
         DO ji = 1, ipi
           ztmp = ptab(ji) * 1.
           CALL DDPDD(CMPLX(ztmp, 0.E0, wp), ctmp)
-       END DO
-       !$ACC END LOOP
+        END DO
+        !$ACC END LOOP
+      END DO
+    END DO
     CALL mpp_sum(cdname, ctmp)
     glob_sum_1d = REAL(ctmp, wp)
   END FUNCTION glob_sum_1d
@@ -100,7 +108,7 @@ MODULE lib_fortran
         hsum(jj) = ctmp
       END DO
     END DO
-    !$ACC END KERNELS 
+    !$ACC END KERNELS
     glob_sum_2d = glob_sum_c1d(hsum, ipj, .TRUE. .AND. lk_mpp, cdname)
     DEALLOCATE(hsum)
   END FUNCTION glob_sum_2d
@@ -191,6 +199,37 @@ MODULE lib_fortran
     glob_sum_full_3d = glob_sum_c1d(hsum, ipk, .TRUE. .AND. lk_mpp, cdname)
     DEALLOCATE(hsum)
   END FUNCTION glob_sum_full_3d
+  FUNCTION glob_sum_full_gpu_3d(cdname, ptab) ! CDe added
+    CHARACTER(LEN = *), INTENT(IN) :: cdname
+    REAL(KIND = wp), INTENT(IN) :: ptab(:, :, :)
+    REAL(KIND = wp) :: glob_sum_full_gpu_3d
+    REAL(KIND = wp) :: FUNCTION_GLOB_OP
+    COMPLEX(KIND = wp) :: ctmp
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:,:,:) :: ztmp
+    INTEGER :: ji, jj, jk
+    INTEGER :: ipi, ipj, ipk
+    COMPLEX(KIND = wp), ALLOCATABLE :: hsum(:)
+    ipi = SIZE(ptab, 1)
+    ipj = SIZE(ptab, 2)
+    ipk = SIZE(ptab, 3)
+    ALLOCATE(hsum(ipk))
+    ALLOCATE(ztmp(ipi,ipj,ipk)) ! CDe
+    !$ACC KERNELS
+    !$ACC LOOP INDEPENDENT COLLAPSE(3)
+    DO jk = 1, ipk
+      DO jj = 1, ipj
+        DO ji = 1, ipi
+          ztmp(ji,jj,jk) = ptab(ji, jj, jk) * tmask_h(ji, jj)
+        END DO
+      END DO
+    END DO
+    DO jk = 1, ipk
+      hsum(jk)=sum(ztmp(:,:,jk))
+    END DO  
+    !$ACC END KERNELS
+    glob_sum_full_gpu_3d = glob_sum_c1d(hsum, ipk, .TRUE. .AND. lk_mpp, cdname)
+    DEALLOCATE(hsum, ztmp)
+  END FUNCTION glob_sum_full_gpu_3d
   FUNCTION glob_min_2d(cdname, ptab)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
     CHARACTER(LEN = *), INTENT(IN) :: cdname
@@ -204,7 +243,7 @@ MODULE lib_fortran
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('glob_min_2d', 'r0', 0, 0)
     ipk = 1
-    !$ACC KERNELS ! CDe added
+    !$ACC KERNELS ! CDe Unary operator support for MINVAL required?
     ztmp = MINVAL(ptab(:, :) * tmask_i(:, :))
     !$ACC END KERNELS
     CALL mpp_min(cdname, ztmp)
@@ -224,7 +263,7 @@ MODULE lib_fortran
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('glob_max_2d', 'r0', 0, 0)
     ipk = 1
-    !$ACC KERNELS ! CDe added
+    !$ACC KERNELS ! CDe Unary operator support for MAXVAL required?
     ztmp = MAXVAL(ptab(:, :) * tmask_i(:, :))
     !$ACC END KERNELS
     CALL mpp_max(cdname, ztmp)
@@ -242,14 +281,14 @@ MODULE lib_fortran
     INTEGER :: jk
     INTEGER :: ipk
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('glob_min_3d', 'r0', 0, 0)
+    !$ACC KERNELS
     ipk = SIZE(ptab, 3)
-    !$ACC KERNELS ! CDe added
     ztmp = MINVAL(ptab(:, :, 1) * tmask_i(:, :))
     DO jk = 2, ipk
       ztmp = MIN(ztmp, MINVAL(ptab(:, :, jk) * tmask_i(:, :)))
     END DO
     !$ACC END KERNELS
+    CALL profile_psy_data0 % PreStart('glob_min_3d', 'r0', 0, 0)
     CALL mpp_min(cdname, ztmp)
     glob_min_3d = ztmp
     CALL profile_psy_data0 % PostEnd
@@ -265,14 +304,14 @@ MODULE lib_fortran
     INTEGER :: jk
     INTEGER :: ipk
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('glob_max_3d', 'r0', 0, 0)
+    !$ACC KERNELS
     ipk = SIZE(ptab, 3)
-    !$ACC KERNELS ! CDe added
     ztmp = MAXVAL(ptab(:, :, 1) * tmask_i(:, :))
     DO jk = 2, ipk
       ztmp = MAX(ztmp, MAXVAL(ptab(:, :, jk) * tmask_i(:, :)))
     END DO
     !$ACC END KERNELS
+    CALL profile_psy_data0 % PreStart('glob_max_3d', 'r0', 0, 0)
     CALL mpp_max(cdname, ztmp)
     glob_max_3d = ztmp
     CALL profile_psy_data0 % PostEnd
@@ -344,8 +383,7 @@ MODULE lib_fortran
     END DO
     !$ACC END KERNELS
     CALL lbc_lnk('lib_fortran', p2d, 'T', 1.)
-    !ARPDBG - 'MISSING BRANCH TARGET BLOCK'
-    !ACC KERNELS
+    !$ACC KERNELS
     IF (nbondi /= - 1) THEN
       IF (MOD(mig(1), 3) == 1) p2d(1, :) = p2d(2, :)
       IF (MOD(mig(1), 3) == 2) p2d(2, :) = p2d(1, :)
@@ -362,7 +400,7 @@ MODULE lib_fortran
       IF (MOD(mjg(jpj - 2), 3) == 1) p2d(:, jpj) = p2d(:, jpj - 1)
       IF (MOD(mjg(jpj - 2), 3) == 0) p2d(:, jpj - 1) = p2d(:, jpj)
     END IF
-    !ACC END KERNELS
+    !$ACC END KERNELS
     CALL lbc_lnk('lib_fortran', p2d, 'T', 1.)
   END SUBROUTINE sum3x3_2d
   SUBROUTINE sum3x3_3d(p3d)
@@ -388,8 +426,7 @@ MODULE lib_fortran
     END DO
     !$ACC END KERNELS
     CALL lbc_lnk('lib_fortran', p3d, 'T', 1.)
-    !ARPDBG - 'MISSING BRANCH TARGET BLOCK'
-    !ACC KERNELS
+    !$ACC KERNELS
     IF (nbondi /= - 1) THEN
       IF (MOD(mig(1), 3) == 1) p3d(1, :, :) = p3d(2, :, :)
       IF (MOD(mig(1), 3) == 2) p3d(2, :, :) = p3d(1, :, :)
@@ -406,7 +443,7 @@ MODULE lib_fortran
       IF (MOD(mjg(jpj - 2), 3) == 1) p3d(:, jpj, :) = p3d(:, jpj - 1, :)
       IF (MOD(mjg(jpj - 2), 3) == 0) p3d(:, jpj - 1, :) = p3d(:, jpj, :)
     END IF
-    !ACC END KERNELS
+    !$ACC END KERNELS
     CALL lbc_lnk('lib_fortran', p3d, 'T', 1.)
   END SUBROUTINE sum3x3_3d
   SUBROUTINE DDPDD(ydda, yddb)
@@ -414,6 +451,7 @@ MODULE lib_fortran
     COMPLEX(KIND = wp), INTENT(IN) :: ydda
     COMPLEX(KIND = wp), INTENT(INOUT) :: yddb
     REAL(KIND = wp) :: zerr, zt1, zt2
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     !$ACC ROUTINE
     zt1 = REAL(ydda) + REAL(yddb)
     zerr = zt1 - REAL(ydda)
@@ -422,7 +460,7 @@ MODULE lib_fortran
   END SUBROUTINE DDPDD
   FUNCTION SIGN_SCALAR(pa, pb)
     REAL(KIND = wp), intent(in), value :: pa, pb
-    REAL(KIND = wp) :: SIGN_SCALAR
+    REAL(KIND = wp), intent(in)        :: SIGN_SCALAR
     !$ACC ROUTINE
     IF (pb >= 0.E0) THEN
       sign_scalar = ABS(pa)
@@ -441,7 +479,7 @@ MODULE lib_fortran
     END WHERE
   END FUNCTION SIGN_ARRAY_1D
   FUNCTION SIGN_ARRAY_2D(pa, pb)
-    REAL(KIND = wp), intent(in) :: pa, pb(:, :)
+    REAL(KIND = wp), intent(in)  :: pa, pb(:, :)
     REAL(KIND = wp) :: SIGN_ARRAY_2D(SIZE(pb, 1), SIZE(pb, 2))
     !$ACC ROUTINE
     WHERE (pb >= 0.E0)
@@ -513,7 +551,6 @@ MODULE lib_fortran
   FUNCTION SIGN_ARRAY_3D_B(pa, pb)
     REAL(KIND = wp) :: pa(:, :, :), pb
     REAL(KIND = wp) :: SIGN_ARRAY_3D_B(SIZE(pa, 1), SIZE(pa, 2), SIZE(pa, 3))
-    !$ACC ROUTINE
     IF (pb >= 0.E0) THEN
       sign_array_3d_b = ABS(pa)
     ELSE

@@ -88,7 +88,9 @@ MODULE sbcisf
         CALL profile_psy_data1 % PreStart('sbc_isf', 'r1', 0, 0)
         IF (.NOT. l_isfcpl) THEN
           CALL fld_read(kt, nn_fsbc, sf_rnfisf)
+          !$ACC KERNELS ! CDe
           fwfisf(:, :) = - sf_rnfisf(1) % fnow(:, :, 1)
+          !$ACC END KERNELS
         END IF
         CALL profile_psy_data1 % PostEnd
         !$ACC KERNELS
@@ -304,7 +306,7 @@ MODULE sbcisf
     END SELECT
     !$ACC KERNELS
     rhisf_tbl_0(:, :) = rhisf_tbl(:, :)
-    !$ACC END KERNELS
+    !$ACC LOOP INDEPENDENT COLLAPSE(2)
     DO jj = 1, jpj
       DO ji = 1, jpi
         ikt = misfkt(ji, jj)
@@ -320,6 +322,7 @@ MODULE sbcisf
         ralpha(ji, jj) = rhisf_tbl(ji, jj) * (1._wp - zhk) / e3t_n(ji, jj, ikb)
       END DO
     END DO
+    !$ACC END KERNELS
     IF (lwxios) THEN
       CALL iom_set_rstw_var_active('fwf_isf_b')
       CALL iom_set_rstw_var_active('isf_hc_b')
@@ -503,6 +506,7 @@ MODULE sbcisf
             pgt = rn_gammat0
             pgs = rn_gammas0
           ELSE
+            !$ACC KERNELS ! CDe      
             zcoef = 0.5_wp / e3w_n(ji, jj, ikt + 1)
             zdku = zcoef * (un(ji - 1, jj, ikt) + un(ji, jj, ikt) - un(ji - 1, jj, ikt + 1) - un(ji, jj, ikt + 1))
             zdkv = zcoef * (vn(ji, jj - 1, ikt) + vn(ji, jj, ikt) - vn(ji, jj - 1, ikt + 1) - vn(ji, jj, ikt + 1))
@@ -510,7 +514,9 @@ MODULE sbcisf
             zts(jp_tem) = ttbl(ji, jj)
             zts(jp_sal) = stbl(ji, jj)
             zdep = gdepw_n(ji, jj, ikt)
+            !$ACC END KERNELS
             CALL eos_rab(zts, zdep, zab)
+            !$ACC KERNELS ! CDe
             zbuofdep = grav * (zab(jp_tem) * pqhisf(ji, jj) - zab(jp_sal) * pqwisf(ji, jj))
             zhmax = gdept_n(ji, jj, mbkt(ji, jj)) - gdepw_n(ji, jj, mikt(ji, jj)) - 0.001_wp
             zmob = zustar(ji, jj) ** 3 / (vkarmn * (zbuofdep + zeps))
@@ -521,6 +527,7 @@ MODULE sbcisf
 &* zxsiN * zetastar) - 1._wp / vkarmn
             pgt(ji, jj) = zustar(ji, jj) / (zgturb + zgmolet)
             pgs(ji, jj) = zustar(ji, jj) / (zgturb + zgmoles)
+            !$ACC END KERNELS
           END IF
         END DO
       END DO
@@ -529,7 +536,6 @@ MODULE sbcisf
     END SELECT
   END SUBROUTINE sbc_isf_gammats
   SUBROUTINE sbc_isf_tbl(pvarin, pvarout, cd_ptin)
-    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(IN) :: pvarin
     REAL(KIND = wp), DIMENSION(:, :), INTENT(OUT) :: pvarout
     CHARACTER(LEN = 1), INTENT(IN) :: cd_ptin
@@ -537,19 +543,15 @@ MODULE sbcisf
     INTEGER :: ikt, ikb
     REAL(KIND = wp) :: ze3, zhk
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zhisf_tbl
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     !$ACC KERNELS
     pvarout(:, :) = 0._wp
     !$ACC END KERNELS
     SELECT CASE (cd_ptin)
     CASE ('U')
+      !$ACC KERNELS
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
-          CALL profile_psy_data0 % PreStart('sbc_isf_tbl', 'r0', 0, 0)
           ikt = miku(ji, jj)
           ikb = miku(ji, jj)
           zhisf_tbl(ji, jj) = MAX(rhisf_tbl_0(ji, jj), e3u_n(ji, jj, ikt))
@@ -557,20 +559,14 @@ MODULE sbcisf
             IF ((SUM(e3u_n(ji, jj, ikt : jk - 1)) < zhisf_tbl(ji, jj)) .AND. (umask(ji, jj, jk) == 1)) ikb = jk
           END DO
           zhisf_tbl(ji, jj) = MIN(zhisf_tbl(ji, jj), SUM(e3u_n(ji, jj, ikt : ikb)))
-          CALL profile_psy_data0 % PostEnd
-          !$ACC KERNELS
           DO jk = ikt, ikb - 1
             ze3 = e3u_n(ji, jj, jk)
             pvarout(ji, jj) = pvarout(ji, jj) + pvarin(ji, jj, jk) / zhisf_tbl(ji, jj) * ze3
           END DO
-          !$ACC END KERNELS
-          CALL profile_psy_data1 % PreStart('sbc_isf_tbl', 'r1', 0, 0)
           zhk = SUM(e3u_n(ji, jj, ikt : ikb - 1)) / zhisf_tbl(ji, jj)
           pvarout(ji, jj) = pvarout(ji, jj) + pvarin(ji, jj, ikb) * (1._wp - zhk)
-          CALL profile_psy_data1 % PostEnd
         END DO
       END DO
-      !$ACC KERNELS
       !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = 2, jpj
         DO ji = 2, jpi
@@ -580,9 +576,10 @@ MODULE sbcisf
       !$ACC END KERNELS
       CALL lbc_lnk('sbcisf', pvarout, 'T', - 1.)
     CASE ('V')
+      !$ACC KERNELS
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
-          CALL profile_psy_data2 % PreStart('sbc_isf_tbl', 'r2', 0, 0)
           ikt = mikv(ji, jj)
           ikb = mikv(ji, jj)
           zhisf_tbl(ji, jj) = MAX(rhisf_tbl_0(ji, jj), e3v_n(ji, jj, ikt))
@@ -590,20 +587,14 @@ MODULE sbcisf
             IF ((SUM(e3v_n(ji, jj, ikt : jk - 1)) < zhisf_tbl(ji, jj)) .AND. (vmask(ji, jj, jk) == 1)) ikb = jk
           END DO
           zhisf_tbl(ji, jj) = MIN(zhisf_tbl(ji, jj), SUM(e3v_n(ji, jj, ikt : ikb)))
-          CALL profile_psy_data2 % PostEnd
-          !$ACC KERNELS
           DO jk = ikt, ikb - 1
             ze3 = e3v_n(ji, jj, jk)
             pvarout(ji, jj) = pvarout(ji, jj) + pvarin(ji, jj, jk) / zhisf_tbl(ji, jj) * ze3
           END DO
-          !$ACC END KERNELS
-          CALL profile_psy_data3 % PreStart('sbc_isf_tbl', 'r3', 0, 0)
           zhk = SUM(e3v_n(ji, jj, ikt : ikb - 1)) / zhisf_tbl(ji, jj)
           pvarout(ji, jj) = pvarout(ji, jj) + pvarin(ji, jj, ikb) * (1._wp - zhk)
-          CALL profile_psy_data3 % PostEnd
         END DO
       END DO
-      !$ACC KERNELS
       !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = 2, jpj
         DO ji = 2, jpi
@@ -613,22 +604,21 @@ MODULE sbcisf
       !$ACC END KERNELS
       CALL lbc_lnk('sbcisf', pvarout, 'T', - 1.)
     CASE ('T')
+      !$ACC KERNELS
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
-          !$ACC KERNELS
           ikt = misfkt(ji, jj)
           ikb = misfkb(ji, jj)
           DO jk = ikt, ikb - 1
             ze3 = e3t_n(ji, jj, jk)
             pvarout(ji, jj) = pvarout(ji, jj) + pvarin(ji, jj, jk) * r1_hisf_tbl(ji, jj) * ze3
           END DO
-          !$ACC END KERNELS
-          CALL profile_psy_data4 % PreStart('sbc_isf_tbl', 'r4', 0, 0)
           zhk = SUM(e3t_n(ji, jj, ikt : ikb - 1)) * r1_hisf_tbl(ji, jj)
           pvarout(ji, jj) = pvarout(ji, jj) + pvarin(ji, jj, ikb) * (1._wp - zhk)
-          CALL profile_psy_data4 % PostEnd
         END DO
       END DO
+      !$ACC END KERNELS
     END SELECT
     !$ACC KERNELS
     pvarout(:, :) = pvarout(:, :) * ssmask(:, :)
@@ -642,11 +632,12 @@ MODULE sbcisf
     REAL(KIND = wp) :: zhk
     REAL(KIND = wp) :: zfact
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    !CALL profile_psy_data0 % PreStart('sbc_isf_div', 'r0', 0, 0)
+    CALL profile_psy_data0 % PreStart('sbc_isf_div', 'r0', 0, 0)
     zfact = 0.5_wp
+    CALL profile_psy_data0 % PostEnd
     IF (.NOT. ln_linssh) THEN
-      !$ACC KERNELS ! CDe added
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)  ! CDe added
+      !$ACC KERNELS
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = 1, jpj
         DO ji = 1, jpi
           ikt = misfkt(ji, jj)
@@ -664,7 +655,6 @@ MODULE sbcisf
       END DO
       !$ACC END KERNELS
     END IF
-    !CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     !$ACC LOOP INDEPENDENT COLLAPSE(2)
     DO jj = 1, jpj

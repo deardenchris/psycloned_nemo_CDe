@@ -34,7 +34,9 @@ MODULE traqsr
   INTEGER :: nqsr
   REAL(KIND = wp) :: xsi0r
   REAL(KIND = wp) :: xsi1r
-  REAL(KIND = wp), DIMENSION(3, 61) :: rkrgb
+  !REAL(KIND = wp), DIMENSION(3, 61) :: rkrgb
+  REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: rkrgb ! CDe allocate in tra_qsr_init
+  REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :, :) :: ze0, ze1, ze2, ze3, zea, ztrdt ! Allocate in tra_qsr_init
   TYPE(FLD), ALLOCATABLE, DIMENSION(:) :: sf_chl
   CONTAINS
   SUBROUTINE tra_qsr(kt)
@@ -49,7 +51,7 @@ MODULE traqsr
     REAL(KIND = wp) :: zCb, zCmax, zze, zpsi, zpsimax, zdelpsi, zCtot, zCze
     REAL(KIND = wp) :: zlogc, zlogc2, zlogc3
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zekb, zekg, zekr
-    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :, :) :: ze0, ze1, ze2, ze3, zea, ztrdt
+    !REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :, :) :: ze0, ze1, ze2, ze3, zea, ztrdt ! CDe declare at module scope
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :, :) :: zetot, zchl3d
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
@@ -67,7 +69,7 @@ MODULE traqsr
     END IF
     CALL profile_psy_data0 % PostEnd
     IF (l_trdtra) THEN
-      ALLOCATE(ztrdt(jpi, jpj, jpk))
+      !ALLOCATE(ztrdt(jpi, jpj, jpk)) ! CDe now allocated in tra_qsr_init
       !$ACC KERNELS
       ztrdt(:, :, :) = tsa(:, :, :, jp_tem)
       !$ACC END KERNELS
@@ -99,8 +101,9 @@ MODULE traqsr
       END DO
       !$ACC END KERNELS
     CASE (np_RGB, np_RGBc)
-      ALLOCATE(zekb(jpi, jpj), zekg(jpi, jpj), zekr(jpi, jpj), ze0(jpi, jpj, jpk), ze1(jpi, jpj, jpk), ze2(jpi, jpj, jpk), &
-&ze3(jpi, jpj, jpk), zea(jpi, jpj, jpk), zchl3d(jpi, jpj, jpk))
+!      ALLOCATE(zekb(jpi, jpj), zekg(jpi, jpj), zekr(jpi, jpj), ze0(jpi, jpj, jpk), ze1(jpi, jpj, jpk), ze2(jpi, jpj, jpk), &
+!&ze3(jpi, jpj, jpk), zea(jpi, jpj, jpk), zchl3d(jpi, jpj, jpk))
+      ALLOCATE(zekb(jpi, jpj), zekg(jpi, jpj), zekr(jpi, jpj), zchl3d(jpi, jpj, jpk)) ! CDe
       IF (nqsr == np_RGBc) THEN
         CALL profile_psy_data2 % PreStart('tra_qsr', 'r2', 0, 0)
         CALL fld_read(kt, 1, sf_chl)
@@ -183,7 +186,8 @@ MODULE traqsr
         END DO
       END DO
       !$ACC END KERNELS
-      DEALLOCATE(zekb, zekg, zekr, ze0, ze1, ze2, ze3, zea, zchl3d)
+      ! DEALLOCATE(zekb, zekg, zekr, ze0, ze1, ze2, ze3, zea, zchl3d) ! CDe
+      DEALLOCATE(zekb, zekg, zekr, zchl3d)
     CASE (np_2BD)
       !$ACC KERNELS
       zz0 = rn_abs * r1_rau0_rcp
@@ -248,7 +252,7 @@ MODULE traqsr
       !$ACC END KERNELS
       CALL profile_psy_data5 % PreStart('tra_qsr', 'r5', 0, 0)
       CALL trd_tra(kt, 'TRA', jp_tem, jptra_qsr, ztrdt)
-      DEALLOCATE(ztrdt)
+      ! DEALLOCATE(ztrdt)
       CALL profile_psy_data5 % PostEnd
     END IF
     CALL profile_psy_data6 % PreStart('tra_qsr', 'r6', 0, 0)
@@ -299,7 +303,10 @@ MODULE traqsr
     xsi1r = 1._wp / rn_si1
     SELECT CASE (nqsr)
     CASE (np_RGB, np_RGBc)
+      ALLOCATE(ze0(jpi, jpj, jpk), ze1(jpi, jpj, jpk), ze2(jpi, jpj, jpk), ze3(jpi, jpj, jpk), &
+      zea(jpi, jpj, jpk), ztrdt(jpi, jpj, jpk)) ! CDe
       IF (lwp) WRITE(numout, FMT = *) '   ==>>>   R-G-B   light penetration '
+      ALLOCATE(rkrgb(3, 61)) ! CDe
       CALL trc_oce_rgb(rkrgb)
       nksr = trc_oce_ext_lev(r_si2, 33._wp)
       IF (lwp) WRITE(numout, FMT = *) '        level of light extinction = ', nksr, ' ref depth = ', gdepw_1d(nksr + 1), ' m'

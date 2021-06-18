@@ -44,6 +44,8 @@ MODULE sbcssr
       IF (nn_sssr >= 1) CALL fld_read(kt, nn_fsbc, sf_sss)
       IF (MOD(kt - 1, nn_fsbc) == 0) THEN
         IF (nn_sstr == 1) THEN
+          !$ACC KERNELS ! CDe
+          !$ACC LOOP INDEPENDENT COLLAPSE(2) ! CDe      
           DO jj = 1, jpj
             DO ji = 1, jpi
               zqrp = rn_dqdt * (sst_m(ji, jj) - sf_sst(1) % fnow(ji, jj, 1)) * tmask(ji, jj, 1)
@@ -51,10 +53,13 @@ MODULE sbcssr
               qrp(ji, jj) = zqrp
             END DO
           END DO
+          !$ACC END KERNELS
           CALL iom_put("qrp", qrp)
         END IF
         IF (nn_sssr == 1) THEN
+          !$ACC KERNELS ! CDe
           zsrp = rn_deds / rday
+          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               zerp = zsrp * (1. - 2. * rnfmsk(ji, jj)) * (sss_m(ji, jj) - sf_sss(1) % fnow(ji, jj, 1)) * tmask(ji, jj, 1)
@@ -62,10 +67,13 @@ MODULE sbcssr
               erp(ji, jj) = zerp / MAX(sss_m(ji, jj), 1.E-20)
             END DO
           END DO
+          !$ACC END KERNELS
           CALL iom_put("erp", erp)
         ELSE IF (nn_sssr == 2) THEN
+          !$ACC KERNELS ! CDe      
           zsrp = rn_deds / rday
           zerp_bnd = rn_sssr_bnd / rday
+          !$ACC LOOP INDEPENDENT COLLAPSE(2)
           DO jj = 1, jpj
             DO ji = 1, jpi
               zerp = zsrp * (1. - 2. * rnfmsk(ji, jj)) * (sss_m(ji, jj) - sf_sss(1) % fnow(ji, jj, 1)) / MAX(sss_m(ji, jj), &
@@ -76,6 +84,7 @@ MODULE sbcssr
               erp(ji, jj) = zerp
             END DO
           END DO
+          !$ACC END KERNELS
           CALL iom_put("erp", erp)
         END IF
       END IF

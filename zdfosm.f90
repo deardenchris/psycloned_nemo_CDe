@@ -51,7 +51,8 @@ MODULE zdfosm
   INTEGER :: jdebug = 228
   CONTAINS
   INTEGER FUNCTION zdf_osm_alloc()
-    ALLOCATE(ghamu(jpi, jpj, jpk), ghamv(jpi, jpj, jpk), ghamt(jpi, jpj, jpk), ghams(jpi, jpj, jpk), hbl(jpi, jpj), hbli(jpi, jpj), dstokes(jpi, jpj), etmean(jpi, jpj, jpk), STAT = zdf_osm_alloc)
+    ALLOCATE(ghamu(jpi, jpj, jpk), ghamv(jpi, jpj, jpk), ghamt(jpi, jpj, jpk), ghams(jpi, jpj, jpk), hbl(jpi, jpj), hbli(jpi, &
+&jpj), dstokes(jpi, jpj), etmean(jpi, jpj, jpk), STAT = zdf_osm_alloc)
     IF (zdf_osm_alloc /= 0) CALL ctl_warn('zdf_osm_alloc: failed to allocate zdf_osm arrays')
     CALL mpp_sum('zdfosm', zdf_osm_alloc)
   END FUNCTION zdf_osm_alloc
@@ -225,16 +226,19 @@ MODULE zdfosm
     ghamv(:, :, :) = 0._wp
     zz0 = rn_abs
     zz1 = 1. - rn_abs
-    !$ACC LOOP INDEPENDENT
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         zrad0(ji, jj) = qsr(ji, jj) * r1_rau0_rcp
         zradh(ji, jj) = zrad0(ji, jj) * (zz0 * EXP(- hbl(ji, jj) / rn_si0) + zz1 * EXP(- hbl(ji, jj) / rn_si1))
-        zradav(ji, jj) = zrad0(ji, jj) * (zz0 * (1.0 - EXP(- hbl(ji, jj) / rn_si0)) * rn_si0 + zz1 * (1.0 - EXP(- hbl(ji, jj) / rn_si1)) * rn_si1) / hbl(ji, jj)
+        zradav(ji, jj) = zrad0(ji, jj) * (zz0 * (1.0 - EXP(- hbl(ji, jj) / rn_si0)) * rn_si0 + zz1 * (1.0 - EXP(- hbl(ji, jj) / &
+&rn_si1)) * rn_si1) / hbl(ji, jj)
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         zthermal = rab_n(ji, jj, 1, jp_tem)
         zbeta = rab_n(ji, jj, 1, jp_sal)
@@ -253,8 +257,9 @@ MODULE zdfosm
     END DO
     SELECT CASE (nn_osm_wave)
     CASE (0)
-      !$ACC LOOP INDEPENDENT
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
           zus_x = zcos_wind(ji, jj) * zustar(ji, jj) / 0.3 ** 2
           zus_y = zsin_wind(ji, jj) * zustar(ji, jj) / 0.3 ** 2
@@ -262,8 +267,9 @@ MODULE zdfosm
         END DO
       END DO
     CASE (1)
-      !$ACC LOOP INDEPENDENT
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
           zustke(ji, jj) = MAX(0.016 * wndm(ji, jj), 1.0E-8)
           dstokes(ji, jj) = 0.12 * wndm(ji, jj) ** 2 / grav
@@ -271,21 +277,26 @@ MODULE zdfosm
       END DO
     CASE (2)
       zfac = 2.0_wp * rpi / 16.0_wp
-      !$ACC LOOP INDEPENDENT
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
-          zustke(ji, jj) = MAX(1.0 * (zcos_wind(ji, jj) * ut0sd(ji, jj) + zsin_wind(ji, jj) * vt0sd(ji, jj)), zustar(ji, jj) / (0.45 * 0.45))
+          zustke(ji, jj) = MAX(1.0 * (zcos_wind(ji, jj) * ut0sd(ji, jj) + zsin_wind(ji, jj) * vt0sd(ji, jj)), zustar(ji, jj) / &
+&(0.45 * 0.45))
           dstokes(ji, jj) = MAX(zfac * hsw(ji, jj) * hsw(ji, jj) / (MAX(zustke(ji, jj) * wmp(ji, jj), 1.0E-7)), 5.0E-1)
         END DO
       END DO
     END SELECT
-    !$ACC LOOP INDEPENDENT
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         zwstrl(ji, jj) = (zustar(ji, jj) * zustar(ji, jj) * zustke(ji, jj)) ** pthird
-        zwstrl(ji, jj) = zwstrl(ji, jj) * (1.12 * (1.0 - (1.0 - EXP(- hbl(ji, jj) / dstokes(ji, jj))) * dstokes(ji, jj) / hbl(ji, jj))) ** pthird * (1.0 - EXP(- 15.0 * dstokes(ji, jj) / hbl(ji, jj)))
+        zwstrl(ji, jj) = zwstrl(ji, jj) * (1.12 * (1.0 - (1.0 - EXP(- hbl(ji, jj) / dstokes(ji, jj))) * dstokes(ji, jj) / hbl(ji, &
+&jj))) ** pthird * (1.0 - EXP(- 15.0 * dstokes(ji, jj) / hbl(ji, jj)))
         zla(ji, jj) = SQRT(zustar(ji, jj) / zwstrl(ji, jj)) ** 3
-        zvstr(ji, jj) = (zwstrl(ji, jj) ** 3 + (1.0 - EXP(- 0.5 * zla(ji, jj) ** 2)) * zustar(ji, jj) * zustar(ji, jj) * zustar(ji, jj)) ** pthird
+        zvstr(ji, jj) = (zwstrl(ji, jj) ** 3 + (1.0 - EXP(- 0.5 * zla(ji, jj) ** 2)) * zustar(ji, jj) * zustar(ji, jj) * &
+&zustar(ji, jj)) ** pthird
         IF (zla(ji, jj) >= 0.45) zla(ji, jj) = 0.45
         IF (zwbav(ji, jj) > 0.0) THEN
           zwstrc(ji, jj) = (2.0 * zwbav(ji, jj) * 0.9 * hbl(ji, jj)) ** pthird
@@ -300,8 +311,9 @@ MODULE zdfosm
     hbl(:, :) = MAX(hbl(:, :), gdepw_n(:, :, 3))
     ibld(:, :) = 3
     DO jk = 4, jpkm1
-      !$ACC LOOP INDEPENDENT
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
           IF (hbl(ji, jj) >= gdepw_n(ji, jj, jk)) THEN
             ibld(ji, jj) = MIN(mbkt(ji, jj), jk)
@@ -309,8 +321,9 @@ MODULE zdfosm
         END DO
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         zthermal = rab_n(ji, jj, 1, jp_tem)
         zbeta = rab_n(ji, jj, 1, jp_sal)
@@ -332,20 +345,26 @@ MODULE zdfosm
         zv_bl(ji, jj) = zv / zthick
         zdt_bl(ji, jj) = zt_bl(ji, jj) - tsn(ji, jj, ibld(ji, jj), jp_tem)
         zds_bl(ji, jj) = zs_bl(ji, jj) - tsn(ji, jj, ibld(ji, jj), jp_sal)
-        zdu_bl(ji, jj) = zu_bl(ji, jj) - (ub(ji, jj, ibld(ji, jj)) + ub(ji - 1, jj, ibld(ji, jj))) / MAX(1., umask(ji, jj, ibld(ji, jj)) + umask(ji - 1, jj, ibld(ji, jj)))
-        zdv_bl(ji, jj) = zv_bl(ji, jj) - (vb(ji, jj, ibld(ji, jj)) + vb(ji, jj - 1, ibld(ji, jj))) / MAX(1., vmask(ji, jj, ibld(ji, jj)) + vmask(ji, jj - 1, ibld(ji, jj)))
+        zdu_bl(ji, jj) = zu_bl(ji, jj) - (ub(ji, jj, ibld(ji, jj)) + ub(ji - 1, jj, ibld(ji, jj))) / MAX(1., umask(ji, jj, &
+&ibld(ji, jj)) + umask(ji - 1, jj, ibld(ji, jj)))
+        zdv_bl(ji, jj) = zv_bl(ji, jj) - (vb(ji, jj, ibld(ji, jj)) + vb(ji, jj - 1, ibld(ji, jj))) / MAX(1., vmask(ji, jj, &
+&ibld(ji, jj)) + vmask(ji, jj - 1, ibld(ji, jj)))
         zdb_bl(ji, jj) = grav * zthermal * zdt_bl(ji, jj) - grav * zbeta * zds_bl(ji, jj)
         IF (lconv(ji, jj)) THEN
           zwb_ent(ji, jj) = - (2.0 * 0.2 * zwbav(ji, jj) + 0.135 * zla(ji, jj) * zwstrl(ji, jj) ** 3 / hbl(ji, jj))
-          zvel_max = - (1.0 + 1.0 * (zwstrl(ji, jj) ** 3 + 0.5 * zwstrc(ji, jj) ** 3) ** pthird * rn_rdt / hbl(ji, jj)) * zwb_ent(ji, jj) / (zwstrl(ji, jj) ** 3 + 0.5 * zwstrc(ji, jj) ** 3) ** pthird
+          zvel_max = - (1.0 + 1.0 * (zwstrl(ji, jj) ** 3 + 0.5 * zwstrc(ji, jj) ** 3) ** pthird * rn_rdt / hbl(ji, jj)) * &
+&zwb_ent(ji, jj) / (zwstrl(ji, jj) ** 3 + 0.5 * zwstrc(ji, jj) ** 3) ** pthird
           zzdhdt = - zwb_ent(ji, jj) / (zvel_max + MAX(zdb_bl(ji, jj), 0.0))
         ELSE
-          zzdhdt = 0.32 * (hbli(ji, jj) / hbl(ji, jj) - 1.0) * zwstrl(ji, jj) ** 3 / hbli(ji, jj) + ((0.32 / 3.0) * EXP(- 2.5 * (hbli(ji, jj) / hbl(ji, jj) - 1.0)) - (0.32 / 3.0 - 0.135 * zla(ji, jj)) * EXP(- 12.5 * (hbli(ji, jj) / hbl(ji, jj)))) * zwstrl(ji, jj) ** 3 / hbli(ji, jj)
+          zzdhdt = 0.32 * (hbli(ji, jj) / hbl(ji, jj) - 1.0) * zwstrl(ji, jj) ** 3 / hbli(ji, jj) + ((0.32 / 3.0) * EXP(- 2.5 * &
+&(hbli(ji, jj) / hbl(ji, jj) - 1.0)) - (0.32 / 3.0 - 0.135 * zla(ji, jj)) * EXP(- 12.5 * (hbli(ji, jj) / hbl(ji, jj)))) * &
+&zwstrl(ji, jj) ** 3 / hbli(ji, jj)
           zzdhdt = zzdhdt + zwbav(ji, jj)
           IF (zzdhdt < 0._wp) THEN
             zpert = 2.0 * (1.0 + 2.0 * zwstrl(ji, jj) * rn_rdt / hbl(ji, jj)) * zwstrl(ji, jj) ** 2 / hbl(ji, jj)
           ELSE
-            zpert = 2.0 * (1.0 + 2.0 * zwstrl(ji, jj) * rn_rdt / hbl(ji, jj)) * zwstrl(ji, jj) ** 2 / hbl(ji, jj) + MAX(zdb_bl(ji, jj), 0.0)
+            zpert = 2.0 * (1.0 + 2.0 * zwstrl(ji, jj) * rn_rdt / hbl(ji, jj)) * zwstrl(ji, jj) ** 2 / hbl(ji, jj) + MAX(zdb_bl(ji, &
+&jj), 0.0)
           END IF
           zzdhdt = 2.0 * zzdhdt / zpert
         END IF
@@ -358,8 +377,9 @@ MODULE zdfosm
     zhbl_t(:, :) = MIN(zhbl_t(:, :), ht_n(:, :))
     zdhdt(:, :) = MIN(zdhdt(:, :), (zhbl_t(:, :) - hbl(:, :)) / rn_rdt + wn(ji, jj, ibld(ji, jj)))
     DO jk = 4, jpkm1
-      !$ACC LOOP INDEPENDENT
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
           IF (zhbl_t(ji, jj) >= gdepw_n(ji, jj, jk)) THEN
             ibld(ji, jj) = MIN(mbkt(ji, jj), jk)
@@ -379,9 +399,11 @@ MODULE zdfosm
           CALL profile_psy_data1 % PostEnd
           IF (lconv(ji, jj)) THEN
             CALL profile_psy_data2 % PreStart('zdf_osm', 'r2', 0, 0)
-            zvel_max = - (1.0 + 1.0 * (zvstr(ji, jj) ** 3 + 0.5 * zwstrc(ji, jj) ** 3) ** pthird * rn_rdt / hbl(ji, jj)) * zwb_ent(ji, jj) / (zvstr(ji, jj) ** 3 + 0.5 * zwstrc(ji, jj) ** 3) ** pthird
+            zvel_max = - (1.0 + 1.0 * (zvstr(ji, jj) ** 3 + 0.5 * zwstrc(ji, jj) ** 3) ** pthird * rn_rdt / hbl(ji, jj)) * &
+&zwb_ent(ji, jj) / (zvstr(ji, jj) ** 3 + 0.5 * zwstrc(ji, jj) ** 3) ** pthird
             DO jk = imld(ji, jj), ibld(ji, jj)
-              zdb = MAX(grav * (zthermal * (zt_bl(ji, jj) - tsn(ji, jj, jm, jp_tem)) - zbeta * (zs_bl(ji, jj) - tsn(ji, jj, jm, jp_sal))), 0.0) + zvel_max
+              zdb = MAX(grav * (zthermal * (zt_bl(ji, jj) - tsn(ji, jj, jm, jp_tem)) - zbeta * (zs_bl(ji, jj) - tsn(ji, jj, jm, &
+&jp_sal))), 0.0) + zvel_max
               zhbl_s = zhbl_s + MIN(- zwb_ent(ji, jj) / zdb * rn_rdt / FLOAT(ibld(ji, jj) - imld(ji, jj)), e3w_n(ji, jj, jk))
               zhbl_s = MIN(zhbl_s, ht_n(ji, jj))
               IF (zhbl_s >= gdepw_n(ji, jj, jm + 1)) jm = jm + 1
@@ -393,8 +415,11 @@ MODULE zdfosm
           ELSE
             !$ACC KERNELS
             DO jk = imld(ji, jj), ibld(ji, jj)
-              zdb = MAX(grav * (zthermal * (zt_bl(ji, jj) - tsn(ji, jj, jm, jp_tem)) - zbeta * (zs_bl(ji, jj) - tsn(ji, jj, jm, jp_sal))), 0.0) + 2.0 * zwstrl(ji, jj) ** 2 / zhbl_s
-              zhbl_s = zhbl_s + (0.32 * (hbli(ji, jj) / zhbl_s - 1.0) * zwstrl(ji, jj) ** 3 / hbli(ji, jj) + ((0.32 / 3.0) * EXP(- 2.5 * (hbli(ji, jj) / zhbl_s - 1.0)) - (0.32 / 3.0 - 0.0485) * EXP(- 12.5 * (hbli(ji, jj) / zhbl_s))) * zwstrl(ji, jj) ** 3 / hbli(ji, jj)) / zdb * e3w_n(ji, jj, jk) / zdhdt(ji, jj)
+              zdb = MAX(grav * (zthermal * (zt_bl(ji, jj) - tsn(ji, jj, jm, jp_tem)) - zbeta * (zs_bl(ji, jj) - tsn(ji, jj, jm, &
+&jp_sal))), 0.0) + 2.0 * zwstrl(ji, jj) ** 2 / zhbl_s
+              zhbl_s = zhbl_s + (0.32 * (hbli(ji, jj) / zhbl_s - 1.0) * zwstrl(ji, jj) ** 3 / hbli(ji, jj) + ((0.32 / 3.0) * EXP(- &
+&2.5 * (hbli(ji, jj) / zhbl_s - 1.0)) - (0.32 / 3.0 - 0.0485) * EXP(- 12.5 * (hbli(ji, jj) / zhbl_s))) * zwstrl(ji, jj) ** 3 / &
+&hbli(ji, jj)) / zdb * e3w_n(ji, jj, jk) / zdhdt(ji, jj)
               zhbl_s = MIN(zhbl_s, ht_n(ji, jj))
               IF (zhbl_s >= gdepw_n(ji, jj, jm)) jm = jm + 1
             END DO
@@ -421,8 +446,9 @@ MODULE zdfosm
     END DO
     !$ACC KERNELS
     dstokes(:, :) = MIN(dstokes(:, :), hbl(:, :) / 3.)
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         zthermal = rab_n(ji, jj, 1, jp_tem)
         zbeta = rab_n(ji, jj, 1, jp_sal)
@@ -444,8 +470,10 @@ MODULE zdfosm
         zv_bl(ji, jj) = zv / zthick
         zdt_bl(ji, jj) = zt_bl(ji, jj) - tsn(ji, jj, ibld(ji, jj), jp_tem)
         zds_bl(ji, jj) = zs_bl(ji, jj) - tsn(ji, jj, ibld(ji, jj), jp_sal)
-        zdu_bl(ji, jj) = zu_bl(ji, jj) - (ub(ji, jj, ibld(ji, jj)) + ub(ji - 1, jj, ibld(ji, jj))) / MAX(1., umask(ji, jj, ibld(ji, jj)) + umask(ji - 1, jj, ibld(ji, jj)))
-        zdv_bl(ji, jj) = zv_bl(ji, jj) - (vb(ji, jj, ibld(ji, jj)) + vb(ji, jj - 1, ibld(ji, jj))) / MAX(1., vmask(ji, jj, ibld(ji, jj)) + vmask(ji, jj - 1, ibld(ji, jj)))
+        zdu_bl(ji, jj) = zu_bl(ji, jj) - (ub(ji, jj, ibld(ji, jj)) + ub(ji - 1, jj, ibld(ji, jj))) / MAX(1., umask(ji, jj, &
+&ibld(ji, jj)) + umask(ji - 1, jj, ibld(ji, jj)))
+        zdv_bl(ji, jj) = zv_bl(ji, jj) - (vb(ji, jj, ibld(ji, jj)) + vb(ji, jj - 1, ibld(ji, jj))) / MAX(1., vmask(ji, jj, &
+&ibld(ji, jj)) + vmask(ji, jj - 1, ibld(ji, jj)))
         zdb_bl(ji, jj) = grav * zthermal * zdt_bl(ji, jj) - grav * zbeta * zds_bl(ji, jj)
         zhbl(ji, jj) = gdepw_n(ji, jj, ibld(ji, jj))
         IF (lconv(ji, jj)) THEN
@@ -489,8 +517,9 @@ MODULE zdfosm
         END IF
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         zthermal = rab_n(ji, jj, 1, jp_tem)
         zbeta = rab_n(ji, jj, 1, jp_sal)
@@ -513,8 +542,10 @@ MODULE zdfosm
           zv_ml(ji, jj) = zv / zthick
           zdt_ml(ji, jj) = zt_ml(ji, jj) - tsn(ji, jj, ibld(ji, jj), jp_tem)
           zds_ml(ji, jj) = zs_ml(ji, jj) - tsn(ji, jj, ibld(ji, jj), jp_sal)
-          zdu_ml(ji, jj) = zu_ml(ji, jj) - (ub(ji, jj, ibld(ji, jj)) + ub(ji - 1, jj, ibld(ji, jj))) / MAX(1., umask(ji, jj, ibld(ji, jj)) + umask(ji - 1, jj, ibld(ji, jj)))
-          zdv_ml(ji, jj) = zv_ml(ji, jj) - (vb(ji, jj, ibld(ji, jj)) + vb(ji, jj - 1, ibld(ji, jj))) / MAX(1., vmask(ji, jj, ibld(ji, jj)) + vmask(ji, jj - 1, ibld(ji, jj)))
+          zdu_ml(ji, jj) = zu_ml(ji, jj) - (ub(ji, jj, ibld(ji, jj)) + ub(ji - 1, jj, ibld(ji, jj))) / MAX(1., umask(ji, jj, &
+&ibld(ji, jj)) + umask(ji - 1, jj, ibld(ji, jj)))
+          zdv_ml(ji, jj) = zv_ml(ji, jj) - (vb(ji, jj, ibld(ji, jj)) + vb(ji, jj - 1, ibld(ji, jj))) / MAX(1., vmask(ji, jj, &
+&ibld(ji, jj)) + vmask(ji, jj - 1, ibld(ji, jj)))
           zdb_ml(ji, jj) = grav * zthermal * zdt_ml(ji, jj) - grav * zbeta * zds_ml(ji, jj)
         ELSE
           IF (zdhdt(ji, jj) >= 0._wp) THEN
@@ -527,8 +558,10 @@ MODULE zdfosm
               zthick = zthick + e3t_n(ji, jj, jm)
               zt = zt + e3t_n(ji, jj, jm) * tsn(ji, jj, jm, jp_tem)
               zs = zs + e3t_n(ji, jj, jm) * tsn(ji, jj, jm, jp_sal)
-              zu = zu + e3t_n(ji, jj, jm) * (ub(ji, jj, jm) + ub(ji - 1, jj, jm)) / MAX(1., umask(ji, jj, jm) + umask(ji - 1, jj, jm))
-              zv = zv + e3t_n(ji, jj, jm) * (vb(ji, jj, jm) + vb(ji, jj - 1, jm)) / MAX(1., vmask(ji, jj, jm) + vmask(ji, jj - 1, jm))
+              zu = zu + e3t_n(ji, jj, jm) * (ub(ji, jj, jm) + ub(ji - 1, jj, jm)) / MAX(1., umask(ji, jj, jm) + umask(ji - 1, jj, &
+&jm))
+              zv = zv + e3t_n(ji, jj, jm) * (vb(ji, jj, jm) + vb(ji, jj - 1, jm)) / MAX(1., vmask(ji, jj, jm) + vmask(ji, jj - 1, &
+&jm))
             END DO
             zt_ml(ji, jj) = zt / zthick
             zs_ml(ji, jj) = zs / zthick
@@ -536,15 +569,18 @@ MODULE zdfosm
             zv_ml(ji, jj) = zv / zthick
             zdt_ml(ji, jj) = zt_ml(ji, jj) - tsn(ji, jj, ibld(ji, jj), jp_tem)
             zds_ml(ji, jj) = zs_ml(ji, jj) - tsn(ji, jj, ibld(ji, jj), jp_sal)
-            zdu_ml(ji, jj) = zu_ml(ji, jj) - (ub(ji, jj, ibld(ji, jj)) + ub(ji - 1, jj, ibld(ji, jj))) / MAX(1., umask(ji, jj, ibld(ji, jj)) + umask(ji - 1, jj, ibld(ji, jj)))
-            zdv_ml(ji, jj) = zv_ml(ji, jj) - (vb(ji, jj, ibld(ji, jj)) + vb(ji, jj - 1, ibld(ji, jj))) / MAX(1., vmask(ji, jj, ibld(ji, jj)) + vmask(ji, jj - 1, ibld(ji, jj)))
+            zdu_ml(ji, jj) = zu_ml(ji, jj) - (ub(ji, jj, ibld(ji, jj)) + ub(ji - 1, jj, ibld(ji, jj))) / MAX(1., umask(ji, jj, &
+&ibld(ji, jj)) + umask(ji - 1, jj, ibld(ji, jj)))
+            zdv_ml(ji, jj) = zv_ml(ji, jj) - (vb(ji, jj, ibld(ji, jj)) + vb(ji, jj - 1, ibld(ji, jj))) / MAX(1., vmask(ji, jj, &
+&ibld(ji, jj)) + vmask(ji, jj - 1, ibld(ji, jj)))
             zdb_ml(ji, jj) = grav * zthermal * zdt_ml(ji, jj) - grav * zbeta * zds_ml(ji, jj)
           END IF
         END IF
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         ztemp = zu_ml(ji, jj)
         zu_ml(ji, jj) = zu_ml(ji, jj) * zcos_wind(ji, jj) + zv_ml(ji, jj) * zsin_wind(ji, jj)
@@ -562,8 +598,9 @@ MODULE zdfosm
     END DO
     zuw_bse = 0._wp
     zvw_bse = 0._wp
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           IF (zdb_bl(ji, jj) > 0._wp) THEN
@@ -576,8 +613,9 @@ MODULE zdfosm
         END IF
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           IF (zdb_bl(ji, jj) > 0._wp) THEN
@@ -620,12 +658,15 @@ MODULE zdfosm
         END IF
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
-          zugrad = (zdu_ml(ji, jj) / zdh(ji, jj)) + 0.275 * zustar(ji, jj) * zustar(ji, jj) / ((zwstrl(ji, jj) ** 3 + 0.5 * zwstrc(ji, jj) ** 3) ** pthird * zhml(ji, jj)) / zla(ji, jj) ** (8.0 / 3.0)
-          zvgrad = (zdv_ml(ji, jj) / zdh(ji, jj)) + 3.5 * ff_t(ji, jj) * zustke(ji, jj) / (zwstrl(ji, jj) ** 3 + 0.5 * zwstrc(ji, jj) ** 3) ** pthird
+          zugrad = (zdu_ml(ji, jj) / zdh(ji, jj)) + 0.275 * zustar(ji, jj) * zustar(ji, jj) / ((zwstrl(ji, jj) ** 3 + 0.5 * &
+&zwstrc(ji, jj) ** 3) ** pthird * zhml(ji, jj)) / zla(ji, jj) ** (8.0 / 3.0)
+          zvgrad = (zdv_ml(ji, jj) / zdh(ji, jj)) + 3.5 * ff_t(ji, jj) * zustke(ji, jj) / (zwstrl(ji, jj) ** 3 + 0.5 * zwstrc(ji, &
+&jj) ** 3) ** pthird
           DO jk = 2, ibld(ji, jj) - 1
             znd = - (gdepw_n(ji, jj, jk) - zhml(ji, jj)) / zdh(ji, jj)
             zdudz_pyc(ji, jj, jk) = zugrad * EXP(- 1.75 * (znd + 0.75) ** 2)
@@ -646,8 +687,9 @@ MODULE zdfosm
         END IF
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           zdifml_sc(ji, jj) = zhml(ji, jj) * (zvstr(ji, jj) ** 3 + 0.5 * zwstrc(ji, jj) ** 3) ** pthird
@@ -662,14 +704,16 @@ MODULE zdfosm
         END IF
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           DO jk = 2, imld(ji, jj)
             zznd_ml = gdepw_n(ji, jj, jk) / zhml(ji, jj)
             zdiffut(ji, jj, jk) = 0.8 * zdifml_sc(ji, jj) * zznd_ml * (1.0 - zbeta_d_sc(ji, jj) * zznd_ml) ** 1.5
-            zviscos(ji, jj, jk) = 0.375 * zvisml_sc(ji, jj) * zznd_ml * (1.0 - zbeta_v_sc(ji, jj) * zznd_ml) * (1.0 - 0.5 * zznd_ml ** 2)
+            zviscos(ji, jj, jk) = 0.375 * zvisml_sc(ji, jj) * zznd_ml * (1.0 - zbeta_v_sc(ji, jj) * zznd_ml) * (1.0 - 0.5 * &
+&zznd_ml ** 2)
           END DO
           IF (zdh(ji, jj) > 0._wp) THEN
             DO jk = imld(ji, jj) + 1, ibld(ji, jj)
@@ -697,8 +741,9 @@ MODULE zdfosm
       zsc_ws_1 = 2.0 * zwsav
     END WHERE
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           DO jk = 2, imld(ji, jj)
@@ -725,19 +770,22 @@ MODULE zdfosm
       zsc_vw_1 = ff_t * zhbl * zustke ** 3 * zla ** (8.0 / 3.0) / (zvstr ** 2 + epsln)
     END WHERE
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           DO jk = 2, imld(ji, jj)
             zznd_d = gdepw_n(ji, jj, jk) / dstokes(ji, jj)
-            ghamu(ji, jj, jk) = ghamu(ji, jj, jk) + (- 0.05 * EXP(- 0.4 * zznd_d) * zsc_uw_1(ji, jj) + 0.00125 * EXP(- zznd_d) * zsc_uw_2(ji, jj)) * (1.0 - EXP(- 2.0 * zznd_d))
+            ghamu(ji, jj, jk) = ghamu(ji, jj, jk) + (- 0.05 * EXP(- 0.4 * zznd_d) * zsc_uw_1(ji, jj) + 0.00125 * EXP(- zznd_d) * &
+&zsc_uw_2(ji, jj)) * (1.0 - EXP(- 2.0 * zznd_d))
             ghamv(ji, jj, jk) = ghamv(ji, jj, jk) - 0.65 * 0.15 * EXP(- zznd_d) * (1.0 - EXP(- 2.0 * zznd_d)) * zsc_vw_1(ji, jj)
           END DO
         ELSE
           DO jk = 2, ibld(ji, jj)
             zznd_d = gdepw_n(ji, jj, jk) / dstokes(ji, jj)
-            ghamu(ji, jj, jk) = ghamu(ji, jj, jk) - 0.75 * 1.3 * EXP(- 0.5 * zznd_d) * (1.0 - EXP(- 4.0 * zznd_d)) * zsc_uw_1(ji, jj)
+            ghamu(ji, jj, jk) = ghamu(ji, jj, jk) - 0.75 * 1.3 * EXP(- 0.5 * zznd_d) * (1.0 - EXP(- 4.0 * zznd_d)) * zsc_uw_1(ji, &
+&jj)
             ghamv(ji, jj, jk) = ghamv(ji, jj, jk) + 0._wp
           END DO
         END IF
@@ -752,14 +800,16 @@ MODULE zdfosm
       zsc_ws_1 = 0._wp
     END WHERE
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           DO jk = 2, imld(ji, jj)
             zznd_ml = gdepw_n(ji, jj, jk) / zhml(ji, jj)
             zl_c = 0.9 * (1.0 - EXP(- 7.0 * (zznd_ml - zznd_ml ** 3 / 3.0))) * (1.0 - EXP(- 15.0 * (1.1 - zznd_ml)))
-            zl_l = 2.0 * (1.0 - EXP(- 2.0 * (zznd_ml - zznd_ml ** 3 / 3.0))) * (1.0 - EXP(- 5.0 * (1.0 - zznd_ml))) * (1.0 + dstokes(ji, jj) / zhml(ji, jj))
+            zl_l = 2.0 * (1.0 - EXP(- 2.0 * (zznd_ml - zznd_ml ** 3 / 3.0))) * (1.0 - EXP(- 5.0 * (1.0 - zznd_ml))) * (1.0 + &
+&dstokes(ji, jj) / zhml(ji, jj))
             zl_eps = zl_l + (zl_c - zl_l) / (1.0 + EXP(3.0 * LOG10(- zhol(ji, jj)))) ** (3.0 / 2.0)
             ghamt(ji, jj, jk) = ghamt(ji, jj, jk) + 0.3 * 0.5 * zsc_wth_1(ji, jj) * zl_eps * zhml(ji, jj) / (0.15 + zznd_ml)
             ghams(ji, jj, jk) = ghams(ji, jj, jk) + 0.3 * 0.5 * zsc_ws_1(ji, jj) * zl_eps * zhml(ji, jj) / (0.15 + zznd_ml)
@@ -782,13 +832,15 @@ MODULE zdfosm
       zsc_vw_1 = 0._wp
     END WHERE
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT !CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           DO jk = 2, imld(ji, jj)
             zznd_d = gdepw_n(ji, jj, jk) / dstokes(ji, jj)
-            ghamu(ji, jj, jk) = ghamu(ji, jj, jk) + 0.3 * 0.5 * (zsc_uw_1(ji, jj) + 0.125 * EXP(- 0.5 * zznd_d) * (1.0 - EXP(- 0.5 * zznd_d)) * zsc_uw_2(ji, jj))
+            ghamu(ji, jj, jk) = ghamu(ji, jj, jk) + 0.3 * 0.5 * (zsc_uw_1(ji, jj) + 0.125 * EXP(- 0.5 * zznd_d) * (1.0 - EXP(- 0.5 &
+&* zznd_d)) * zsc_uw_2(ji, jj))
             ghamv(ji, jj, jk) = ghamv(ji, jj, jk) + zsc_vw_1(ji, jj)
           END DO
         ELSE
@@ -808,21 +860,26 @@ MODULE zdfosm
       zsc_ws_1 = zws0
     END WHERE
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           DO jk = 2, imld(ji, jj)
             zznd_ml = gdepw_n(ji, jj, jk) / zhml(ji, jj)
-            ghamt(ji, jj, jk) = ghamt(ji, jj, jk) + 0.3 * zsc_wth_1(ji, jj) * (- 2.0 + 2.75 * ((1.0 + 0.6 * zznd_ml ** 4) - EXP(- 6.0 * zznd_ml))) * (1.0 - EXP(- 15.0 * (1.0 - zznd_ml)))
-            ghams(ji, jj, jk) = ghams(ji, jj, jk) + 0.3 * zsc_ws_1(ji, jj) * (- 2.0 + 2.75 * ((1.0 + 0.6 * zznd_ml ** 4) - EXP(- 6.0 * zznd_ml))) * (1.0 - EXP(- 15.0 * (1.0 - zznd_ml)))
+            ghamt(ji, jj, jk) = ghamt(ji, jj, jk) + 0.3 * zsc_wth_1(ji, jj) * (- 2.0 + 2.75 * ((1.0 + 0.6 * zznd_ml ** 4) - EXP(- &
+&6.0 * zznd_ml))) * (1.0 - EXP(- 15.0 * (1.0 - zznd_ml)))
+            ghams(ji, jj, jk) = ghams(ji, jj, jk) + 0.3 * zsc_ws_1(ji, jj) * (- 2.0 + 2.75 * ((1.0 + 0.6 * zznd_ml ** 4) - EXP(- &
+&6.0 * zznd_ml))) * (1.0 - EXP(- 15.0 * (1.0 - zznd_ml)))
           END DO
         ELSE
           DO jk = 2, ibld(ji, jj)
             zznd_d = gdepw_n(ji, jj, jk) / dstokes(ji, jj)
             znd = gdepw_n(ji, jj, jk) / zhbl(ji, jj)
-            ghamt(ji, jj, jk) = ghamt(ji, jj, jk) + 0.3 * (- 4.06 * EXP(- 2.0 * zznd_d) * (1.0 - EXP(- 4.0 * zznd_d)) + 7.5 * EXP(- 10.0 * (0.95 - znd) ** 2) * (1.0 - znd)) * zsc_wth_1(ji, jj)
-            ghams(ji, jj, jk) = ghams(ji, jj, jk) + 0.3 * (- 4.06 * EXP(- 2.0 * zznd_d) * (1.0 - EXP(- 4.0 * zznd_d)) + 7.5 * EXP(- 10.0 * (0.95 - znd) ** 2) * (1.0 - znd)) * zsc_ws_1(ji, jj)
+            ghamt(ji, jj, jk) = ghamt(ji, jj, jk) + 0.3 * (- 4.06 * EXP(- 2.0 * zznd_d) * (1.0 - EXP(- 4.0 * zznd_d)) + 7.5 * &
+&EXP(- 10.0 * (0.95 - znd) ** 2) * (1.0 - znd)) * zsc_wth_1(ji, jj)
+            ghams(ji, jj, jk) = ghams(ji, jj, jk) + 0.3 * (- 4.06 * EXP(- 2.0 * zznd_d) * (1.0 - EXP(- 4.0 * zznd_d)) + 7.5 * &
+&EXP(- 10.0 * (0.95 - znd) ** 2) * (1.0 - znd)) * zsc_ws_1(ji, jj)
           END DO
         END IF
       END DO
@@ -838,14 +895,16 @@ MODULE zdfosm
       zsc_vw_2 = - 0.11 * SIN(3.14159 * (2.0 + 0.4)) * EXP(- (1.5 + 2.0) ** 2) * zsc_vw_1
     END WHERE
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           DO jk = 2, imld(ji, jj)
             zznd_ml = gdepw_n(ji, jj, jk) / zhml(ji, jj)
             zznd_d = gdepw_n(ji, jj, jk) / dstokes(ji, jj)
-            ghamu(ji, jj, jk) = ghamu(ji, jj, jk) + 0.3 * (- 2.0 + 2.5 * (1.0 + 0.1 * zznd_ml ** 4) - EXP(- 8.0 * zznd_ml)) * zsc_uw_1(ji, jj)
+            ghamu(ji, jj, jk) = ghamu(ji, jj, jk) + 0.3 * (- 2.0 + 2.5 * (1.0 + 0.1 * zznd_ml ** 4) - EXP(- 8.0 * zznd_ml)) * &
+&zsc_uw_1(ji, jj)
             ghamv(ji, jj, jk) = ghamv(ji, jj, jk) + 0.3 * 0.1 * (EXP(- zznd_d) + EXP(- 5.0 * (1.0 - zznd_ml))) * zsc_vw_1(ji, jj)
           END DO
         ELSE
@@ -853,18 +912,22 @@ MODULE zdfosm
             znd = gdepw_n(ji, jj, jk) / zhbl(ji, jj)
             zznd_d = gdepw_n(ji, jj, jk) / dstokes(ji, jj)
             IF (zznd_d <= 2.0) THEN
-              ghamu(ji, jj, jk) = ghamu(ji, jj, jk) + 0.5 * 0.3 * (2.25 - 3.0 * (1.0 - EXP(- 1.25 * zznd_d)) * (1.0 - EXP(- 2.0 * zznd_d))) * zsc_uw_1(ji, jj)
+              ghamu(ji, jj, jk) = ghamu(ji, jj, jk) + 0.5 * 0.3 * (2.25 - 3.0 * (1.0 - EXP(- 1.25 * zznd_d)) * (1.0 - EXP(- 2.0 * &
+&zznd_d))) * zsc_uw_1(ji, jj)
             ELSE
               ghamu(ji, jj, jk) = ghamu(ji, jj, jk) + 0.5 * 0.3 * (1.0 - EXP(- 5.0 * (1.0 - znd))) * zsc_uw_2(ji, jj)
             END IF
-            ghamv(ji, jj, jk) = ghamv(ji, jj, jk) + 0.3 * 0.15 * SIN(3.14159 * (0.65 * zznd_d)) * EXP(- 0.25 * zznd_d ** 2) * zsc_vw_1(ji, jj)
-            ghamv(ji, jj, jk) = ghamv(ji, jj, jk) + 0.3 * 0.15 * EXP(- 5.0 * (1.0 - znd)) * (1.0 - EXP(- 20.0 * (1.0 - znd))) * zsc_vw_2(ji, jj)
+            ghamv(ji, jj, jk) = ghamv(ji, jj, jk) + 0.3 * 0.15 * SIN(3.14159 * (0.65 * zznd_d)) * EXP(- 0.25 * zznd_d ** 2) * &
+&zsc_vw_1(ji, jj)
+            ghamv(ji, jj, jk) = ghamv(ji, jj, jk) + 0.3 * 0.15 * EXP(- 5.0 * (1.0 - znd)) * (1.0 - EXP(- 20.0 * (1.0 - znd))) * &
+&zsc_vw_2(ji, jj)
           END DO
         END IF
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           DO jk = 2, ibld(ji, jj)
@@ -908,8 +971,9 @@ MODULE zdfosm
       END DO
     END DO
     !$ACC KERNELS
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 2, jpjm1
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 2, jpim1
         IF (lconv(ji, jj)) THEN
           DO jk = 1, imld(ji, jj) - 1
@@ -953,19 +1017,24 @@ MODULE zdfosm
     IF (ln_kpprimix) THEN
       !$ACC KERNELS
       DO jk = 2, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = 1, jpjm1
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = 1, jpim1
-            z3du(ji, jj, jk) = 0.5 * (un(ji, jj, jk - 1) - un(ji, jj, jk)) * (ub(ji, jj, jk - 1) - ub(ji, jj, jk)) * wumask(ji, jj, jk) / (e3uw_n(ji, jj, jk) * e3uw_b(ji, jj, jk))
-            z3dv(ji, jj, jk) = 0.5 * (vn(ji, jj, jk - 1) - vn(ji, jj, jk)) * (vb(ji, jj, jk - 1) - vb(ji, jj, jk)) * wvmask(ji, jj, jk) / (e3vw_n(ji, jj, jk) * e3vw_b(ji, jj, jk))
+            z3du(ji, jj, jk) = 0.5 * (un(ji, jj, jk - 1) - un(ji, jj, jk)) * (ub(ji, jj, jk - 1) - ub(ji, jj, jk)) * wumask(ji, &
+&jj, jk) / (e3uw_n(ji, jj, jk) * e3uw_b(ji, jj, jk))
+            z3dv(ji, jj, jk) = 0.5 * (vn(ji, jj, jk - 1) - vn(ji, jj, jk)) * (vb(ji, jj, jk - 1) - vb(ji, jj, jk)) * wvmask(ji, &
+&jj, jk) / (e3vw_n(ji, jj, jk) * e3vw_b(ji, jj, jk))
           END DO
         END DO
       END DO
       DO jk = 2, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = 2, jpjm1
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = 2, jpim1
-            zesh2 = (z3du(ji - 1, jj, jk) + z3du(ji, jj, jk)) / MAX(1._wp, umask(ji - 1, jj, jk) + umask(ji, jj, jk)) + (z3dv(ji, jj - 1, jk) + z3dv(ji, jj, jk)) / MAX(1._wp, vmask(ji, jj - 1, jk) + vmask(ji, jj, jk))
+            zesh2 = (z3du(ji - 1, jj, jk) + z3du(ji, jj, jk)) / MAX(1._wp, umask(ji - 1, jj, jk) + umask(ji, jj, jk)) + (z3dv(ji, &
+&jj - 1, jk) + z3dv(ji, jj, jk)) / MAX(1._wp, vmask(ji, jj - 1, jk) + vmask(ji, jj, jk))
             zri = MAX(rn2b(ji, jj, jk), 0._wp) / MAX(zesh2, epsln)
             zfri = MIN(zri / rn_riinfty, 1.0_wp)
             zfri = (1.0_wp - zfri * zfri)
@@ -999,8 +1068,9 @@ MODULE zdfosm
     CALL lbc_lnk('zdfosm', zviscos(:, :, :), 'W', 1.)
     !$ACC KERNELS
     DO jk = 2, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
           p_avt(ji, jj, jk) = MAX(zdiffut(ji, jj, jk), avtb(jk)) * tmask(ji, jj, jk)
           p_avm(ji, jj, jk) = MAX(zviscos(ji, jj, jk), avmb(jk)) * tmask(ji, jj, jk)
@@ -1011,11 +1081,14 @@ MODULE zdfosm
     CALL lbc_lnk_multi('zdfosm', p_avt, 'W', 1., p_avm, 'W', 1., ghamu, 'W', 1., ghamv, 'W', 1.)
     !$ACC KERNELS
     DO jk = 2, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
-          ghamu(ji, jj, jk) = (ghamu(ji, jj, jk) + ghamu(ji + 1, jj, jk)) / MAX(1., tmask(ji, jj, jk) + tmask(ji + 1, jj, jk)) * umask(ji, jj, jk)
-          ghamv(ji, jj, jk) = (ghamv(ji, jj, jk) + ghamv(ji, jj + 1, jk)) / MAX(1., tmask(ji, jj, jk) + tmask(ji, jj + 1, jk)) * vmask(ji, jj, jk)
+          ghamu(ji, jj, jk) = (ghamu(ji, jj, jk) + ghamu(ji + 1, jj, jk)) / MAX(1., tmask(ji, jj, jk) + tmask(ji + 1, jj, jk)) * &
+&umask(ji, jj, jk)
+          ghamv(ji, jj, jk) = (ghamv(ji, jj, jk) + ghamv(ji, jj + 1, jk)) / MAX(1., tmask(ji, jj, jk) + tmask(ji, jj + 1, jk)) * &
+&vmask(ji, jj, jk)
           ghamt(ji, jj, jk) = ghamt(ji, jj, jk) * tmask(ji, jj, jk)
           ghams(ji, jj, jk) = ghams(ji, jj, jk) * tmask(ji, jj, jk)
         END DO
@@ -1029,11 +1102,13 @@ MODULE zdfosm
       CASE (0 : 1)
         IF (iom_use("us_x")) CALL iom_put("us_x", tmask(:, :, 1) * zustke * zcos_wind)
         IF (iom_use("us_y")) CALL iom_put("us_y", tmask(:, :, 1) * zustke * zsin_wind)
-        IF (iom_use("wind_wave_abs_power")) CALL iom_put("wind_wave_abs_power", 1000. * rau0 * tmask(:, :, 1) * zustar ** 2 * zustke)
+        IF (iom_use("wind_wave_abs_power")) CALL iom_put("wind_wave_abs_power", 1000. * rau0 * tmask(:, :, 1) * zustar ** 2 * &
+&zustke)
       CASE (2)
         IF (iom_use("us_x")) CALL iom_put("us_x", ut0sd)
         IF (iom_use("us_y")) CALL iom_put("us_y", vt0sd)
-        IF (iom_use("wind_wave_abs_power")) CALL iom_put("wind_wave_abs_power", 1000. * rau0 * tmask(:, :, 1) * zustar ** 2 * SQRT(ut0sd ** 2 + vt0sd ** 2))
+        IF (iom_use("wind_wave_abs_power")) CALL iom_put("wind_wave_abs_power", 1000. * rau0 * tmask(:, :, 1) * zustar ** 2 * &
+&SQRT(ut0sd ** 2 + vt0sd ** 2))
       END SELECT
       IF (iom_use("ghamt")) CALL iom_put("ghamt", tmask * ghamt)
       IF (iom_use("ghams")) CALL iom_put("ghams", tmask * ghams)
@@ -1064,7 +1139,8 @@ MODULE zdfosm
   SUBROUTINE zdf_osm_init
     INTEGER :: ios
     INTEGER :: ji, jj, jk
-    NAMELIST /namzdf_osm/ ln_use_osm_la, rn_osm_la, rn_osm_dstokes, nn_ave, nn_osm_wave, ln_dia_osm, rn_osm_hbl0, ln_kpprimix, rn_riinfty, rn_difri, ln_convmix, rn_difconv
+    NAMELIST /namzdf_osm/ ln_use_osm_la, rn_osm_la, rn_osm_dstokes, nn_ave, nn_osm_wave, ln_dia_osm, rn_osm_hbl0, ln_kpprimix, &
+&rn_riinfty, rn_difri, ln_convmix, rn_difconv
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, namzdf_osm, IOSTAT = ios, ERR = 901)
 901 IF (ios /= 0) CALL ctl_nam(ios, 'namzdf_osm in reference namelist', lwp)
@@ -1122,10 +1198,12 @@ MODULE zdfosm
       !$ACC KERNELS
       etmean(:, :, :) = 0.E0
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = 2, jpjm1
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = 2, jpim1
-            etmean(ji, jj, jk) = tmask(ji, jj, jk) / MAX(1., umask(ji - 1, jj, jk) + umask(ji, jj, jk) + vmask(ji, jj - 1, jk) + vmask(ji, jj, jk))
+            etmean(ji, jj, jk) = tmask(ji, jj, jk) / MAX(1., umask(ji - 1, jj, jk) + umask(ji, jj, jk) + vmask(ji, jj - 1, jk) + &
+&vmask(ji, jj, jk))
           END DO
         END DO
       END DO
@@ -1135,10 +1213,13 @@ MODULE zdfosm
       !$ACC KERNELS
       etmean(:, :, :) = 0.E0
       DO jk = 1, jpkm1
-        !$ACC LOOP INDEPENDENT COLLAPSE(2)
+        !$ACC LOOP INDEPENDENT ! CDe
         DO jj = 2, jpjm1
+          !$ACC LOOP INDEPENDENT ! CDe
           DO ji = 2, jpim1
-            etmean(ji, jj, jk) = tmask(ji, jj, jk) / MAX(1., 2. * tmask(ji, jj, jk) + .5 * (tmask(ji - 1, jj + 1, jk) + tmask(ji - 1, jj - 1, jk) + tmask(ji + 1, jj + 1, jk) + tmask(ji + 1, jj - 1, jk)) + 1. * (tmask(ji - 1, jj, jk) + tmask(ji, jj + 1, jk) + tmask(ji, jj - 1, jk) + tmask(ji + 1, jj, jk)))
+            etmean(ji, jj, jk) = tmask(ji, jj, jk) / MAX(1., 2. * tmask(ji, jj, jk) + .5 * (tmask(ji - 1, jj + 1, jk) + tmask(ji - &
+&1, jj - 1, jk) + tmask(ji + 1, jj + 1, jk) + tmask(ji + 1, jj - 1, jk)) + 1. * (tmask(ji - 1, jj, jk) + tmask(ji, jj + 1, jk) + &
+&tmask(ji, jj - 1, jk) + tmask(ji + 1, jj, jk)))
           END DO
         END DO
       END DO
@@ -1211,8 +1292,9 @@ MODULE zdfosm
     zN2_c = grav * rho_c * r1_rau0
     hbl(:, :) = 0._wp
     DO jk = 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 1, jpj
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 1, jpi
           ikt = mbkt(ji, jj)
           hbl(ji, jj) = hbl(ji, jj) + MAX(rn2(ji, jj, jk), 0._wp) * e3w_n(ji, jj, jk)
@@ -1220,8 +1302,9 @@ MODULE zdfosm
         END DO
       END DO
     END DO
-    !$ACC LOOP INDEPENDENT COLLAPSE(2)
+    !$ACC LOOP INDEPENDENT ! CDe
     DO jj = 1, jpj
+      !$ACC LOOP INDEPENDENT ! CDe
       DO ji = 1, jpi
         iiki = imld_rst(ji, jj)
         hbl(ji, jj) = gdepw_n(ji, jj, iiki) * ssmask(ji, jj)
@@ -1260,8 +1343,9 @@ MODULE zdfosm
     END IF
     !$ACC KERNELS
     DO jk = 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
           tsa(ji, jj, jk, jp_tem) = tsa(ji, jj, jk, jp_tem) - (ghamt(ji, jj, jk) - ghamt(ji, jj, jk + 1)) / e3t_n(ji, jj, jk)
           tsa(ji, jj, jk, jp_sal) = tsa(ji, jj, jk, jp_sal) - (ghams(ji, jj, jk) - ghams(ji, jj, jk + 1)) / e3t_n(ji, jj, jk)
@@ -1283,7 +1367,8 @@ MODULE zdfosm
     END IF
     CALL profile_psy_data2 % PreStart('tra_osm', 'r2', 0, 0)
     IF (ln_ctl) THEN
-      CALL prt_ctl(tab3d_1 = tsa(:, :, :, jp_tem), clinfo1 = ' osm  - Ta: ', mask1 = tmask, tab3d_2 = tsa(:, :, :, jp_sal), clinfo2 = ' Sa: ', mask2 = tmask, clinfo3 = 'tra')
+      CALL prt_ctl(tab3d_1 = tsa(:, :, :, jp_tem), clinfo1 = ' osm  - Ta: ', mask1 = tmask, tab3d_2 = tsa(:, :, :, jp_sal), &
+&clinfo2 = ' Sa: ', mask2 = tmask, clinfo3 = 'tra')
     END IF
     CALL profile_psy_data2 % PostEnd
   END SUBROUTINE tra_osm
@@ -1305,8 +1390,9 @@ MODULE zdfosm
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     DO jk = 1, jpkm1
-      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      !$ACC LOOP INDEPENDENT ! CDe
       DO jj = 2, jpjm1
+        !$ACC LOOP INDEPENDENT ! CDe
         DO ji = 2, jpim1
           ua(ji, jj, jk) = ua(ji, jj, jk) - (ghamu(ji, jj, jk) - ghamu(ji, jj, jk + 1)) / e3u_n(ji, jj, jk)
           va(ji, jj, jk) = va(ji, jj, jk) - (ghamv(ji, jj, jk) - ghamv(ji, jj, jk + 1)) / e3v_n(ji, jj, jk)

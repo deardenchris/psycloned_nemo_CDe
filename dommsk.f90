@@ -68,6 +68,7 @@ MODULE dommsk
         CALL ctl_stop('dom_msk: wrong value for rn_shlat (i.e. a negalive value). We stop.')
       END IF
     END IF
+    !$ACC KERNELS ! CDe
     tmask(:, :, :) = 0._wp
     DO jj = 1, jpj
       DO ji = 1, jpi
@@ -78,6 +79,7 @@ MODULE dommsk
         END IF
       END DO
     END DO
+    !$ACC END KERNELS
     CALL lbc_lnk('dommsk', tmask, 'T', 1._wp)
     REWIND(UNIT = numnam_ref)
     READ(numnam_ref, nambdy, IOSTAT = ios, ERR = 903)
@@ -89,6 +91,7 @@ MODULE dommsk
       CALL iom_open(cn_mask_file, inum)
       CALL iom_get(inum, jpdom_data, 'bdy_msk', bdytmask(:, :))
       CALL iom_close(inum)
+      !$ACC KERNELS ! CDe
       DO jk = 1, jpkm1
         DO jj = 1, jpj
           DO ji = 1, jpi
@@ -96,7 +99,9 @@ MODULE dommsk
           END DO
         END DO
       END DO
+      !$ACC END KERNELS
     END IF
+    !$ACC KERNELS ! CDe
     DO jk = 1, jpk
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
@@ -108,7 +113,9 @@ MODULE dommsk
         END DO
       END DO
     END DO
+    !$ACC END KERNELS
     CALL lbc_lnk_multi('dommsk', umask, 'U', 1., vmask, 'V', 1., fmask, 'F', 1.)
+    !$ACC KERNELS ! CDe
     wmask(:, :, 1) = tmask(:, :, 1)
     wumask(:, :, 1) = umask(:, :, 1)
     wvmask(:, :, 1) = vmask(:, :, 1)
@@ -131,23 +138,34 @@ MODULE dommsk
     tmask_h(:, ijl : jpj) = 0._wp
     tpol(1 : jpiglo) = 1._wp
     fpol(1 : jpiglo) = 1._wp
+    !$ACC END KERNELS
     IF (jperio == 3 .OR. jperio == 4) THEN
+      !$ACC KERNELS ! CDe      
       tpol(jpiglo / 2 + 1 : jpiglo) = 0._wp
       fpol(1 : jpiglo) = 0._wp
+      !$ACC END KERNELS
       IF (mjg(nlej) == jpjglo) THEN
+        !$ACC KERNELS      
         DO ji = iif + 1, iil - 1
           tmask_h(ji, nlej - 1) = tmask_h(ji, nlej - 1) * tpol(mig(ji))
         END DO
+        !$ACC END KERNELS
       END IF
     END IF
     IF (jperio == 5 .OR. jperio == 6) THEN
+      !$ACC KERNELS      
       tpol(1 : jpiglo) = 0._wp
       fpol(jpiglo / 2 + 1 : jpiglo) = 0._wp
+      !$ACC END KERNELS
     END IF
+    !$ACC KERNELS
     tmask_i(:, :) = ssmask(:, :) * tmask_h(:, :)
+    !$ACC END KERNELS
     IF (rn_shlat /= 0 .OR. ln_shlat2d) THEN
       DO jk = 1, jpk
         IF (ln_shlat2d) THEN
+          !$ACC KERNELS      
+          !$ACC LOOP INDEPENDENT COLLAPSE(2)      
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               IF (fmask(ji, jj, jk) == 0._wp) THEN
@@ -156,7 +174,10 @@ MODULE dommsk
               END IF
             END DO
           END DO
+          !$ACC END KERNELS
         ELSE
+          !$ACC KERNELS      
+          !$ACC LOOP INDEPENDENT COLLAPSE(2)      
           DO jj = 2, jpjm1
             DO ji = 2, jpim1
               IF (fmask(ji, jj, jk) == 0._wp) THEN
@@ -165,7 +186,9 @@ MODULE dommsk
               END IF
             END DO
           END DO
+          !$ACC END KERNELS
         END IF
+        !$ACC KERNELS
         DO jj = 2, jpjm1
           IF (fmask(1, jj, jk) == 0._wp) THEN
             fmask(1, jj, jk) = rn_shlat * MIN(1._wp, MAX(vmask(2, jj, jk), umask(1, jj + 1, jk), umask(1, jj, jk)))
@@ -182,6 +205,7 @@ MODULE dommsk
             fmask(ji, jpj, jk) = rn_shlat * MIN(1._wp, MAX(vmask(ji + 1, jpj, jk), vmask(ji - 1, jpj, jk), umask(ji, jpjm1, jk)))
           END IF
         END DO
+        !$ACC END KERNELS
       END DO
       IF (ln_shlat2d) DEALLOCATE(zshlat2d)
       CALL lbc_lnk('dommsk', fmask, 'F', 1._wp)

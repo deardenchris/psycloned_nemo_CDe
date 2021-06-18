@@ -80,6 +80,7 @@ MODULE dynspg_ts
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zcpx, zcpy
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: ztwdmask, zuwdmask, zvwdmask
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zuwdav2, zvwdav2
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zun_r1, zvn_r1 ! CDe
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
@@ -92,6 +93,7 @@ MODULE dynspg_ts
     CALL profile_psy_data0 % PreStart('dyn_spg_ts', 'r0', 0, 0)
     IF (ln_wd_il) ALLOCATE(zcpx(jpi, jpj), zcpy(jpi, jpj))
     IF (ln_wd_dl) ALLOCATE(ztwdmask(jpi, jpj), zuwdmask(jpi, jpj), zvwdmask(jpi, jpj), zuwdav2(jpi, jpj), zvwdav2(jpi, jpj))
+    ALLOCATE(zun_r1(jpi, jpj), zvn_r1(jpi, jpj)) ! CDe
     zmdi = 1.E+20
     zwdramp = r_rn_wdmin1
     IF (kt == nit000 .AND. neuler == 0) THEN
@@ -691,14 +693,26 @@ MODULE dynspg_ts
         !$ACC END KERNELS
       END IF
       !$ACC KERNELS
-      za2 = wgtbtp2(jn)
-      un_adv(:, :) = un_adv(:, :) + za2 * zwx(:, :) * r1_e2u(:, :)
-      vn_adv(:, :) = vn_adv(:, :) + za2 * zwy(:, :) * r1_e1v(:, :)
+      !za2 = wgtbtp2(jn) ! CDe use inline instead to prevent implicit data transfer
+      DO jj = 1, jpj ! CDe rewrite as explicit loop
+        DO ji = 1, jpi
+!          un_adv(ji, jj) = un_adv(ji, jj) + za2 * zwx(ji, jj) * r1_e2u(ji, jj)
+          un_adv(ji, jj) = un_adv(ji, jj) + wgtbtp2(jn) * zwx(ji, jj) * r1_e2u(ji, jj) 
+        END DO
+      END DO
+      DO jj = 1, jpj
+        DO ji = 1, jpi  
+!          vn_adv(ji, jj) = vn_adv(ji, jj) + za2 * zwy(ji, jj) * r1_e1v(ji, jj)
+          vn_adv(ji, jj) = vn_adv(ji, jj) + wgtbtp2(jn) * zwy(ji, jj) * r1_e1v(ji, jj)
+        END DO
+      END DO
       !$ACC END KERNELS
       IF (ln_wd_dl_bc) THEN
         !$ACC KERNELS
-        zuwdav2(:, :) = zuwdav2(:, :) + za2 * zuwdmask(:, :)
-        zvwdav2(:, :) = zvwdav2(:, :) + za2 * zvwdmask(:, :)
+ !       zuwdav2(:, :) = zuwdav2(:, :) + za2 * zuwdmask(:, :)
+        zuwdav2(:, :) = zuwdav2(:, :) + wgtbtp2(jn) * zuwdmask(:, :)
+!        zvwdav2(:, :) = zvwdav2(:, :) + za2 * zvwdmask(:, :)
+        zvwdav2(:, :) = zvwdav2(:, :) + wgtbtp2(jn) * zvwdmask(:, :)
         !$ACC END KERNELS
       END IF
       !$ACC KERNELS
@@ -708,7 +722,12 @@ MODULE dynspg_ts
           zhdiv(ji, jj) = (zwx(ji, jj) - zwx(ji - 1, jj) + zwy(ji, jj) - zwy(ji, jj - 1)) * r1_e1e2t(ji, jj)
         END DO
       END DO
-      ssha_e(:, :) = (sshn_e(:, :) - rdtbt * (zssh_frc(:, :) + zhdiv(:, :))) * ssmask(:, :)
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      DO jj = 1, jpj ! CDe write as explicit loop to improve GPU performance
+        DO ji = 1, jpi
+          ssha_e(ji, jj) = (sshn_e(ji, jj) - rdtbt * (zssh_frc(ji, jj) + zhdiv(ji, jj))) * ssmask(ji, jj)
+        END DO
+      END DO
       !$ACC END KERNELS
       CALL profile_psy_data5 % PreStart('dyn_spg_ts', 'r5', 0, 0)
       CALL lbc_lnk('dynspg_ts', ssha_e, 'T', 1._wp)
@@ -945,37 +964,109 @@ MODULE dynspg_ts
       IF (ln_bdy) CALL bdy_dyn2d(jn, ua_e, va_e, un_e, vn_e, hur_e, hvr_e, ssha_e)
       CALL profile_psy_data7 % PostEnd
       !$ACC KERNELS
-      ubb_e(:, :) = ub_e(:, :)
-      ub_e(:, :) = un_e(:, :)
-      un_e(:, :) = ua_e(:, :)
-      vbb_e(:, :) = vb_e(:, :)
-      vb_e(:, :) = vn_e(:, :)
-      vn_e(:, :) = va_e(:, :)
-      sshbb_e(:, :) = sshb_e(:, :)
-      sshb_e(:, :) = sshn_e(:, :)
-      sshn_e(:, :) = ssha_e(:, :)
-      za1 = wgtbtp1(jn)
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      DO jj = 1, jpj ! CDe re-written as explicit loop
+        DO ji = 1, jpi
+          ubb_e(ji, jj) = ub_e(ji, jj)
+        END DO
+      END DO
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      DO jj = 1, jpj ! CDe re-written as explicit loop
+        DO ji = 1, jpi
+          ub_e(ji, jj) = un_e(ji, jj)
+        END DO
+      END DO
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      DO jj = 1, jpj ! CDe re-written as explicit loop
+        DO ji = 1, jpi
+          un_e(ji, jj) = ua_e(ji, jj)
+        END DO
+      END DO
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      DO jj = 1, jpj ! CDe re-written as explicit loop
+        DO ji = 1, jpi
+          vbb_e(ji, jj) = vb_e(ji, jj)
+        END DO  
+      END DO  
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      DO jj = 1, jpj ! CDe re-written as explicit loop
+        DO ji = 1, jpi
+          vb_e(ji, jj) = vn_e(ji, jj)
+        END DO
+      END DO
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      DO jj = 1, jpj ! CDe re-written as explicit loop
+        DO ji = 1, jpi
+          vn_e(ji, jj) = va_e(ji, jj)
+        END DO
+      END DO
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      DO jj = 1, jpj ! CDe re-written as explicit loop
+        DO ji = 1, jpi
+          sshbb_e(ji, jj) = sshb_e(ji, jj)
+        END DO
+      END DO
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      DO jj = 1, jpj ! CDe re-written as explicit loop
+        DO ji = 1, jpi
+          sshb_e(ji, jj) = sshn_e(ji, jj)
+        END DO
+      END DO
+      !$ACC LOOP INDEPENDENT COLLAPSE(2)
+      DO jj = 1, jpj ! CDe re-written as explicit loop
+        DO ji = 1, jpi
+          sshn_e(ji, jj) = ssha_e(ji, jj)
+        END DO
+      END DO
+      !za1 = wgtbtp1(jn) ! CDe use inline instead to prevent implicit data transfer
       !$ACC END KERNELS
       IF (ln_dynadv_vec .OR. ln_linssh) THEN
-        !$ACC KERNELS
-        ua_b(:, :) = ua_b(:, :) + za1 * ua_e(:, :)
-        va_b(:, :) = va_b(:, :) + za1 * va_e(:, :)
+        !$ACC KERNELS        
+!        ua_b(:, :) = ua_b(:, :) + za1 * ua_e(:, :)
+        ua_b(:, :) = ua_b(:, :) + wgtbtp1(jn) * ua_e(:, :)
+!        va_b(:, :) = va_b(:, :) + za1 * va_e(:, :)
+        va_b(:, :) = va_b(:, :) + wgtbtp1(jn) * va_e(:, :)
         !$ACC END KERNELS
       ELSE
         IF (.NOT. ln_wd_dl) THEN
-          !$ACC KERNELS
-          ua_b(:, :) = ua_b(:, :) + za1 * ua_e(:, :) * hu_e(:, :)
-          va_b(:, :) = va_b(:, :) + za1 * va_e(:, :) * hv_e(:, :)
-          !$ACC END KERNELS
+        !$ACC KERNELS
+        DO jj = 1, jpj ! CDe re-written as explicit loop
+          DO ji = 1, jpi
+!            ua_b(ji, jj) = ua_b(ji, jj) + za1 * ua_e(ji, jj) * hu_e(ji, jj)
+            ua_b(ji, jj) = ua_b(ji, jj) + wgtbtp1(jn) * ua_e(ji, jj) * hu_e(ji, jj)
+          END DO
+        END DO
+        DO jj = 1, jpj ! CDe re-written as explicit loop
+          DO ji = 1, jpi
+!            va_b(ji, jj) = va_b(ji, jj) + za1 * va_e(ji, jj) * hv_e(ji, jj)
+            va_b(ji, jj) = va_b(ji, jj) + wgtbtp1(jn) * va_e(ji, jj) * hv_e(ji, jj)
+          END DO
+        END DO
+        !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS
-          ua_b(:, :) = ua_b(:, :) + za1 * ua_e(:, :) * hu_e(:, :) * zuwdmask(:, :)
-          va_b(:, :) = va_b(:, :) + za1 * va_e(:, :) * hv_e(:, :) * zvwdmask(:, :)
-          !$ACC END KERNELS
+        !$ACC KERNELS        
+        DO jj = 1, jpj ! CDe re-written as explicit loop
+          DO ji = 1, jpi
+!            ua_b(ji, jj) = ua_b(ji, jj) + za1 * ua_e(ji, jj) * hu_e(ji, jj) * zuwdmask(ji, jj)
+            ua_b(ji, jj) = ua_b(ji, jj) + wgtbtp1(jn) * ua_e(ji, jj) * hu_e(ji, jj) * zuwdmask(ji, jj)
+          END DO
+        END DO
+        DO jj = 1, jpj ! CDe re-written as explicit loop
+          DO ji = 1, jpi
+!            va_b(ji, jj) = va_b(ji, jj) + za1 * va_e(ji, jj) * hv_e(ji, jj) * zvwdmask(ji, jj)
+            va_b(ji, jj) = va_b(ji, jj) + wgtbtp1(jn) * va_e(ji, jj) * hv_e(ji, jj) * zvwdmask(ji, jj)
+          END DO
+        END DO
+        !$ACC END KERNELS
         END IF
       END IF
       !$ACC KERNELS
-      ssha(:, :) = ssha(:, :) + za1 * ssha_e(:, :)
+      DO jj = 1, jpj ! CDe re-written as explicit loop
+        DO ji = 1, jpi
+!          ssha(ji, jj) = ssha(ji, jj) + za1 * ssha_e(ji, jj)
+          ssha(ji, jj) = ssha(ji, jj) + wgtbtp1(jn) * ssha_e(ji, jj)
+        END DO
+      END DO
       !$ACC END KERNELS
     END DO
     IF (ln_bt_fw) THEN
@@ -1048,12 +1139,25 @@ MODULE dynspg_ts
         !$ACC END KERNELS
       END DO
     END IF
+    !$ACC KERNELS ! CDe
+    !CDe - do the calculation on GPU before passing to iom_put - helps to reduce managed memory page faulting
+    !$ACC LOOP GANG VECTOR COLLAPSE(2)
+    DO jj = 1, jpj
+      DO ji = 1, jpi
+        zun_r1(ji, jj) = un_adv(ji, jj) * r1_hu_n(ji, jj)
+        zvn_r1(ji, jj) = vn_adv(ji, jj) * r1_hv_n(ji, jj)
+      END DO
+    END DO
+    !$ACC END KERNELS
     CALL profile_psy_data8 % PreStart('dyn_spg_ts', 'r8', 0, 0)
-    CALL iom_put("ubar", un_adv(:, :) * r1_hu_n(:, :))
-    CALL iom_put("vbar", vn_adv(:, :) * r1_hv_n(:, :))
+!    CALL iom_put("ubar", un_adv(:, :) * r1_hu_n(:, :))
+!    CALL iom_put("vbar", vn_adv(:, :) * r1_hv_n(:, :))
+    CALL iom_put("ubar", zun_r1(:,:)) ! CDe
+    CALL iom_put("vbar", zvn_r1(:,:)) ! CDe
     IF (lrst_oce .AND. ln_bt_fw) CALL ts_rst(kt, 'WRITE')
     IF (ln_wd_il) DEALLOCATE(zcpx, zcpy)
     IF (ln_wd_dl) DEALLOCATE(ztwdmask, zuwdmask, zvwdmask, zuwdav2, zvwdav2)
+    DEALLOCATE(zun_r1, zvn_r1) ! CDe
     IF (ln_diatmb) THEN
       CALL iom_put("baro_u", un_b * ssumask(:, :) + zmdi * (1. - ssumask(:, :)))
       CALL iom_put("baro_v", vn_b * ssvmask(:, :) + zmdi * (1. - ssvmask(:, :)))
@@ -1069,7 +1173,6 @@ MODULE dynspg_ts
     INTEGER :: jic, jn, ji
     REAL(KIND = wp) :: za1, za2
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     !$ACC KERNELS
     zwgt1(:) = 0._wp
     zwgt2(:) = 0._wp
@@ -1115,12 +1218,8 @@ MODULE dynspg_ts
         zwgt2(jn) = zwgt2(jn) + zwgt1(ji)
       END DO
     END DO
-    !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('ts_wgt', 'r1', 0, 0)
     za1 = 1._wp / SUM(zwgt1(1 : jpit))
     za2 = 1._wp / SUM(zwgt2(1 : jpit))
-    CALL profile_psy_data1 % PostEnd
-    !$ACC KERNELS
     DO jn = 1, jpit
       zwgt1(jn) = zwgt1(jn) * za1
       zwgt2(jn) = zwgt2(jn) * za2
@@ -1187,8 +1286,8 @@ MODULE dynspg_ts
         zcu(ji, jj) = SQRT(grav * MAX(ht_0(ji, jj), 0._wp) * (zxr2 + zyr2))
       END DO
     END DO
-    !$ACC END KERNELS
     zcmax = MAXVAL(zcu(:, :))
+    !$ACC END KERNELS
     CALL mpp_max('dynspg_ts', zcmax)
     IF (ln_bt_auto) nn_baro = CEILING(rdt / rn_bt_cmax * zcmax)
     rdtbt = rdt / REAL(nn_baro, wp)

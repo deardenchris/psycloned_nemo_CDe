@@ -193,8 +193,6 @@ MODULE trdvor
     REAL(KIND = wp) :: zmean
     REAL(KIND = wp), DIMENSION(jpi, jpj) :: zun, zvn
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     !$ACC KERNELS
     IF (kt > nit000) vor_avrb(:, :) = vor_avr(:, :)
     vor_avr(:, :) = 0._wp
@@ -234,16 +232,10 @@ MODULE trdvor
     itmod = kt - nit000 + 1
     !$ACC END KERNELS
     IF (MOD(it, nn_trd) == 0) THEN
-      CALL profile_psy_data0 % PreStart('trd_vor_iom', 'r0', 0, 0)
+      !$ACC KERNELS
       zmean = 1._wp / (REAL(nmoydpvor, wp) * 2._wp * rdt)
-      CALL profile_psy_data0 % PostEnd
-      !$ACC KERNELS
       vor_avrtot(:, :) = (vor_avr(:, :) - vor_avrbn(:, :) + vor_avrb(:, :) - vor_avrbb(:, :)) * zmean
-      !$ACC END KERNELS
-      CALL profile_psy_data1 % PreStart('trd_vor_iom', 'r1', 0, 0)
       zmean = 1._wp / REAL(nmoydpvor, wp)
-      CALL profile_psy_data1 % PostEnd
-      !$ACC KERNELS
       vor_avrres(:, :) = vor_avrtot(:, :) - rotot(:, :) / zmean
       !$ACC END KERNELS
       CALL lbc_lnk_multi('trdvor', vor_avrtot, 'F', 1., vor_avrres, 'F', 1.)
@@ -253,7 +245,7 @@ MODULE trdvor
       nmoydpvor = 0
       !$ACC END KERNELS
     END IF
-    CALL profile_psy_data2 % PreStart('trd_vor_iom', 'r2', 0, 0)
+    CALL profile_psy_data0 % PreStart('trd_vor_iom', 'r0', 0, 0)
     IF (kt >= nit000 + 1) THEN
       IF (lwp .AND. MOD(itmod, nn_trd) == 0) THEN
         WRITE(numout, FMT = *) ''
@@ -278,7 +270,7 @@ MODULE trdvor
         CALL FLUSH(numout)
       END IF
     END IF
-    CALL profile_psy_data2 % PostEnd
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     IF (MOD(it, nn_trd) == 0) rotot(:, :) = 0
     !$ACC END KERNELS

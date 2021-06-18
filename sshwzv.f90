@@ -200,8 +200,8 @@ MODULE sshwzv
     CALL lbc_lnk('sshwzv', Cu_adv, 'T', 1.)
     CALL iom_put("Courant", Cu_adv)
     CALL profile_psy_data1 % PostEnd
+    !$ACC KERNELS
     IF (MAXVAL(Cu_adv(:, :, :)) > Cu_min) THEN
-      !$ACC KERNELS
       DO jk = 1, jpkm1
         !$ACC LOOP INDEPENDENT COLLAPSE(2)
         DO jj = 1, jpj
@@ -222,13 +222,11 @@ MODULE sshwzv
           END DO
         END DO
       END DO
-      !$ACC END KERNELS
     ELSE
-      !$ACC KERNELS
       Cu_adv(:, :, :) = 0._wp
       wi(:, :, :) = 0._wp
-      !$ACC END KERNELS
     END IF
+    !$ACC END KERNELS
     CALL profile_psy_data2 % PreStart('waimp', 'r2', 0, 0)
     CALL iom_put("wimp", wi)
     CALL iom_put("wi_cff", Cu_adv)

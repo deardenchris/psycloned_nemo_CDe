@@ -27,9 +27,11 @@ MODULE trc_oce
     INTEGER :: jc
     INTEGER :: irgb
     REAL(KIND = wp) :: zchl
-    REAL(KIND = wp), DIMENSION(4, 61) :: zrgb
+    !REAL(KIND = wp), DIMENSION(4, 61) :: zrgb
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zrgb
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    ALLOCATE(zrgb(4, 61)) ! CDe
     CALL profile_psy_data0 % PreStart('trc_oce_rgb', 'r0', 0, 0)
     IF (lwp) THEN
       WRITE(numout, FMT = *)
@@ -329,15 +331,13 @@ MODULE trc_oce
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE trc_oce_rgb_read
   FUNCTION trc_oce_ext_lev(prldex, pqsr_frc) RESULT(pjl)
-    USE profile_psy_data_mod, ONLY: profile_PSyDataType
     REAL(KIND = wp), INTENT(IN) :: prldex
     REAL(KIND = wp), INTENT(IN) :: pqsr_frc
     INTEGER :: jk, pjl
     REAL(KIND = wp) :: zhext
     REAL(KIND = wp) :: zprec = 15._wp
     REAL(KIND = wp) :: zem
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('trc_oce_ext_lev', 'r0', 0, 0)
+    !$ACC KERNELS
     zhext = prldex * (LOG(10._wp) * zprec + LOG(pqsr_frc))
     pjl = jpkm1
     DO jk = jpkm1, 1, - 1
@@ -348,6 +348,6 @@ MODULE trc_oce
         pjl = jk
       END IF
     END DO
-    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
   END FUNCTION trc_oce_ext_lev
 END MODULE trc_oce

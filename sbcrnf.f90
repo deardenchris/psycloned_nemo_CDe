@@ -68,7 +68,9 @@ MODULE sbcrnf
     CALL profile_psy_data0 % PostEnd
     IF (MOD(kt - 1, nn_fsbc) == 0) THEN
       CALL profile_psy_data1 % PreStart('sbc_rnf', 'r1', 0, 0)
+      !$ACC KERNELS ! CDe
       IF (.NOT. l_rnfcpl) rnf(:, :) = rn_rfact * (sf_rnf(1) % fnow(:, :, 1)) * tmask(:, :, 1)
+      !$ACC END KERNELS
       CALL profile_psy_data1 % PostEnd
       IF (ln_rnf_tem) THEN
         CALL profile_psy_data2 % PreStart('sbc_rnf', 'r2', 0, 0)
@@ -129,10 +131,12 @@ MODULE sbcrnf
     REAL(KIND = wp) :: zfact
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     CALL profile_psy_data0 % PreStart('sbc_rnf_div', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe
     zfact = 0.5_wp
+    !$ACC END KERNELS
     CALL profile_psy_data0 % PostEnd
     IF (ln_rnf_depth .OR. ln_rnf_depth_ini) THEN
-      IF (ln_linssh) THEN
+      IF (ln_linssh) THEN              
         DO jj = 1, jpj
           DO ji = 1, jpi
             !$ACC KERNELS

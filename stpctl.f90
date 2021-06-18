@@ -24,7 +24,8 @@ MODULE stpctl
     INTEGER, DIMENSION(2) :: ih
     INTEGER, DIMENSION(3) :: iu, is1, is2
     REAL(KIND = wp) :: zzz
-    REAL(KIND = wp), DIMENSION(9) :: zmax
+    !REAL(KIND = wp), DIMENSION(9) :: zmax
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:) :: zmax ! CDe
     LOGICAL :: ll_wrtstp, ll_colruns, ll_wrtruns
     CHARACTER(LEN = 20) :: clname
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
@@ -36,6 +37,7 @@ MODULE stpctl
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data7
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
+    ALLOCATE(zmax(9)) ! CDe
     CALL profile_psy_data0 % PreStart('stp_ctl', 'r0', 0, 0)
     ll_wrtstp = (MOD(kt, sn_cfctl % ptimincr) == 0) .OR. (kt == nitend)
     ll_colruns = ll_wrtstp .AND. (ln_ctl .OR. sn_cfctl % l_runstat)
@@ -66,8 +68,8 @@ MODULE stpctl
           istatus = NF90_DEF_VAR(idrun, 'Cu_max', NF90_DOUBLE, (/idtime/), idc1)
         END IF
         CALL profile_psy_data2 % PostEnd
-        !$ACC KERNELS
         istatus = NF90_ENDDEF(idrun)
+        !$ACC KERNELS
         zmax(8 : 9) = 0._wp
         !$ACC END KERNELS
       END IF
@@ -78,17 +80,17 @@ MODULE stpctl
       WRITE(numstp, FMT = '(1x, i8)') kt
       REWIND(UNIT = numstp)
     END IF
-    CALL profile_psy_data3 % PostEnd
+    CALL profile_psy_data3 % PostEnd ! CDe added
     IF (ll_wd) THEN
-      !$ACC KERNELS  ! CDe added  
+      !$ACC KERNELS ! CDe added      
       zmax(1) = MAXVAL(ABS(sshn(:, :) + ssh_ref * tmask(:, :, 1)))
       !$ACC END KERNELS
     ELSE
-      !$ACC KERNELS  ! CDe added  
+      !$ACC KERNELS ! CDe added      
       zmax(1) = MAXVAL(ABS(sshn(:, :)))
       !$ACC END KERNELS
     END IF
-    !$ACC KERNELS    ! CDe added
+    !$ACC KERNELS ! CDe added
     zmax(2) = MAXVAL(ABS(un(:, :, :)))
     zmax(3) = MAXVAL(- tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp)
     zmax(4) = MAXVAL(tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp)
@@ -97,7 +99,7 @@ MODULE stpctl
     zmax(7) = REAL(nstop, wp)
     !$ACC END KERNELS
     IF (ln_zad_Aimp) THEN
-      !$ACC KERNELS ! CDe added     
+      !$ACC KERNELS ! CDe added      
       zmax(8) = MAXVAL(ABS(wi(:, :, :)), mask = wmask(:, :, :) == 1._wp)
       zmax(9) = MAXVAL(Cu_adv(:, :, :), mask = tmask(:, :, :) == 1._wp)
       !$ACC END KERNELS
@@ -124,7 +126,7 @@ MODULE stpctl
     END IF
     CALL profile_psy_data4 % PostEnd
     IF ((ln_ctl .OR. lsomeoce) .AND. (zmax(1) > 20._wp .OR. zmax(2) > 10._wp .OR. zmax(3) >= 0._wp .OR. zmax(4) >= 100._wp .OR. &
-&zmax(4) < 0._wp .OR. ieee_is_nan(zmax(1) + zmax(2) + zmax(3)))) THEN
+&zmax(4) < 0._wp .OR. IEEE_IS_NAN(zmax(1) + zmax(2) + zmax(3)))) THEN
       IF (lk_mpp .AND. ln_ctl) THEN
         CALL profile_psy_data5 % PreStart('stp_ctl', 'r5', 0, 0)
         CALL mpp_maxloc('stpctl', ABS(sshn), ssmask(:, :), zzz, ih)
@@ -139,8 +141,8 @@ MODULE stpctl
         iu(:) = MAXLOC(ABS(un(:, :, :))) + (/nimpp - 1, njmpp - 1, 0/)
         is1(:) = MINLOC(tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp) + (/nimpp - 1, njmpp - 1, 0/)
         is2(:) = MAXLOC(tsn(:, :, :, jp_sal), mask = tmask(:, :, :) == 1._wp) + (/nimpp - 1, njmpp - 1, 0/)
-        !CC END KERNELS
         CALL profile_psy_data6 % PostEnd
+        !CC END KERNELS
       END IF
       CALL profile_psy_data7 % PreStart('stp_ctl', 'r7', 0, 0)
       WRITE(ctmp1, FMT = *) ' stp_ctl: |ssh| > 20 m  or  |U| > 10 m/s  or  S <= 0  or  S >= 100  or  NaN encounter in the tests'

@@ -265,7 +265,6 @@ MODULE zdfmxl
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zthick_0, zthick
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     CALL profile_psy_data0 % PreStart('zdf_mxl_zint_htc', 'r0', 0, 0)
     IF (.NOT. ALLOCATED(ilevel)) THEN
       ALLOCATE(ilevel(jpi, jpj), zthick_0(jpi, jpj), zthick(jpi, jpj), STAT = ji)
@@ -303,10 +302,8 @@ MODULE zdfmxl
       htc_mld(:, :) = 0._wp
       !$ACC END KERNELS
     END IF
-    CALL profile_psy_data2 % PreStart('zdf_mxl_zint_htc', 'r2', 0, 0)
-    ikmax = MIN(MAXVAL(ilevel(:, :)), jpkm1)
-    CALL profile_psy_data2 % PostEnd
     !$ACC KERNELS
+    ikmax = MIN(MAXVAL(ilevel(:, :)), jpkm1)
     DO jk = 1, ikmax
       !$ACC LOOP INDEPENDENT COLLAPSE(2)
       DO jj = 1, jpj

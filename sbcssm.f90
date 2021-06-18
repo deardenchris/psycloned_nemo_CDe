@@ -26,7 +26,6 @@ MODULE sbcssm
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data4
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data5
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data6
     !$ACC KERNELS
     !$ACC LOOP INDEPENDENT COLLAPSE(2)
     DO jj = 1, jpj
@@ -72,9 +71,9 @@ MODULE sbcssm
         IF (lwp) WRITE(numout, FMT = *)
         IF (lwp) WRITE(numout, FMT = *) 'sbc_ssm : mean fields initialised to instantaneous values'
         IF (lwp) WRITE(numout, FMT = *) '~~~~~~~   '
-        zcoef = REAL(nn_fsbc - 1, wp)
         CALL profile_psy_data1 % PostEnd
         !$ACC KERNELS
+        zcoef = REAL(nn_fsbc - 1, wp)
         ssu_m(:, :) = zcoef * ub(:, :, 1)
         ssv_m(:, :) = zcoef * vb(:, :, 1)
         !$ACC END KERNELS
@@ -142,12 +141,8 @@ MODULE sbcssm
       !$ACC KERNELS
       e3t_m(:, :) = e3t_m(:, :) + e3t_n(:, :, 1)
       frq_m(:, :) = frq_m(:, :) + fraqsr_1lev(:, :)
-      !$ACC END KERNELS
       IF (MOD(kt - 1, nn_fsbc) == 0) THEN
-        CALL profile_psy_data4 % PreStart('sbc_ssm', 'r4', 0, 0)
         zcoef = 1. / REAL(nn_fsbc, wp)
-        CALL profile_psy_data4 % PostEnd
-        !$ACC KERNELS
         sst_m(:, :) = sst_m(:, :) * zcoef
         sss_m(:, :) = sss_m(:, :) * zcoef
         ssu_m(:, :) = ssu_m(:, :) * zcoef
@@ -155,9 +150,9 @@ MODULE sbcssm
         ssh_m(:, :) = ssh_m(:, :) * zcoef
         e3t_m(:, :) = e3t_m(:, :) * zcoef
         frq_m(:, :) = frq_m(:, :) * zcoef
-        !$ACC END KERNELS
       END IF
-      CALL profile_psy_data5 % PreStart('sbc_ssm', 'r5', 0, 0)
+      !$ACC END KERNELS
+      CALL profile_psy_data4 % PreStart('sbc_ssm', 'r4', 0, 0)
       IF (lrst_oce) THEN
         IF (lwp) WRITE(numout, FMT = *)
         IF (lwp) WRITE(numout, FMT = *) 'sbc_ssm : sea surface mean fields written in ocean restart file ', 'at it= ', kt, ' date= &
@@ -175,9 +170,9 @@ MODULE sbcssm
         CALL iom_rstput(kt, nitrst, numrow, 'frq_m', frq_m, ldxios = lwxios)
         IF (lwxios) CALL iom_swap(cxios_context)
       END IF
-      CALL profile_psy_data5 % PostEnd
+      CALL profile_psy_data4 % PostEnd
     END IF
-    CALL profile_psy_data6 % PreStart('sbc_ssm', 'r6', 0, 0)
+    CALL profile_psy_data5 % PreStart('sbc_ssm', 'r5', 0, 0)
     IF (MOD(kt - 1, nn_fsbc) == 0) THEN
       CALL iom_put('ssu_m', ssu_m)
       CALL iom_put('ssv_m', ssv_m)
@@ -187,7 +182,7 @@ MODULE sbcssm
       CALL iom_put('e3t_m', e3t_m)
       CALL iom_put('frq_m', frq_m)
     END IF
-    CALL profile_psy_data6 % PostEnd
+    CALL profile_psy_data5 % PostEnd
   END SUBROUTINE sbc_ssm
   SUBROUTINE sbc_ssm_init
     REAL(KIND = wp) :: zcoef, zf_sbc
@@ -217,8 +212,8 @@ MODULE sbcssm
         END IF
         IF (zf_sbc /= REAL(nn_fsbc, wp)) THEN
           IF (lwp) WRITE(numout, FMT = *) '   restart with a change in the frequency of mean from ', zf_sbc, ' to ', nn_fsbc
-          zcoef = REAL(nn_fsbc - 1, wp) / zf_sbc
           !$ACC KERNELS
+          zcoef = REAL(nn_fsbc - 1, wp) / zf_sbc
           ssu_m(:, :) = zcoef * ssu_m(:, :)
           ssv_m(:, :) = zcoef * ssv_m(:, :)
           sst_m(:, :) = zcoef * sst_m(:, :)

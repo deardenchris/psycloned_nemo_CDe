@@ -506,43 +506,59 @@ MODULE lib_mpp
     INTEGER, DIMENSION(MPI_STATUS_SIZE) :: ml_stat
     REAL(KIND = wp), DIMENSION(:, :, :, :, :, :), ALLOCATABLE :: zt3ns, zt3sn
     REAL(KIND = wp), DIMENSION(:, :, :, :, :, :), ALLOCATABLE :: zt3ew, zt3we
+
     ipk = 1
     ipl = 1
     ipf = kfld
+
     IF (narea == 1 .AND. numcom == - 1) CALL mpp_report(cdname, ipk, ipl, ipf, ld_lbc = .TRUE.)
+
+    !$ACC DATA COPYIN ( cd_nat(1:ipf) ) ! CDe fixes compiler error ""Could not find allocated-variable index for symbol - cd_nat"
+                                        ! when accessing cd_nat inside kernels region
+    !$ACC KERNELS ! CDe
     IF (PRESENT(pval)) THEN
       zland = pval
     ELSE
       zland = 0._wp
     END IF
+    
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
-          !$ACC KERNELS     
           ptab(jf) % pt2d(1, :) = ptab(jf) % pt2d(jpim1, :)
           ptab(jf) % pt2d(jpi, :) = ptab(jf) % pt2d(2, :)
-          !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS      
-          IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(1 : nn_hls, :) = zland
-          ptab(jf) % pt2d(nlci - nn_hls + 1 : jpi, :) = zland
-          !$ACC END KERNELS
+          IF (.NOT. cd_nat(jf) == 'F') THEN
+            !$ACC LOOP GANG VECTOR ! CDe
+            DO jj = 1, jpj ! CDe re-write as explicit loop
+              !ptab(jf) % pt2d(1 : nn_hls, :) = zland
+              ptab(jf) % pt2d(1 : nn_hls, jj) = zland
+            END DO
+          END IF
+          !$ACC LOOP GANG VECTOR ! CDe
+          DO jj = 1, jpj ! CDe re-write as explicit loop
+            !ptab(jf) % pt2d(nlci - nn_hls + 1 : jpi, :) = zland
+            ptab(jf) % pt2d(nlci - nn_hls + 1 : jpi, jj) = zland
+          END DO
         END IF
         IF (l_Jperio) THEN
-          !$ACC KERNELS
           ptab(jf) % pt2d(:, 1) = ptab(jf) % pt2d(:, jpjm1)
           ptab(jf) % pt2d(:, jpj) = ptab(jf) % pt2d(:, 2)
-          !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS      
-          IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt2d(:, 1 : nn_hls) = zland
-          !$ACC END KERNELS
-          !$ACC KERNELS
-          ptab(jf) % pt2d(:, nlcj - nn_hls + 1 : jpj) = zland
-          !$ACC END KERNELS
+          IF (.NOT. cd_nat(jf) == 'F') THEN
+            !$ACC LOOP GANG VECTOR
+            DO ji = 1, jpi ! CDe verifies
+              ptab(jf) % pt2d(ji, 1 : nn_hls) = zland
+            END DO
+          END IF
+          !$ACC LOOP GANG VECTOR
+          DO ji = 1, jpi ! CDe verifies
+            ptab(jf) % pt2d(ji, nlcj - nn_hls + 1 : jpj) = zland
+          END DO
         END IF
       END DO
     END IF
+    !$ACC END KERNELS ! CDe
     IF (ABS(nbondi) == 1) ALLOCATE(zt3ew(jpj, nn_hls, ipk, ipl, ipf, 1), zt3we(jpj, nn_hls, ipk, ipl, ipf, 1))
     IF (nbondi == 0) ALLOCATE(zt3ew(jpj, nn_hls, ipk, ipl, ipf, 2), zt3we(jpj, nn_hls, ipk, ipl, ipf, 2))
     SELECT CASE (nbondi)
@@ -562,7 +578,7 @@ MODULE lib_mpp
         END DO
       END DO
       !$ACC END KERNELS
-    CASE (0)
+    CASE (0) ! CDe Invoked
       !$ACC KERNELS
       iihom = nlci - nreci
       !$ACC LOOP SEQ
@@ -743,7 +759,7 @@ MODULE lib_mpp
       DO jf = 1, ipf
         DO jl = 1, ipl
           !$ACC KERNELS
-          DO jk = 1, ipk
+          DO jk = 1, ipk 
             DO jh = 1, nn_hls
               ptab(jf) % pt2d(:, ijhom + jh) = zt3ns(:, jh, jk, jl, jf, 1)
             END DO
@@ -778,6 +794,7 @@ MODULE lib_mpp
       END DO
     END SELECT
     IF (nbondj /= 2) DEALLOCATE(zt3ns, zt3sn)
+    !$ACC END DATA ! CDe
   END SUBROUTINE mpp_lnk_2d_ptr
   SUBROUTINE mpp_lnk_3d(cdname, ptab, cd_nat, psgn, cd_mpp, pval)
     REAL(KIND = wp), INTENT(INOUT) :: ptab(:, :, :)
@@ -847,19 +864,24 @@ MODULE lib_mpp
         END DO
       END DO
     CASE (0)
+      !$ACC KERNELS ! CDe This works OK
       iihom = nlci - nreci
+      !$ACC LOOP GANG VECTOR COLLAPSE(5) ! CDe
       DO jf = 1, ipf
         DO jl = 1, ipl
-          !$ACC KERNELS
           DO jk = 1, ipk
             DO jh = 1, nn_hls
-              zt3ew(:, jh, jk, jl, jf, 1) = ptab(nn_hls + jh, :, jk)
-              zt3we(:, jh, jk, jl, jf, 1) = ptab(iihom + jh, :, jk)
+              DO jj = 1, jpj ! CDe explicit loop over jj
+!              zt3ew(:, jh, jk, jl, jf, 1) = ptab(nn_hls + jh, :, jk)
+!              zt3we(:, jh, jk, jl, jf, 1) = ptab(iihom + jh, :, jk)
+                zt3ew(jj, jh, jk, jl, jf, 1) = ptab(nn_hls + jh, jj, jk)
+                zt3we(jj, jh, jk, jl, jf, 1) = ptab(iihom + jh, jj, jk)
+              END DO ! CDe
             END DO
           END DO
-          !$ACC END KERNELS
         END DO
       END DO
+      !$ACC END KERNELS
     CASE (1)
       iihom = nlci - nreci
       DO jf = 1, ipf
@@ -1066,41 +1088,60 @@ MODULE lib_mpp
     INTEGER, DIMENSION(MPI_STATUS_SIZE) :: ml_stat
     REAL(KIND = wp), DIMENSION(:, :, :, :, :, :), ALLOCATABLE :: zt3ns, zt3sn
     REAL(KIND = wp), DIMENSION(:, :, :, :, :, :), ALLOCATABLE :: zt3ew, zt3we
+
     ipk = SIZE(ptab(1) % pt3d, 3)
     ipl = 1
     ipf = kfld
+
     IF (narea == 1 .AND. numcom == - 1) CALL mpp_report(cdname, ipk, ipl, ipf, ld_lbc = .TRUE.)
+
+    !$ACC DATA COPYIN ( cd_nat(1:ipf) ) ! CDe to avoid compiler error when indexing cd_nat
+    !$ACC KERNELS ! CDe
     IF (PRESENT(pval)) THEN
       zland = pval
     ELSE
       zland = 0._wp
     END IF
+
     IF (.NOT. PRESENT(cd_mpp)) THEN
       DO jf = 1, ipf
         IF (l_Iperio) THEN
-          !$ACC KERNELS
           ptab(jf) % pt3d(1, :, :) = ptab(jf) % pt3d(jpim1, :, :)
           ptab(jf) % pt3d(jpi, :, :) = ptab(jf) % pt3d(2, :, :)
-          !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS      
-          IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(1 : nn_hls, :, :) = zland
-          ptab(jf) % pt3d(nlci - nn_hls + 1 : jpi, :, :) = zland
-          !$ACC END KERNELS
+          IF (.NOT. cd_nat(jf) == 'F') THEN
+            DO jk = 1, ipk ! CDe verifies
+              DO jj = 1, jpj 
+                ptab(jf) % pt3d(1 : nn_hls, jj, jk) = zland
+              END DO
+            END DO
+          END IF
+          DO jk = 1, ipk
+            DO jj = 1, jpj
+              ptab(jf) % pt3d(nlci - nn_hls + 1 : jpi, jj, jk) = zland
+            END DO
+          END DO
         END IF
         IF (l_Jperio) THEN
-          !$ACC KERNELS      
           ptab(jf) % pt3d(:, 1, :) = ptab(jf) % pt3d(:, jpjm1, :)
           ptab(jf) % pt3d(:, jpj, :) = ptab(jf) % pt3d(:, 2, :)
-          !$ACC END KERNELS
         ELSE
-          !$ACC KERNELS      
-          IF (.NOT. cd_nat(jf) == 'F') ptab(jf) % pt3d(:, 1 : nn_hls, :) = zland
-          ptab(jf) % pt3d(:, nlcj - nn_hls + 1 : jpj, :) = zland
-          !$ACC END KERNELS
+          IF (.NOT. cd_nat(jf) == 'F') THEN
+            DO jk = 1, ipk ! CDe verifies
+              DO ji = 1, jpi
+                ptab(jf) % pt3d(ji, 1 : nn_hls, jk) = zland
+              END DO
+            END DO
+          END IF
+          DO jk = 1, ipk
+            DO ji = 1, jpi
+              ptab(jf) % pt3d(ji, nlcj - nn_hls + 1 : jpj, jk) = zland
+            END DO
+          END DO
         END IF
       END DO
     END IF
+    !$ACC END KERNELS ! CDe
     IF (ABS(nbondi) == 1) ALLOCATE(zt3ew(jpj, nn_hls, ipk, ipl, ipf, 1), zt3we(jpj, nn_hls, ipk, ipl, ipf, 1))
     IF (nbondi == 0) ALLOCATE(zt3ew(jpj, nn_hls, ipk, ipl, ipf, 2), zt3we(jpj, nn_hls, ipk, ipl, ipf, 2))
     SELECT CASE (nbondi)
@@ -1330,6 +1371,7 @@ MODULE lib_mpp
       END DO
     END SELECT
     IF (nbondj /= 2) DEALLOCATE(zt3ns, zt3sn)
+    !$ACC END DATA ! CDe
   END SUBROUTINE mpp_lnk_3d_ptr
   SUBROUTINE mpp_lnk_4d(cdname, ptab, cd_nat, psgn, cd_mpp, pval)
     REAL(KIND = wp), INTENT(INOUT) :: ptab(:, :, :, :)
@@ -2074,20 +2116,22 @@ MODULE lib_mpp
     REAL(KIND = wp), DIMENSION(:, :, :, :, :), ALLOCATABLE :: ztab, ztabr
     REAL(KIND = wp), DIMENSION(:, :, :, :, :), ALLOCATABLE :: znorthloc, zfoldwk
     REAL(KIND = wp), DIMENSION(:, :, :, :, :, :), ALLOCATABLE :: znorthgloio
+
     ipk = 1
     ipl = 1
     ipf = kfld
+
     IF (l_north_nogather) THEN
+      !$ACC DATA COPYIN ( cd_nat(1:ipf) ) ! CDe to avoid compiler error when accessing cd_nat inside kernels region
       ALLOCATE(ipj_s(ipf))
       !$ACC KERNELS
       ipj = 2
       ipj_s(:) = 1
       !$ACC END KERNELS
       ALLOCATE(jj_s(ipf, 2))
-      !$ACC KERNELS
+      !$ACC KERNELS ! CDe
       l_full_nf_update = .TRUE.
       IF (l_full_nf_update .OR. (ncom_stp == nit000 .AND. .NOT. ln_rstart)) ipj_s(:) = 2
-      !$ACC END KERNELS
       DO jf = 1, ipf
         SELECT CASE (npolj)
         CASE (3, 4)
@@ -2110,21 +2154,26 @@ MODULE lib_mpp
           END SELECT
         END SELECT
       END DO
-      ipf_j = SUM(ipj_s(:))
+      !$ACC END KERNELS 
+      ipf_j = SUM(ipj_s(:)) ! CDe This line causes a runtime error when placed inside a kernels region??
       ALLOCATE(znorthloc(jpimax, ipf_j, ipk, ipl, 1))
+      !$ACC KERNELS ! CDe
       js = 0
+      !$ACC LOOP SEQ ! CDe
       DO jf = 1, ipf
+        !$ACC LOOP SEQ ! CDe
         DO jj = 1, ipj_s(jf)
           js = js + 1
+          !$ACC LOOP SEQ ! CDe
           DO jl = 1, ipl
-            !$ACC KERNELS
+            !$ACC LOOP GANG VECTOR ! CDe
             DO jk = 1, ipk
               znorthloc(1 : jpi, js, jk, jl, 1) = ptab(jf) % pt2d(1 : jpi, jj_s(jf, jj))
             END DO
-            !$ACC END KERNELS
           END DO
         END DO
       END DO
+      !$ACC END KERNELS ! CDe
       ibuffsize = jpimax * ipf_j * ipk * ipl
       ALLOCATE(zfoldwk(jpimax, ipf_j, ipk, ipl, 1))
       ALLOCATE(ztabr(jpimax * jpmaxngh, ipj, ipk, ipl, ipf))
@@ -2166,19 +2215,24 @@ MODULE lib_mpp
             END DO
           END DO
         ELSE IF (iproc == narea - 1) THEN
+          !$ACC KERNELS ! CDe This is OK
+          !$ACC LOOP SEQ ! CDe
           DO jf = 1, ipf
+            !$ACC LOOP SEQ ! CDe
             DO jj = 1, ipj_s(jf)
+              !$ACC LOOP SEQ ! CDe
               DO jl = 1, ipl
-                 !$ACC KERNELS
+                !$ACC LOOP SEQ ! CDe
                 DO jk = 1, ipk
+                  !$ACC LOOP GANG VECTOR ! CDe
                   DO ji = ildi, ilei
                     ztabr(iilb + ji, jj, jk, jl, jf) = ptab(jf) % pt2d(ji, jj_s(jf, jj))
                   END DO
                 END DO
-                !$ACC END KERNELS
               END DO
             END DO
           END DO
+          !$ACC END KERNELS ! CDe
         END IF
       END DO
       IF (l_isend) THEN
@@ -2196,6 +2250,7 @@ MODULE lib_mpp
       DEALLOCATE(ztabr)
       DEALLOCATE(jj_s)
       DEALLOCATE(ipj_s)
+      !$ACC END DATA  ! CDe
     ELSE
       ipj = 4
       ALLOCATE(znorthloc(jpimax, ipj, ipk, ipl, ipf))
@@ -2510,10 +2565,10 @@ MODULE lib_mpp
       ipj_s(:) = 1
       !$ACC END KERNELS
       ALLOCATE(jj_s(ipf, 2))
+      !$ACC DATA COPYIN( cd_nat(1:ipj) ) ! CDe to avoid compiler error when accessing cd_nat inside kernels region
       !$ACC KERNELS
       l_full_nf_update = .TRUE.
       IF (l_full_nf_update .OR. (ncom_stp == nit000 .AND. .NOT. ln_rstart)) ipj_s(:) = 2
-      !$ACC END KERNELS
       DO jf = 1, ipf
         SELECT CASE (npolj)
         CASE (3, 4)
@@ -2536,7 +2591,8 @@ MODULE lib_mpp
           END SELECT
         END SELECT
       END DO
-      ipf_j = SUM(ipj_s(:))
+      !$ACC END KERNELS ! CDe
+      ipf_j = SUM(ipj_s(:)) ! Breaks verification leading to runtime crash when placed inside kernels region??
       ALLOCATE(znorthloc(jpimax, ipf_j, ipk, ipl, 1))
       js = 0
       DO jf = 1, ipf
@@ -2622,6 +2678,7 @@ MODULE lib_mpp
       DEALLOCATE(ztabr)
       DEALLOCATE(jj_s)
       DEALLOCATE(ipj_s)
+      !$ACC END DATA ! CDe
     ELSE
       ipj = 4
       ALLOCATE(znorthloc(jpimax, ipj, ipk, ipl, ipf))
@@ -4364,7 +4421,9 @@ MODULE lib_mpp
     INTEGER :: index0
     REAL(KIND = wp) :: zmin
     INTEGER, DIMENSION(:), ALLOCATABLE :: ilocs
-    REAL(KIND = wp), DIMENSION(2, 1) :: zain, zaout
+!    REAL(KIND = wp), DIMENSION(2, 1) :: zain, zaout
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zain, zaout ! CDe make allocatable for use with managed memory
+    ALLOCATE(zain(2, 1), zaout(2, 1)) ! CDe
     IF (narea == 1 .AND. numcom == - 1) CALL mpp_report(cdname, ld_glb = .TRUE.)
     idim = SIZE(kindex)
     IF (ALL(pmask(:, :) /= 1._wp)) THEN
@@ -4452,7 +4511,9 @@ MODULE lib_mpp
     INTEGER :: index0
     REAL(KIND = wp) :: zmin
     INTEGER, DIMENSION(:), ALLOCATABLE :: ilocs
-    REAL(KIND = wp), DIMENSION(2, 1) :: zain, zaout
+    !REAL(KIND = wp), DIMENSION(2, 1) :: zain, zaout ! CDe
+    REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: zain, zaout ! CDe
+    ALLOCATE(zain(2, 1), zaout(2, 1)) ! CDe
     IF (narea == 1 .AND. numcom == - 1) CALL mpp_report(cdname, ld_glb = .TRUE.)
     idim = SIZE(kindex)
     IF (ALL(pmask(:, :) /= 1._wp)) THEN

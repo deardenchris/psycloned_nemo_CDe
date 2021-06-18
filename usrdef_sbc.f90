@@ -37,11 +37,8 @@ MODULE usrdef_sbc
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
-    CALL profile_psy_data0 % PreStart('usrdef_sbc_oce', 'r0', 0, 0)
-    zyydd = REAL(nyear_len(1), wp)
-    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
+    zyydd = REAL(nyear_len(1), wp)
     zyear0 = ndate0 / 10000
     zmonth0 = (ndate0 - zyear0 * 10000) / 100
     zday0 = ndate0 - zyear0 * 10000 - zmonth0 * 100
@@ -76,10 +73,10 @@ MODULE usrdef_sbc
       END DO
     END DO
     !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('usrdef_sbc_oce', 'r1', 0, 0)
+    CALL profile_psy_data0 % PreStart('usrdef_sbc_oce', 'r0', 0, 0)
     zsumemp = GLOB_SUM('usrdef_sbc', emp(:, :))
     zsurf = GLOB_SUM('usrdef_sbc', tmask(:, :, 1))
-    CALL profile_psy_data1 % PostEnd
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
     zsumemp = zsumemp / zsurf
     emp(:, :) = emp(:, :) - zsumemp * tmask(:, :, 1)
@@ -90,9 +87,9 @@ MODULE usrdef_sbc
     zday0 = ndate0 - zyear0 * 10000 - zmonth0 * 100
     zday_year0 = (zmonth0 - 1) * 30. + zday0
     !$ACC END KERNELS
-    CALL profile_psy_data2 % PreStart('usrdef_sbc_oce', 'r2', 0, 0)
+    CALL profile_psy_data1 % PreStart('usrdef_sbc_oce', 'r1', 0, 0)
     ztime = FLOAT(kt) * rdt / (rmmss * rhhmm) - (nyear - 1) * rjjhh * zyydd
-    CALL profile_psy_data2 % PostEnd
+    CALL profile_psy_data1 % PostEnd
     !$ACC KERNELS
     ztimemax = ((5. * 30.) + 21.) * 24.
     ztimemin = ztimemax + rjjhh * zyydd / 2
@@ -118,7 +115,7 @@ MODULE usrdef_sbc
       END DO
     END DO
     !$ACC END KERNELS
-    CALL profile_psy_data3 % PreStart('usrdef_sbc_oce', 'r3', 0, 0)
+    CALL profile_psy_data2 % PreStart('usrdef_sbc_oce', 'r2', 0, 0)
     CALL lbc_lnk_multi('usrdef_sbc', taum(:, :), 'T', 1., wndm(:, :), 'T', 1.)
     IF (kt == nit000 .AND. lwp) THEN
       WRITE(numout, FMT = *)
@@ -151,7 +148,7 @@ MODULE usrdef_sbc
       WRITE(numout, FMT = *) '           ndastp     = ', ndastp
       WRITE(numout, FMT = *) '           adatrj     = ', adatrj
     END IF
-    CALL profile_psy_data3 % PostEnd
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE usrdef_sbc_oce
   SUBROUTINE usrdef_sbc_ice_tau(kt)
     INTEGER, INTENT(IN) :: kt

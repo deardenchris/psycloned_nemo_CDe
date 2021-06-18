@@ -136,9 +136,9 @@ MODULE diurnal_bulk
       z_fla(:, :) = 0._wp
     END WHERE
     !$ACC END KERNELS
-    !CALL profile_psy_data3 % PreStart('diurnal_sst_takaya_step', 'r3', 0, 0)
+    CALL profile_psy_data3 % PreStart('diurnal_sst_takaya_step', 'r3', 0, 0)
     x_dsst(:, :) = t_imp(x_dsst(:, :), p_rdt, z_abflux(:, :), z_fvel(:, :), z_fla(:, :), zmu(:, :), zthick(:, :), prho(:, :))
-    !CALL profile_psy_data3 % PostEnd
+    CALL profile_psy_data3 % PostEnd
   END SUBROUTINE diurnal_sst_takaya_step
   FUNCTION t_imp(p_dsst, p_rdt, p_abflux, p_fvel, p_fla, pmu, pthick, prho)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
