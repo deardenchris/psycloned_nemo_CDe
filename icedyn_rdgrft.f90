@@ -174,11 +174,7 @@ MODULE icedyn_rdgrft
     REAL(KIND = wp), DIMENSION(jpij) :: zasum, z1_asum, zaksum
     REAL(KIND = wp), DIMENSION(jpij, jpl) :: zhi
     REAL(KIND = wp), DIMENSION(jpij, - 1 : jpl) :: zGsum
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data3
-    CALL profile_psy_data0 % PreStart('rdgrft_prep', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe added
     z1_gstar = 1._wp / rn_gstar
     z1_astar = 1._wp / rn_astar
     WHERE (pa_i(1 : npti, :) > epsi20)
@@ -186,23 +182,19 @@ MODULE icedyn_rdgrft
     ELSEWHERE
       zhi(1 : npti, :) = 0._wp
     END WHERE
+    ! CDe - SUM(xx, dim=yy) no longer causes seg fault inside kernels region if using NV-HPC-SDK >= 20.7
     zasum(1 : npti) = pato_i(1 : npti) + SUM(pa_i(1 : npti, :), dim = 2)
     WHERE (zasum(1 : npti) > epsi20)
       z1_asum(1 : npti) = 1._wp / zasum(1 : npti)
     ELSEWHERE
       z1_asum(1 : npti) = 0._wp
     END WHERE
-    CALL profile_psy_data0 % PostEnd
-    !$ACC KERNELS
     zGsum(1 : npti, - 1) = 0._wp
     zGsum(1 : npti, 0) = pato_i(1 : npti) * z1_asum(1 : npti)
-    !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('rdgrft_prep', 'r1', 0, 0)
     DO jl = 1, jpl
+      ! CDe - SUM(xx, dim=yy) no longer causes seg fault if using NV-HPC-SDK >= 20.7
       zGsum(1 : npti, jl) = (pato_i(1 : npti) + SUM(pa_i(1 : npti, 1 : jl), dim = 2)) * z1_asum(1 : npti)
     END DO
-    CALL profile_psy_data1 % PostEnd
-    !$ACC KERNELS
     IF (ln_partf_lin) THEN
       DO jl = 0, jpl
         DO ji = 1, npti
@@ -228,47 +220,35 @@ MODULE icedyn_rdgrft
         END DO
       END DO
     END IF
-    !$ACC END KERNELS
     IF (ln_rafting .AND. ln_ridging) THEN
-      CALL profile_psy_data2 % PreStart('rdgrft_prep', 'r2', 0, 0)
       DO jl = 1, jpl
         DO ji = 1, npti
           aridge(ji, jl) = (1._wp + TANH(rn_craft * (zhi(ji, jl) - rn_hraft))) * 0.5_wp * apartf(ji, jl)
           araft(ji, jl) = apartf(ji, jl) - aridge(ji, jl)
         END DO
       END DO
-      CALL profile_psy_data2 % PostEnd
     ELSE IF (ln_ridging .AND. .NOT. ln_rafting) THEN
-      !$ACC KERNELS
       DO jl = 1, jpl
         DO ji = 1, npti
           aridge(ji, jl) = apartf(ji, jl)
           araft(ji, jl) = 0._wp
         END DO
       END DO
-      !$ACC END KERNELS
-      ! !$ACC KERNELS ! CDe compiler doesn't like this
     ELSE IF (ln_rafting .AND. .NOT. ln_ridging) THEN
-      ! !$ACC END KERNELS
-      !$ACC KERNELS ! CDe added
       DO jl = 1, jpl
         DO ji = 1, npti
           aridge(ji, jl) = 0._wp
           araft(ji, jl) = apartf(ji, jl)
         END DO
       END DO
-      !$ACC END KERNELS
     ELSE
-      !$ACC KERNELS ! CDe added      
       DO jl = 1, jpl
         DO ji = 1, npti
           aridge(ji, jl) = 0._wp
           araft(ji, jl) = 0._wp
         END DO
       END DO
-      !$ACC END KERNELS
     END IF
-    !$ACC KERNELS
     zfac = 1._wp / hi_hrft
     zaksum(1 : npti) = apartf(1 : npti, 0)
     DO jl = 1, jpl
@@ -288,13 +268,11 @@ MODULE icedyn_rdgrft
         END IF
       END DO
     END DO
-    !$ACC END KERNELS
     WHERE (zaksum(1 : npti) > epsi20)
       closing_gross(1 : npti) = pclosing_net(1 : npti) / zaksum(1 : npti)
     ELSEWHERE
       closing_gross(1 : npti) = 0._wp
     END WHERE
-    !$ACC KERNELS
     DO jl = 1, jpl
       DO ji = 1, npti
         zfac = apartf(ji, jl) * closing_gross(ji) * rdt_ice
@@ -303,8 +281,6 @@ MODULE icedyn_rdgrft
         END IF
       END DO
     END DO
-    !$ACC END KERNELS
-    CALL profile_psy_data3 % PreStart('rdgrft_prep', 'r3', 0, 0)
     DO ji = 1, npti
       zfac = pato_i(ji) + (opning(ji) - apartf(ji, 0) * closing_gross(ji)) * rdt_ice
       IF (zfac < 0._wp) THEN
@@ -313,7 +289,7 @@ MODULE icedyn_rdgrft
         opning(ji) = apartf(ji, 0) * closing_gross(ji) + (zasum(ji) - pato_i(ji)) * r1_rdtice
       END IF
     END DO
-    CALL profile_psy_data3 % PostEnd
+    !$ACC END KERNELS
   END SUBROUTINE rdgrft_prep
   SUBROUTINE rdgrft_shift
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
