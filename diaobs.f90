@@ -193,6 +193,11 @@ MODULE diaobs
         CALL obs_settypefiles(nsurftypes, jpmaxnfiles, jtype, 'sst   ', cn_sstfbfiles, ifilessurf, cobstypessurf, clsurffiles)
         CALL obs_setinterpopts(nsurftypes, jtype, 'sst   ', nn_2dint, nn_2dint_sst, rn_sst_avglamscl, rn_sst_avgphiscl, ln_sst_fp_indegs, ln_sstnight, n2dintsurf, zavglamscl, zavgphiscl, lfpindegs, llnightav)
       END IF
+      IF (ln_sic) THEN
+        jtype = jtype + 1
+        CALL obs_settypefiles(nsurftypes, jpmaxnfiles, jtype, 'sic   ', cn_sicfbfiles, ifilessurf, cobstypessurf, clsurffiles)
+        CALL obs_setinterpopts(nsurftypes, jtype, 'sic   ', nn_2dint, nn_2dint_sic, rn_sic_avglamscl, rn_sic_avgphiscl, ln_sic_fp_indegs, .FALSE., n2dintsurf, zavglamscl, zavgphiscl, lfpindegs, llnightav)
+      END IF
       IF (ln_sss) THEN
         jtype = jtype + 1
         CALL obs_settypefiles(nsurftypes, jpmaxnfiles, jtype, 'sss   ', cn_sssfbfiles, ifilessurf, cobstypessurf, clsurffiles)
@@ -283,6 +288,7 @@ MODULE diaobs
     USE phycst, ONLY: rday
     USE oce, ONLY: tsn, un, vn, sshn
     USE phycst, ONLY: rday
+    USE ice, ONLY: at_i
     IMPLICIT NONE
     INTEGER, INTENT(IN) :: kstp
     INTEGER :: idaystp
@@ -347,7 +353,7 @@ MODULE diaobs
             surfdataqc(jtype) % nsurfup = surfdataqc(jtype) % nsurfup + surfdataqc(jtype) % nsstp(1)
             CYCLE
           ELSE
-            CALL ctl_stop(' Trying to run sea-ice observation operator', ' but no sea-ice model appears to have been defined')
+            zsurfvar(:, :) = fr_i(:, :)
           END IF
         END SELECT
         CALL obs_surf_opt(surfdataqc(jtype), kstp, jpi, jpj, nit000, idaystp, zsurfvar, zsurfmask, n2dintsurf(jtype), llnightav(jtype), zavglamscl(jtype), zavgphiscl(jtype), lfpindegs(jtype))

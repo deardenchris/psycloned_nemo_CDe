@@ -4,6 +4,7 @@ MODULE sbcblk_algo_ncar
   USE phycst
   USE sbc_oce
   USE sbcwave, ONLY: cdn_wave
+  USE sbc_ice
   USE iom
   USE lib_mpp
   USE in_out_manager

@@ -42,6 +42,7 @@ MODULE icb_oce
   REAL(KIND = wp), PUBLIC, DIMENSION(:, :), ALLOCATABLE :: ua_e, va_e
   REAL(KIND = wp), PUBLIC, DIMENSION(:, :), ALLOCATABLE :: ssh_e
   REAL(KIND = wp), PUBLIC, DIMENSION(:, :), ALLOCATABLE :: tmask_e, umask_e, vmask_e
+  REAL(KIND = wp), PUBLIC, DIMENSION(:, :), ALLOCATABLE :: hi_e, ui_e, vi_e
   REAL(KIND = wp), PUBLIC, PARAMETER :: pp_rho_ice = 916.7_wp
   REAL(KIND = wp), PUBLIC, PARAMETER :: pp_rho_water = 999.8_wp
   REAL(KIND = wp), PUBLIC, PARAMETER :: pp_rho_air = 1.1_wp
@@ -88,15 +89,13 @@ MODULE icb_oce
   INTEGER FUNCTION icb_alloc()
     INTEGER :: ill
     icb_alloc = 0
-    !ALLOCATE(berg_grid, STAT = ill) ! CDe
-    !icb_alloc = icb_alloc + ill ! CDe
-    ALLOCATE(berg_grid(1)) ! CDe
+    ALLOCATE(berg_grid(1), STAT = ill)
+    icb_alloc = icb_alloc + ill
     ALLOCATE(berg_grid(1) % calving(jpi, jpj), berg_grid(1) % calving_hflx(jpi, jpj), berg_grid(1) % stored_heat(jpi, jpj), &
     berg_grid(1) % floating_melt(jpi, jpj), berg_grid(1) % maxclass(jpi, jpj), berg_grid(1) % stored_ice(jpi, jpj, nclasses), &
-    berg_grid(1) % tmp(jpi, jpj), &
-&STAT = ill)
+    berg_grid(1) % tmp(jpi, jpj), STAT = ill)
     icb_alloc = icb_alloc + ill
-    ALLOCATE(uo_e(0 : jpi + 1, 0 : jpj + 1), ua_e(0 : jpi + 1, 0 : jpj + 1), vo_e(0 : jpi + 1, 0 : jpj + 1), va_e(0 : jpi + 1, 0 : jpj + 1), ff_e(0 : jpi + 1, 0 : jpj + 1), fr_e(0 : jpi + 1, 0 : jpj + 1), tt_e(0 : jpi + 1, 0 : jpj + 1), ssh_e(0 : jpi + 1, 0 : jpj + 1), first_width(nclasses), first_length(nclasses), src_calving(jpi, jpj), src_calving_hflx(jpi, jpj), STAT = ill)
+    ALLOCATE(uo_e(0 : jpi + 1, 0 : jpj + 1), ua_e(0 : jpi + 1, 0 : jpj + 1), vo_e(0 : jpi + 1, 0 : jpj + 1), va_e(0 : jpi + 1, 0 : jpj + 1), ui_e(0 : jpi + 1, 0 : jpj + 1), vi_e(0 : jpi + 1, 0 : jpj + 1), hi_e(0 : jpi + 1, 0 : jpj + 1), ff_e(0 : jpi + 1, 0 : jpj + 1), fr_e(0 : jpi + 1, 0 : jpj + 1), tt_e(0 : jpi + 1, 0 : jpj + 1), ssh_e(0 : jpi + 1, 0 : jpj + 1), first_width(nclasses), first_length(nclasses), src_calving(jpi, jpj), src_calving_hflx(jpi, jpj), STAT = ill)
     icb_alloc = icb_alloc + ill
     ALLOCATE(tmask_e(0 : jpi + 1, 0 : jpj + 1), umask_e(0 : jpi + 1, 0 : jpj + 1), vmask_e(0 : jpi + 1, 0 : jpj + 1), STAT = ill)
     icb_alloc = icb_alloc + ill

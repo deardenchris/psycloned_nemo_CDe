@@ -78,6 +78,7 @@ MODULE dia25h
       rmxln_25h(:, :, :) = hmxl_n(:, :, :)
       !$ACC END KERNELS
     END IF
+    CALL ctl_stop('STOP', 'dia_25h not setup yet to do tidemean ice')
   END SUBROUTINE dia_25h_init
   SUBROUTINE dia_25h(kt)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType

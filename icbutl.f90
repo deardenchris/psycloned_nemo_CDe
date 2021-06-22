@@ -6,6 +6,9 @@ MODULE icbutl
   USE lib_mpp
   USE icb_oce
   USE sbc_oce
+  USE ice, ONLY: u_ice, v_ice, hm_i
+  USE icevar
+  USE sbc_ice, ONLY: snwice_mass, snwice_mass_b
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: icb_utl_copy
@@ -25,6 +28,11 @@ MODULE icbutl
   PUBLIC :: icb_utl_heat
   CONTAINS
   SUBROUTINE icb_utl_copy
+    USE profile_psy_data_mod, ONLY: profile_PSyDataType
+    REAL(KIND = wp), DIMENSION(jpi, jpj) :: zssh_lead_m
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     !$ACC KERNELS
     uo_e(1 : jpi, 1 : jpj) = ssu_m(:, :) * umask(:, :, 1)
     vo_e(1 : jpi, 1 : jpj) = ssv_m(:, :) * vmask(:, :, 1)
@@ -34,6 +42,7 @@ MODULE icbutl
     ua_e(1 : jpi, 1 : jpj) = utau(:, :) * umask(:, :, 1)
     va_e(1 : jpi, 1 : jpj) = vtau(:, :) * vmask(:, :, 1)
     !$ACC END KERNELS
+    CALL profile_psy_data0 % PreStart('icb_utl_copy', 'r0', 0, 0)
     CALL lbc_lnk_icb('icbutl', uo_e, 'U', - 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', vo_e, 'V', - 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', ff_e, 'F', + 1._wp, 1, 1)
@@ -41,10 +50,24 @@ MODULE icbutl
     CALL lbc_lnk_icb('icbutl', va_e, 'V', - 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', fr_e, 'T', + 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', tt_e, 'T', + 1._wp, 1, 1)
+    CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
-    ssh_e(1 : jpi, 1 : jpj) = ssh_m(:, :) * tmask(:, :, 1)
+    hi_e(1 : jpi, 1 : jpj) = hm_i(:, :)
+    ui_e(1 : jpi, 1 : jpj) = u_ice(:, :)
+    vi_e(1 : jpi, 1 : jpj) = v_ice(:, :)
     !$ACC END KERNELS
+    CALL profile_psy_data1 % PreStart('icb_utl_copy', 'r1', 0, 0)
+    zssh_lead_m(:, :) = ice_var_sshdyn(ssh_m, snwice_mass, snwice_mass_b)
+    CALL profile_psy_data1 % PostEnd
+    !$ACC KERNELS
+    ssh_e(1 : jpi, 1 : jpj) = zssh_lead_m(:, :) * tmask(:, :, 1)
+    !$ACC END KERNELS
+    CALL profile_psy_data2 % PreStart('icb_utl_copy', 'r2', 0, 0)
+    CALL lbc_lnk_icb('icbutl', hi_e, 'T', + 1._wp, 1, 1)
+    CALL lbc_lnk_icb('icbutl', ui_e, 'U', - 1._wp, 1, 1)
+    CALL lbc_lnk_icb('icbutl', vi_e, 'V', - 1._wp, 1, 1)
     CALL lbc_lnk_icb('icbutl', ssh_e, 'T', + 1._wp, 1, 1)
+    CALL profile_psy_data2 % PostEnd
   END SUBROUTINE icb_utl_copy
   SUBROUTINE icb_utl_interp(pi, pe1, puo, pui, pua, pssh_i, pj, pe2, pvo, pvi, pva, pssh_j, psst, pcn, phi, pff)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
@@ -69,9 +92,9 @@ MODULE icbutl
     zmod = 1._wp / MAX(1.E-20, SQRT(zcd * SQRT(pua * pua + pva * pva)))
     pua = pua * zmod
     pva = pva * zmod
-    pui = 0._wp
-    pvi = 0._wp
-    phi = 0._wp
+    pui = icb_utl_bilin_h(ui_e, pi, pj, 'U', .FALSE.)
+    pvi = icb_utl_bilin_h(vi_e, pi, pj, 'V', .FALSE.)
+    phi = icb_utl_bilin_h(hi_e, pi, pj, 'T', .TRUE.)
     pssh_i = (icb_utl_bilin_h(ssh_e, pi + 0.1_wp, pj, 'T', .TRUE.) - icb_utl_bilin_h(ssh_e, pi - 0.1_wp, pj, 'T', .TRUE.)) / (0.2_wp * pe1)
     pssh_j = (icb_utl_bilin_h(ssh_e, pi, pj + 0.1_wp, 'T', .TRUE.) - icb_utl_bilin_h(ssh_e, pi, pj - 0.1_wp, 'T', .TRUE.)) / (0.2_wp * pe2)
     CALL profile_psy_data0 % PostEnd

@@ -261,6 +261,35 @@ MODULE bdyini
         IF (lwp) WRITE(numout, *) '      NO T/S relaxation'
       END IF
       IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) 'Boundary conditions for sea ice:  '
+      SELECT CASE (cn_ice(ib_bdy))
+      CASE ('none')
+        IF (lwp) WRITE(numout, *) '      no open boundary condition'
+        dta_bdy(ib_bdy) % ll_a_i = .FALSE.
+        dta_bdy(ib_bdy) % ll_h_i = .FALSE.
+        dta_bdy(ib_bdy) % ll_h_s = .FALSE.
+      CASE ('frs')
+        IF (lwp) WRITE(numout, *) '      Flow Relaxation Scheme'
+        dta_bdy(ib_bdy) % ll_a_i = .TRUE.
+        dta_bdy(ib_bdy) % ll_h_i = .TRUE.
+        dta_bdy(ib_bdy) % ll_h_s = .TRUE.
+      CASE DEFAULT
+        CALL ctl_stop('unrecognised value for cn_ice')
+      END SELECT
+      IF (cn_ice(ib_bdy) /= 'none') THEN
+        SELECT CASE (nn_ice_dta(ib_bdy))
+        CASE (0)
+          IF (lwp) WRITE(numout, *) '      initial state used for bdy data'
+        CASE (1)
+          IF (lwp) WRITE(numout, *) '      boundary data taken from file'
+        CASE DEFAULT
+          CALL ctl_stop('nn_ice_dta must be 0 or 1')
+        END SELECT
+      END IF
+      IF (lwp) WRITE(numout, *)
+      IF (lwp) WRITE(numout, *) '      tem of bdy sea-ice = ', rn_ice_tem(ib_bdy)
+      IF (lwp) WRITE(numout, *) '      sal of bdy sea-ice = ', rn_ice_sal(ib_bdy)
+      IF (lwp) WRITE(numout, *) '      age of bdy sea-ice = ', rn_ice_age(ib_bdy)
       IF (lwp) WRITE(numout, *) '      Width of relaxation zone = ', nn_rimwidth(ib_bdy)
       IF (lwp) WRITE(numout, *)
     END DO

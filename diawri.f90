@@ -23,6 +23,8 @@ MODULE diawri
   USE dia25h
   USE iom
   USE ioipsl
+  USE ice
+  USE icewri
   USE lib_mpp
   USE timing
   USE diurnal_bulk
@@ -329,7 +331,7 @@ MODULE diawri
     IF (lwp) WRITE(numout, *) 'dia_wri_state : single instantaneous ocean state'
     IF (lwp) WRITE(numout, *) '~~~~~~~~~~~~~   and forcing fields file created '
     IF (lwp) WRITE(numout, *) '                and named :', cdfile_name, '...nc'
-    CALL iom_open(TRIM(cdfile_name), inum, ldwrt = .TRUE.)
+    CALL iom_open(TRIM(cdfile_name), inum, ldwrt = .TRUE., kdlev = jpl)
     CALL iom_rstput(0, 0, inum, 'votemper', tsn(:, :, :, jp_tem))
     CALL iom_rstput(0, 0, inum, 'vosaline', tsn(:, :, :, jp_sal))
     CALL iom_rstput(0, 0, inum, 'sossheig', sshn)
@@ -358,6 +360,9 @@ MODULE diawri
       CALL iom_rstput(0, 0, inum, 'sdzocrtx', usd)
       CALL iom_rstput(0, 0, inum, 'sdmecrty', vsd)
       CALL iom_rstput(0, 0, inum, 'sdvecrtz', wsd)
+    END IF
+    IF (nn_ice == 2) THEN
+      CALL ice_wri_state(inum)
     END IF
     CALL iom_close(inum)
     CALL profile_psy_data0 % PostEnd

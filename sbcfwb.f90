@@ -43,8 +43,8 @@ MODULE sbcfwb
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data8
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data9
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data10
+    CALL profile_psy_data0 % PreStart('sbc_fwb', 'r0', 0, 0)
     IF (kt == nit000) THEN
-      CALL profile_psy_data0 % PreStart('sbc_fwb', 'r0', 0, 0)
       IF (lwp) THEN
         WRITE(numout, *)
         WRITE(numout, *) 'sbc_fwb : FreshWater Budget correction'
@@ -56,12 +56,8 @@ MODULE sbcfwb
       IF (kn_fwb == 3 .AND. nn_sssr /= 2) CALL ctl_stop('sbc_fwb: nn_fwb = 3 requires nn_sssr = 2, we stop ')
       IF (kn_fwb == 3 .AND. ln_isfcav) CALL ctl_stop('sbc_fwb: nn_fwb = 3 with ln_isfcav = .TRUE. not working, we stop ')
       area = glob_sum('sbcfwb', e1e2t(:, :) * tmask(:, :, 1))
-      CALL profile_psy_data0 % PostEnd
-      !$ACC KERNELS
-      snwice_mass_b(:, :) = 0.E0
-      snwice_mass(:, :) = 0.E0
-      !$ACC END KERNELS
     END IF
+    CALL profile_psy_data0 % PostEnd
     SELECT CASE (kn_fwb)
     CASE (1)
       IF (MOD(kt - 1, kn_fsbc) == 0) THEN

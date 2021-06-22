@@ -34,6 +34,12 @@ MODULE bdy_oce
     REAL(KIND = wp), POINTER, DIMENSION(:, :) :: v3d
     REAL(KIND = wp), POINTER, DIMENSION(:, :) :: tem
     REAL(KIND = wp), POINTER, DIMENSION(:, :) :: sal
+    LOGICAL :: ll_a_i
+    LOGICAL :: ll_h_i
+    LOGICAL :: ll_h_s
+    REAL(KIND = wp), POINTER, DIMENSION(:, :) :: a_i
+    REAL(KIND = wp), POINTER, DIMENSION(:, :) :: h_i
+    REAL(KIND = wp), POINTER, DIMENSION(:, :) :: h_s
   END TYPE OBC_DATA
   LOGICAL, PUBLIC :: ln_bdy
   CHARACTER(LEN = 80), DIMENSION(jp_bdy) :: cn_coords_file

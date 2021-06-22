@@ -194,7 +194,13 @@ MODULE ice
     ii = 1
     ALLOCATE(u_oce(jpi, jpj), v_oce(jpi, jpj), ht_i_new(jpi, jpj), strength(jpi, jpj), stress1_i(jpi, jpj), stress2_i(jpi, jpj), stress12_i(jpi, jpj), delta_i(jpi, jpj), divu_i(jpi, jpj), shear_i(jpi, jpj), STAT = ierr(ii))
     ii = ii + 1
-    ALLOCATE(t_bo(jpi, jpj), wfx_snw_sni(jpi, jpj), wfx_snw(jpi, jpj), wfx_snw_dyn(jpi, jpj), wfx_snw_sum(jpi, jpj), wfx_snw_sub(jpi, jpj), wfx_ice(jpi, jpj), wfx_sub(jpi, jpj), wfx_ice_sub(jpi, jpj), wfx_lam(jpi, jpj), wfx_pnd(jpi, jpj), wfx_bog(jpi, jpj), wfx_dyn(jpi, jpj), wfx_bom(jpi, jpj), wfx_sum(jpi, jpj), wfx_res(jpi, jpj), wfx_sni(jpi, jpj), wfx_opw(jpi, jpj), wfx_spr(jpi, jpj), afx_tot(jpi, jpj), rn_amax_2d(jpi, jpj), qsb_ice_bot(jpi, jpj), qlead(jpi, jpj), sfx_res(jpi, jpj), sfx_bri(jpi, jpj), sfx_dyn(jpi, jpj), sfx_sub(jpi, jpj), sfx_lam(jpi, jpj), sfx_bog(jpi, jpj), sfx_bom(jpi, jpj), sfx_sum(jpi, jpj), sfx_sni(jpi, jpj), sfx_opw(jpi, jpj), hfx_res(jpi, jpj), hfx_snw(jpi, jpj), hfx_sub(jpi, jpj), qt_atm_oi(jpi, jpj), qt_oce_ai(jpi, jpj), fhld(jpi, jpj), hfx_sum(jpi, jpj), hfx_bom(jpi, jpj), hfx_bog(jpi, jpj), hfx_dif(jpi, jpj), hfx_opw(jpi, jpj), hfx_thd(jpi, jpj), hfx_dyn(jpi, jpj), hfx_spr(jpi, jpj), hfx_err_dif(jpi, jpj), hfx_err_rem(jpi, jpj), wfx_err_sub(jpi, jpj), STAT = ierr(ii))
+    ALLOCATE(t_bo(jpi, jpj), wfx_snw_sni(jpi, jpj), wfx_snw(jpi, jpj), wfx_snw_dyn(jpi, jpj), wfx_snw_sum(jpi, jpj), wfx_snw_sub(jpi, jpj), &
+            wfx_ice(jpi, jpj), wfx_sub(jpi, jpj), wfx_ice_sub(jpi, jpj), wfx_lam(jpi, jpj), wfx_pnd(jpi, jpj), wfx_bog(jpi, jpj), wfx_dyn(jpi, jpj), &
+            wfx_bom(jpi, jpj), wfx_sum(jpi, jpj), wfx_res(jpi, jpj), wfx_sni(jpi, jpj), wfx_opw(jpi, jpj), wfx_spr(jpi, jpj), afx_tot(jpi, jpj), &
+            rn_amax_2d(jpi, jpj), qsb_ice_bot(jpi, jpj), qlead(jpi, jpj), sfx_res(jpi, jpj), sfx_bri(jpi, jpj), sfx_dyn(jpi, jpj), sfx_sub(jpi, jpj), &
+            sfx_lam(jpi, jpj), sfx_bog(jpi, jpj), sfx_bom(jpi, jpj), sfx_sum(jpi, jpj), sfx_sni(jpi, jpj), sfx_opw(jpi, jpj), hfx_res(jpi, jpj), hfx_snw(jpi, jpj), &
+            hfx_sub(jpi, jpj), qt_atm_oi(jpi, jpj), qt_oce_ai(jpi, jpj), fhld(jpi, jpj), hfx_sum(jpi, jpj), hfx_bom(jpi, jpj), hfx_bog(jpi, jpj), hfx_dif(jpi, jpj), &
+            hfx_opw(jpi, jpj), hfx_thd(jpi, jpj), hfx_dyn(jpi, jpj), hfx_spr(jpi, jpj), hfx_err_dif(jpi, jpj), hfx_err_rem(jpi, jpj), wfx_err_sub(jpi, jpj), STAT = ierr(ii))
     ii = ii + 1
     ALLOCATE(qtr_ice_bot(jpi, jpj, jpl), cnd_ice(jpi, jpj, jpl), t1_ice(jpi, jpj, jpl), h_i(jpi, jpj, jpl), a_i(jpi, jpj, jpl), v_i(jpi, jpj, jpl), v_s(jpi, jpj, jpl), h_s(jpi, jpj, jpl), t_su(jpi, jpj, jpl), s_i(jpi, jpj, jpl), sv_i(jpi, jpj, jpl), o_i(jpi, jpj, jpl), oa_i(jpi, jpj, jpl), bv_i(jpi, jpj, jpl), STAT = ierr(ii))
     ii = ii + 1

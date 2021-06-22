@@ -7,6 +7,7 @@ MODULE sbccpl
   USE sbcdcy
   USE sbcwave
   USE phycst
+  USE ice
   USE cpl_oasis3
   USE geo2ocean
   USE oce, ONLY: tsn, un, vn, sshn, ub, vb, sshb, fraqsr_1lev
@@ -14,6 +15,7 @@ MODULE sbccpl
   USE eosbn2
   USE sbcrnf, ONLY: l_rnfcpl
   USE sbcisf, ONLY: l_isfcpl
+  USE icethd_dh
   USE in_out_manager
   USE iom
   USE lib_mpp
@@ -150,7 +152,6 @@ MODULE sbccpl
     INTEGER :: ierr(4)
     ierr(:) = 0
     ALLOCATE(alb_oce_mix(jpi, jpj), nrcvinfo(jprcv), STAT = ierr(1))
-    ALLOCATE(a_i(jpi, jpj, 1), STAT = ierr(2))
     ALLOCATE(xcplmask(jpi, jpj, 0 : nn_cplmodel), STAT = ierr(3))
     IF (.NOT. ln_apr_dyn) ALLOCATE(ssh_ib(jpi, jpj), ssh_ibb(jpi, jpj), apr(jpi, jpj), STAT = ierr(4))
     sbc_cpl_alloc = MAXVAL(ierr)
@@ -904,6 +905,15 @@ MODULE sbccpl
       CALL iom_put("taum_oce", taum)
     END IF
     IF (srcv(jpr_co2) % laction) atm_co2(:, :) = frcv(jpr_co2) % z3(:, :, 1)
+    IF (srcv(jpr_ts_ice) % laction) THEN
+      WHERE (frcv(jpr_ts_ice) % z3(:, :, :) > 0.0)
+        tsfc_ice(:, :, :) = 0.0
+      ELSEWHERE(frcv(jpr_ts_ice) % z3(:, :, :) < - 60.)
+        tsfc_ice(:, :, :) = - 60.
+      ELSEWHERE
+        tsfc_ice(:, :, :) = frcv(jpr_ts_ice) % z3(:, :, :)
+      END WHERE
+    END IF
     IF (srcv(jpr_mslp) % laction) THEN
       IF (kt /= nit000) ssh_ibb(:, :) = ssh_ib(:, :)
       r1_grau = 1.E0 / (grav * rau0)
@@ -1019,7 +1029,7 @@ MODULE sbccpl
       ELSE
         qsr(:, :) = zqsr(:, :)
       END IF
-      !$ACC KERNELS ! CDe
+      !$ACC KERNELS ! CDe added
       IF (srcv(jpr_sflx) % laction) sfx(:, :) = frcv(jpr_sflx) % z3(:, :, 1)
       IF (srcv(jpr_fice) % laction) fr_i(:, :) = frcv(jpr_fice) % z3(:, :, 1)
       !$ACC END KERNELS
@@ -1131,12 +1141,25 @@ MODULE sbccpl
     CASE ('none')
       CALL ctl_stop('STOP', 'sbccpl/sbc_cpl_ice_flx: some fields are not defined. Change sn_rcv_emp value in namelist namsbc_cpl')
     END SELECT
-    zsnw(:, :) = picefr(:, :)
+    zsnw(:, :) = 0._wp
+    CALL ice_thd_snwblow(ziceld, zsnw)
+    zemp_ice(:, :) = zemp_ice(:, :) + zsprecip(:, :) * (picefr(:, :) - zsnw(:, :))
+    zemp_oce(:, :) = zemp_tot(:, :) - zemp_ice(:, :)
+    zevap_oce(:, :) = frcv(jpr_tevp) % z3(:, :, 1) - frcv(jpr_ievp) % z3(:, :, 1) * picefr(:, :)
+    DO jl = 1, jpl
+      IF (sn_rcv_emp % clcat == 'yes') THEN
+        zevap_ice(:, :, jl) = frcv(jpr_ievp) % z3(:, :, jl)
+      ELSE
+        zevap_ice(:, :, jl) = frcv(jpr_ievp) % z3(:, :, 1)
+      END IF
+    END DO
+    zdevap_ice(:, :) = 0._wp
     IF (srcv(jpr_rnf) % laction) THEN
       rnf(:, :) = frcv(jpr_rnf) % z3(:, :, 1)
     END IF
     IF (srcv(jpr_cal) % laction) THEN
       zemp_tot(:, :) = zemp_tot(:, :) - frcv(jpr_cal) % z3(:, :, 1)
+      zemp_oce(:, :) = zemp_oce(:, :) - frcv(jpr_cal) % z3(:, :, 1)
     END IF
     IF (srcv(jpr_icb) % laction) THEN
       fwficb(:, :) = frcv(jpr_icb) % z3(:, :, 1)
@@ -1148,13 +1171,23 @@ MODULE sbccpl
     IF (ln_mixcpl) THEN
       emp_tot(:, :) = emp_tot(:, :) * xcplmask(:, :, 0) + zemp_tot(:, :) * zmsk(:, :)
       emp_ice(:, :) = emp_ice(:, :) * xcplmask(:, :, 0) + zemp_ice(:, :) * zmsk(:, :)
+      emp_oce(:, :) = emp_oce(:, :) * xcplmask(:, :, 0) + zemp_oce(:, :) * zmsk(:, :)
       sprecip(:, :) = sprecip(:, :) * xcplmask(:, :, 0) + zsprecip(:, :) * zmsk(:, :)
       tprecip(:, :) = tprecip(:, :) * xcplmask(:, :, 0) + ztprecip(:, :) * zmsk(:, :)
+      DO jl = 1, jpl
+        evap_ice(:, :, jl) = evap_ice(:, :, jl) * xcplmask(:, :, 0) + zevap_ice(:, :, jl) * zmsk(:, :)
+        devap_ice(:, :, jl) = devap_ice(:, :, jl) * xcplmask(:, :, 0) + zdevap_ice(:, :) * zmsk(:, :)
+      END DO
     ELSE
       emp_tot(:, :) = zemp_tot(:, :)
       emp_ice(:, :) = zemp_ice(:, :)
+      emp_oce(:, :) = zemp_oce(:, :)
       sprecip(:, :) = zsprecip(:, :)
       tprecip(:, :) = ztprecip(:, :)
+      evap_ice(:, :, :) = zevap_ice(:, :, :)
+      DO jl = 1, jpl
+        devap_ice(:, :, jl) = zdevap_ice(:, :)
+      END DO
     END IF
     IF (srcv(jpr_cal) % laction) CALL iom_put('calving_cea', frcv(jpr_cal) % z3(:, :, 1) * tmask(:, :, 1))
     IF (srcv(jpr_icb) % laction) CALL iom_put('iceberg_cea', frcv(jpr_icb) % z3(:, :, 1) * tmask(:, :, 1))
@@ -1197,18 +1230,39 @@ MODULE sbccpl
     END SELECT
     IF (srcv(jpr_cal) % laction) zqns_tot(:, :) = zqns_tot(:, :) - frcv(jpr_cal) % z3(:, :, 1) * rLfus
     IF (srcv(jpr_icb) % laction) zqns_tot(:, :) = zqns_tot(:, :) - frcv(jpr_icb) % z3(:, :, 1) * rLfus
-    zcptsnw(:, :) = zcptn(:, :)
-    zcptrain(:, :) = zcptn(:, :)
-    zqns_tot(:, :) = zqns_tot(:, :) - (ziceld(:, :) * zsprecip(:, :) * rLfus) - (zemp_tot(:, :) - zemp_ice(:, :)) * zcptn(:, :)
+    zqns_oce = 0._wp
+    WHERE (ziceld /= 0._wp) zqns_oce(:, :) = (zqns_tot(:, :) - SUM(a_i * zqns_ice, dim = 3)) / ziceld(:, :)
+    WHERE (SUM(a_i, dim = 3) > 1.E-10)
+      zcptsnw(:, :) = rcpi * SUM((tn_ice - rt0) * a_i, dim = 3) / SUM(a_i, dim = 3)
+    ELSEWHERE
+      zcptsnw(:, :) = zcptn(:, :)
+    END WHERE
+    zcptrain(:, :) = rcp * (SUM((tn_ice(:, :, :) - rt0) * a_i(:, :, :), dim = 3) + sst_m(:, :) * ziceld(:, :))
+    zqprec_ice(:, :) = rhos * (zcptsnw(:, :) - rLfus)
+    DO jl = 1, jpl
+      zqevap_ice(:, :, jl) = 0._wp
+    END DO
+    zqemp_oce(:, :) = - zevap_oce(:, :) * zcptn(:, :) + (ztprecip(:, :) - zsprecip(:, :)) * zcptrain(:, :) + zsprecip(:, :) * (1._wp - zsnw) * (zcptsnw(:, :) - rLfus)
+    zqemp_ice(:, :) = zsprecip(:, :) * zsnw * (zcptsnw(:, :) - rLfus)
+    zqns_tot(:, :) = zqns_tot(:, :) + zqemp_ice(:, :) + zqemp_oce(:, :)
     IF (ln_mixcpl) THEN
-      qns_tot(:, :) = qns(:, :) * ziceld(:, :) + SUM(qns_ice(:, :, :) * a_i(:, :, :), dim = 3)
       qns_tot(:, :) = qns_tot(:, :) * xcplmask(:, :, 0) + zqns_tot(:, :) * zmsk(:, :)
+      qns_oce(:, :) = qns_oce(:, :) * xcplmask(:, :, 0) + zqns_oce(:, :) * zmsk(:, :)
       DO jl = 1, jpl
         qns_ice(:, :, jl) = qns_ice(:, :, jl) * xcplmask(:, :, 0) + zqns_ice(:, :, jl) * zmsk(:, :)
+        qevap_ice(:, :, jl) = qevap_ice(:, :, jl) * xcplmask(:, :, 0) + zqevap_ice(:, :, jl) * zmsk(:, :)
       END DO
+      qprec_ice(:, :) = qprec_ice(:, :) * xcplmask(:, :, 0) + zqprec_ice(:, :) * zmsk(:, :)
+      qemp_oce(:, :) = qemp_oce(:, :) * xcplmask(:, :, 0) + zqemp_oce(:, :) * zmsk(:, :)
+      qemp_ice(:, :) = qemp_ice(:, :) * xcplmask(:, :, 0) + zqemp_ice(:, :) * zmsk(:, :)
     ELSE
       qns_tot(:, :) = zqns_tot(:, :)
+      qns_oce(:, :) = zqns_oce(:, :)
       qns_ice(:, :, :) = zqns_ice(:, :, :)
+      qevap_ice(:, :, :) = zqevap_ice(:, :, :)
+      qprec_ice(:, :) = zqprec_ice(:, :)
+      qemp_oce(:, :) = zqemp_oce(:, :)
+      qemp_ice(:, :) = zqemp_ice(:, :)
     END IF
     IF (srcv(jpr_cal) % laction) CALL iom_put('hflx_cal_cea', - frcv(jpr_cal) % z3(:, :, 1) * rLfus)
     IF (srcv(jpr_icb) % laction) CALL iom_put('hflx_icb_cea', - frcv(jpr_icb) % z3(:, :, 1) * rLfus)
@@ -1257,6 +1311,13 @@ MODULE sbccpl
         zqsr_ice(:, :, jl) = sbc_dcy(zqsr_ice(:, :, jl))
       END DO
     END IF
+    zqsr_oce = 0._wp
+    WHERE (ziceld /= 0._wp) zqsr_oce(:, :) = (zqsr_tot(:, :) - SUM(a_i * zqsr_ice, dim = 3)) / ziceld(:, :)
+    IF (ln_mixcpl) THEN
+      qsr_oce(:, :) = qsr_oce(:, :) * xcplmask(:, :, 0) + zqsr_oce(:, :) * zmsk(:, :)
+    ELSE
+      qsr_oce(:, :) = zqsr_oce(:, :)
+    END IF
     IF (ln_mixcpl) THEN
       qsr_tot(:, :) = qsr(:, :) * ziceld(:, :) + SUM(qsr_ice(:, :, :) * a_i(:, :, :), dim = 3)
       qsr_tot(:, :) = qsr_tot(:, :) * xcplmask(:, :, 0) + zqsr_tot(:, :) * zmsk(:, :)
@@ -1283,6 +1344,19 @@ MODULE sbccpl
       END DO
     ELSE
       dqns_ice(:, :, :) = zdqns_ice(:, :, :)
+    END IF
+    SELECT CASE (TRIM(sn_rcv_iceflx % cldes))
+    CASE ('coupled')
+      qml_ice(:, :, :) = frcv(jpr_topm) % z3(:, :, :)
+      qcn_ice(:, :, :) = frcv(jpr_botm) % z3(:, :, :)
+    END SELECT
+    IF (.NOT. ln_cndflx) THEN
+      ztri = 0.18 * (1.0 - cldf_ice) + 0.35 * cldf_ice
+      qtr_ice_top(:, :, :) = ztri * qsr_ice(:, :, :)
+      WHERE (phs(:, :, :) >= 0.0_wp) qtr_ice_top(:, :, :) = 0._wp
+      WHERE (phi(:, :, :) <= 0.1_wp) qtr_ice_top(:, :, :) = qsr_ice(:, :, :)
+    ELSE IF (ln_cndflx .AND. .NOT. ln_cndemulate) THEN
+      qtr_ice_top(:, :, :) = 0._wp
     END IF
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE sbc_cpl_ice_flx
@@ -1362,6 +1436,15 @@ MODULE sbccpl
       IF (ssnd(jps_toce) % laction) CALL cpl_snd(jps_toce, isec, RESHAPE(ztmp1, (/jpi, jpj, 1/)), info)
       IF (ssnd(jps_tice) % laction) CALL cpl_snd(jps_tice, isec, ztmp3, info)
       IF (ssnd(jps_tmix) % laction) CALL cpl_snd(jps_tmix, isec, RESHAPE(ztmp1, (/jpi, jpj, 1/)), info)
+    END IF
+    IF (ssnd(jps_ttilyr) % laction) THEN
+      SELECT CASE (sn_snd_ttilyr % cldes)
+      CASE ('weighted ice')
+        ztmp3(:, :, 1 : jpl) = t1_ice(:, :, 1 : jpl) * a_i(:, :, 1 : jpl)
+      CASE DEFAULT
+        CALL ctl_stop('sbc_cpl_snd: wrong definition of sn_snd_ttilyr%cldes')
+      END SELECT
+      IF (ssnd(jps_ttilyr) % laction) CALL cpl_snd(jps_ttilyr, isec, ztmp3, info)
     END IF
     IF (ssnd(jps_albice) % laction) THEN
       SELECT CASE (sn_snd_alb % cldes)
@@ -1473,6 +1556,50 @@ MODULE sbccpl
       END SELECT
       IF (ssnd(jps_hice) % laction) CALL cpl_snd(jps_hice, isec, ztmp3, info)
       IF (ssnd(jps_hsnw) % laction) CALL cpl_snd(jps_hsnw, isec, ztmp4, info)
+    END IF
+    IF (ssnd(jps_a_p) % laction .OR. ssnd(jps_ht_p) % laction) THEN
+      SELECT CASE (sn_snd_mpnd % cldes)
+      CASE ('ice only')
+        SELECT CASE (sn_snd_mpnd % clcat)
+        CASE ('yes')
+          ztmp3(:, :, 1 : jpl) = a_ip(:, :, 1 : jpl)
+          ztmp4(:, :, 1 : jpl) = v_ip(:, :, 1 : jpl)
+        CASE ('no')
+          ztmp3(:, :, :) = 0.0
+          ztmp4(:, :, :) = 0.0
+          DO jl = 1, jpl
+            ztmp3(:, :, 1) = ztmp3(:, :, 1) + a_ip(:, :, jpl)
+            ztmp4(:, :, 1) = ztmp4(:, :, 1) + v_ip(:, :, jpl)
+          END DO
+        CASE DEFAULT
+          CALL ctl_stop('sbc_cpl_snd: wrong definition of sn_snd_mpnd%clcat')
+        END SELECT
+      CASE DEFAULT
+        CALL ctl_stop('sbc_cpl_snd: wrong definition of sn_snd_mpnd%cldes')
+      END SELECT
+      IF (ssnd(jps_a_p) % laction) CALL cpl_snd(jps_a_p, isec, ztmp3, info)
+      IF (ssnd(jps_ht_p) % laction) CALL cpl_snd(jps_ht_p, isec, ztmp4, info)
+    END IF
+    IF (ssnd(jps_kice) % laction) THEN
+      SELECT CASE (sn_snd_cond % cldes)
+      CASE ('weighted ice')
+        SELECT CASE (sn_snd_cond % clcat)
+        CASE ('yes')
+          ztmp3(:, :, 1 : jpl) = cnd_ice(:, :, 1 : jpl) * a_i(:, :, 1 : jpl)
+        CASE ('no')
+          ztmp3(:, :, :) = 0.0
+          DO jl = 1, jpl
+            ztmp3(:, :, 1) = ztmp3(:, :, 1) + cnd_ice(:, :, jl) * a_i(:, :, jl)
+          END DO
+        CASE DEFAULT
+          CALL ctl_stop('sbc_cpl_snd: wrong definition of sn_snd_cond%clcat')
+        END SELECT
+      CASE ('ice only')
+        ztmp3(:, :, 1 : jpl) = cnd_ice(:, :, 1 : jpl)
+      CASE DEFAULT
+        CALL ctl_stop('sbc_cpl_snd: wrong definition of sn_snd_cond%cldes')
+      END SELECT
+      IF (ssnd(jps_kice) % laction) CALL cpl_snd(jps_kice, isec, ztmp3, info)
     END IF
     IF (ssnd(jps_co2) % laction .AND. l_co2cpl) CALL cpl_snd(jps_co2, isec, RESHAPE(oce_co2, (/jpi, jpj, 1/)), info)
     IF (ssnd(jps_ocx1) % laction) THEN
@@ -1620,6 +1747,9 @@ MODULE sbccpl
     IF (ssnd(jps_oty1) % laction) CALL cpl_snd(jps_oty1, isec, RESHAPE(vtau, (/jpi, jpj, 1/)), info)
     IF (ssnd(jps_rnf) % laction) CALL cpl_snd(jps_rnf, isec, RESHAPE(rnf, (/jpi, jpj, 1/)), info)
     IF (ssnd(jps_taum) % laction) CALL cpl_snd(jps_taum, isec, RESHAPE(taum, (/jpi, jpj, 1/)), info)
+    CALL eos_fzp(tsn(:, :, 1, jp_sal), sstfrz)
+    ztmp1(:, :) = sstfrz(:, :) + rt0
+    IF (ssnd(jps_sstfrz) % laction) CALL cpl_snd(jps_sstfrz, isec, RESHAPE(ztmp1, (/jpi, jpj, 1/)), info)
     CALL profile_psy_data0 % PostEnd
   END SUBROUTINE sbc_cpl_snd
 END MODULE sbccpl

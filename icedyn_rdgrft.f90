@@ -247,22 +247,26 @@ MODULE icedyn_rdgrft
         END DO
       END DO
       !$ACC END KERNELS
-      !$ACC KERNELS
+      ! !$ACC KERNELS ! CDe compiler doesn't like this
     ELSE IF (ln_rafting .AND. .NOT. ln_ridging) THEN
-      !$ACC END KERNELS
+      ! !$ACC END KERNELS
+      !$ACC KERNELS ! CDe added
       DO jl = 1, jpl
         DO ji = 1, npti
           aridge(ji, jl) = 0._wp
           araft(ji, jl) = apartf(ji, jl)
         END DO
       END DO
+      !$ACC END KERNELS
     ELSE
+      !$ACC KERNELS ! CDe added      
       DO jl = 1, jpl
         DO ji = 1, npti
           aridge(ji, jl) = 0._wp
           araft(ji, jl) = 0._wp
         END DO
       END DO
+      !$ACC END KERNELS
     END IF
     !$ACC KERNELS
     zfac = 1._wp / hi_hrft

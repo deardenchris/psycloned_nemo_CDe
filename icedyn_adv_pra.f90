@@ -427,7 +427,14 @@ MODULE icedyn_adv_pra
   END SUBROUTINE adv_y
   SUBROUTINE adv_pra_init
     INTEGER :: ierr
-    ALLOCATE(sxopw(jpi, jpj), syopw(jpi, jpj), sxxopw(jpi, jpj), syyopw(jpi, jpj), sxyopw(jpi, jpj), sxice(jpi, jpj, jpl), syice(jpi, jpj, jpl), sxxice(jpi, jpj, jpl), syyice(jpi, jpj, jpl), sxyice(jpi, jpj, jpl), sxsn(jpi, jpj, jpl), sysn(jpi, jpj, jpl), sxxsn(jpi, jpj, jpl), syysn(jpi, jpj, jpl), sxysn(jpi, jpj, jpl), sxa(jpi, jpj, jpl), sya(jpi, jpj, jpl), sxxa(jpi, jpj, jpl), syya(jpi, jpj, jpl), sxya(jpi, jpj, jpl), sxsal(jpi, jpj, jpl), sysal(jpi, jpj, jpl), sxxsal(jpi, jpj, jpl), syysal(jpi, jpj, jpl), sxysal(jpi, jpj, jpl), sxage(jpi, jpj, jpl), syage(jpi, jpj, jpl), sxxage(jpi, jpj, jpl), syyage(jpi, jpj, jpl), sxyage(jpi, jpj, jpl), sxap(jpi, jpj, jpl), syap(jpi, jpj, jpl), sxxap(jpi, jpj, jpl), syyap(jpi, jpj, jpl), sxyap(jpi, jpj, jpl), sxvp(jpi, jpj, jpl), syvp(jpi, jpj, jpl), sxxvp(jpi, jpj, jpl), syyvp(jpi, jpj, jpl), sxyvp(jpi, jpj, jpl), sxc0(jpi, jpj, nlay_s, jpl), syc0(jpi, jpj, nlay_s, jpl), sxxc0(jpi, jpj, nlay_s, jpl), syyc0(jpi, jpj, nlay_s, jpl), sxyc0(jpi, jpj, nlay_s, jpl), sxe(jpi, jpj, nlay_i, jpl), sye(jpi, jpj, nlay_i, jpl), sxxe(jpi, jpj, nlay_i, jpl), syye(jpi, jpj, nlay_i, jpl), sxye(jpi, jpj, nlay_i, jpl), STAT = ierr)
+    ALLOCATE(sxopw(jpi, jpj), syopw(jpi, jpj), sxxopw(jpi, jpj), syyopw(jpi, jpj), sxyopw(jpi, jpj), sxice(jpi, jpj, jpl), syice(jpi, jpj, jpl), sxxice(jpi, jpj, jpl), &
+            syyice(jpi, jpj, jpl), sxyice(jpi, jpj, jpl), sxsn(jpi, jpj, jpl), sysn(jpi, jpj, jpl), sxxsn(jpi, jpj, jpl), syysn(jpi,jpj, jpl), sxysn(jpi, jpj, jpl), &
+            sxa(jpi, jpj, jpl), sya(jpi, jpj, jpl), sxxa(jpi, jpj, jpl), syya(jpi, jpj, jpl), sxya(jpi, jpj, jpl), sxsal(jpi, jpj,jpl), sysal(jpi, jpj, jpl), &
+    sxxsal(jpi, jpj, jpl), syysal(jpi, jpj, jpl), sxysal(jpi, jpj, jpl), sxage(jpi, jpj, jpl), syage(jpi, jpj, jpl), sxxage(jpi,jpj, jpl), syyage(jpi, jpj, jpl), &
+        sxyage(jpi, jpj, jpl), sxap(jpi, jpj, jpl), syap(jpi, jpj, jpl), sxxap(jpi, jpj, jpl), syyap(jpi, jpj, jpl), sxyap(jpi, jpj,jpl), sxvp(jpi, jpj, jpl), &
+        syvp(jpi, jpj, jpl), sxxvp(jpi, jpj, jpl), syyvp(jpi, jpj, jpl), sxyvp(jpi, jpj, jpl), sxc0(jpi, jpj, nlay_s, jpl),syc0(jpi, jpj, nlay_s, jpl), &
+        sxxc0(jpi, jpj, nlay_s, jpl), syyc0(jpi, jpj, nlay_s, jpl), sxyc0(jpi, jpj, nlay_s, jpl), sxe(jpi, jpj, nlay_i, jpl),sye(jpi, jpj, nlay_i, jpl), &
+        sxxe(jpi, jpj, nlay_i, jpl), syye(jpi, jpj, nlay_i, jpl), sxye(jpi, jpj, nlay_i, jpl), STAT = ierr)
     CALL mpp_sum('icedyn_adv_pra', ierr)
     IF (ierr /= 0) CALL ctl_stop('STOP', 'adv_pra_init : unable to allocate ice arrays for Prather advection scheme')
     CALL adv_pra_rst('READ')

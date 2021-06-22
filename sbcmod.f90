@@ -10,6 +10,7 @@ MODULE sbcmod
   USE sbcflx
   USE sbcblk
   USE sbcice_if
+  USE icestp
   USE sbcice_cice
   USE sbcisf
   USE sbccpl
@@ -145,7 +146,6 @@ MODULE sbcmod
     CASE DEFAULT
     END SELECT
     IF (sbc_oce_alloc() /= 0) CALL ctl_stop('sbc_init : unable to allocate sbc_oce arrays')
-    IF (sbc_ice_alloc() /= 0) CALL ctl_stop('sbc_init : unable to allocate sbc_ice arrays')
     IF (.NOT. ln_isf) THEN
       IF (sbc_isf_alloc() /= 0) CALL ctl_stop('STOP', 'sbc_init : unable to allocate sbc_isf arrays')
       !$ACC KERNELS
@@ -231,6 +231,11 @@ MODULE sbcmod
     IF (ln_isf) CALL sbc_isf_init
     CALL sbc_rnf_init
     IF (ln_apr_dyn) CALL sbc_apr_init
+    IF (lk_agrif .AND. nn_ice == 0) THEN
+      IF (sbc_ice_alloc() /= 0) CALL ctl_stop('STOP', 'sbc_ice_alloc : unable to allocate arrays')
+    ELSE IF (nn_ice == 2) THEN
+      CALL ice_init
+    END IF
     IF (nn_ice == 3) CALL cice_sbc_init(nsbc)
     IF (ln_wave) CALL sbc_wave_init
     IF (lwxios) THEN
@@ -308,6 +313,8 @@ MODULE sbcmod
     SELECT CASE (nn_ice)
     CASE (1)
       CALL sbc_ice_if(kt)
+    CASE (2)
+      CALL ice_stp(kt, nsbc)
     CASE (3)
       CALL sbc_ice_cice(kt, nsbc)
     END SELECT

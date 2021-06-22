@@ -14,6 +14,7 @@ MODULE asmbkg
   USE iom
   USE asmpar
   USE zdfmxl
+  USE ice
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: asm_bkg_wri
@@ -72,6 +73,13 @@ MODULE asmbkg
         CALL iom_rstput(kt, nitdin_r, inum, 'tn', tsn(:, :, :, jp_tem))
         CALL iom_rstput(kt, nitdin_r, inum, 'sn', tsn(:, :, :, jp_sal))
         CALL iom_rstput(kt, nitdin_r, inum, 'sshn', sshn)
+        IF (nn_ice == 2) THEN
+          IF (ALLOCATED(at_i)) THEN
+            CALL iom_rstput(kt, nitdin_r, inum, 'iceconc', at_i(:, :))
+          ELSE
+            CALL ctl_warn('asm_bkg_wri: Ice concentration not written to background ', 'as ice variable at_i not allocated on this timestep')
+          END IF
+        END IF
         CALL iom_close(inum)
       END IF
     END IF

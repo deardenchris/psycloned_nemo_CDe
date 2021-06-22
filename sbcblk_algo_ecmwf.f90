@@ -7,6 +7,7 @@ MODULE sbcblk_algo_ecmwf
   USE in_out_manager
   USE prtctl
   USE sbcwave, ONLY: cdn_wave
+  USE sbc_ice
   USE lib_fortran
   USE sbc_oce
   IMPLICIT NONE

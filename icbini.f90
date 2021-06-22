@@ -37,6 +37,9 @@ MODULE icbini
     ff_e(:, :) = 0._wp
     tt_e(:, :) = 0._wp
     fr_e(:, :) = 0._wp
+    hi_e(:, :) = 0._wp
+    ui_e(:, :) = 0._wp
+    vi_e(:, :) = 0._wp
     ssh_e(:, :) = 0._wp
     IF (nn_verbose_level > 0) THEN
       CALL ctl_opn(numicb, 'icebergs.stat', 'REPLACE', 'FORMATTED', 'SEQUENTIAL', - 1, numout, lwp, narea)

@@ -4,7 +4,7 @@ MODULE sbcice_if
   USE phycst
   USE eosbn2
   USE sbc_oce
-  USE sbc_ice, ONLY: a_i
+  USE ice, ONLY: a_i
   USE in_out_manager
   USE iom
   USE fldread

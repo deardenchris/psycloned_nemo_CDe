@@ -11,6 +11,7 @@ MODULE asminc
   USE c1d
   USE sbc_oce
   USE diaobs, ONLY: calc_date
+  USE ice, ONLY: hm_i, at_i, at_i_b
   USE in_out_manager
   USE iom
   USE lib_mpp
@@ -505,10 +506,14 @@ MODULE asminc
     INTEGER, INTENT(IN), OPTIONAL :: kindic
     INTEGER :: it
     REAL(KIND = wp) :: zincwgt
+    REAL(KIND = wp), DIMENSION(jpi, jpj) :: zofrld, zohicif, zseaicendg, zhicifinc
+    REAL(KIND = wp) :: zhicifmin = 0.5_wp
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('seaice_asm_inc', 'r0', 0, 0)
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
     IF (ln_asmiau) THEN
       IF ((kt >= nitiaustr_r) .AND. (kt <= nitiaufin_r)) THEN
+        CALL profile_psy_data0 % PreStart('seaice_asm_inc', 'r0', 0, 0)
         it = kt - nit000 + 1
         zincwgt = wgtiau(it)
         IF (lwp) THEN
@@ -516,20 +521,52 @@ MODULE asminc
           WRITE(numout, *) 'seaice_asm_inc : sea ice conc IAU at time step = ', kt, ' with IAU weight = ', wgtiau(it)
           WRITE(numout, *) '~~~~~~~~~~~~'
         END IF
+        CALL profile_psy_data0 % PostEnd
+        !$ACC KERNELS
+        zofrld(:, :) = 1._wp - at_i(:, :)
+        zohicif(:, :) = hm_i(:, :)
+        at_i(:, :) = 1. - MIN(MAX(1. - at_i(:, :) - seaice_bkginc(:, :) * zincwgt, 0.0_wp), 1.0_wp)
+        at_i_b(:, :) = 1. - MIN(MAX(1. - at_i_b(:, :) - seaice_bkginc(:, :) * zincwgt, 0.0_wp), 1.0_wp)
+        fr_i(:, :) = at_i(:, :)
+        zseaicendg(:, :) = zofrld(:, :) - (1. - at_i(:, :))
+        WHERE (zseaicendg(:, :) > 0.0_wp .AND. hm_i(:, :) < zhicifmin)
+          zhicifinc(:, :) = (zhicifmin - hm_i(:, :)) * zincwgt
+        ELSEWHERE
+          zhicifinc(:, :) = 0.0_wp
+        END WHERE
+        hm_i(:, :) = hm_i(:, :) + zhicifinc(:, :)
+        !$ACC END KERNELS
+        CALL profile_psy_data1 % PreStart('seaice_asm_inc', 'r1', 0, 0)
         IF (kt == nitiaufin_r) THEN
           DEALLOCATE(seaice_bkginc)
         END IF
+        CALL profile_psy_data1 % PostEnd
       ELSE
       END IF
     ELSE IF (ln_asmdin) THEN
       IF (kt == nitdin_r) THEN
+        !$ACC KERNELS
         neuler = 0
+        zofrld(:, :) = 1._wp - at_i(:, :)
+        zohicif(:, :) = hm_i(:, :)
+        at_i(:, :) = 1. - MIN(MAX(1. - at_i(:, :) - seaice_bkginc(:, :), 0.0_wp), 1.0_wp)
+        at_i_b(:, :) = at_i(:, :)
+        fr_i(:, :) = at_i(:, :)
+        zseaicendg(:, :) = zofrld(:, :) - (1. - at_i(:, :))
+        WHERE (zseaicendg(:, :) > 0.0_wp .AND. hm_i(:, :) < zhicifmin)
+          zhicifinc(:, :) = zhicifmin - hm_i(:, :)
+        ELSEWHERE
+          zhicifinc(:, :) = 0.0_wp
+        END WHERE
+        hm_i(:, :) = hm_i(:, :) + zhicifinc(:, :)
+        !$ACC END KERNELS
+        CALL profile_psy_data2 % PreStart('seaice_asm_inc', 'r2', 0, 0)
         IF (.NOT. PRESENT(kindic)) THEN
           DEALLOCATE(seaice_bkginc)
         END IF
+        CALL profile_psy_data2 % PostEnd
       ELSE
       END IF
     END IF
-    CALL profile_psy_data0 % PostEnd
   END SUBROUTINE seaice_asm_inc
 END MODULE asminc
