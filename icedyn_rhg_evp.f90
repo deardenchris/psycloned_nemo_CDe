@@ -275,7 +275,8 @@ MODULE icedyn_rhg_evp
       CALL lbc_lnk('icedyn_rhg_evp', zds, 'F', 1.)
       CALL profile_psy_data7 % PostEnd
       !$ACC KERNELS
-      !$ACC loop independent collapse(2)
+      ! CDe - private clause needed to parallelise the nested loop
+      !$ACC loop independent collapse(2) private(zalph2, z1_alph2)
       DO jj = 2, jpj
         DO ji = 2, jpi
           zds2 = (zds(ji, jj) * zds(ji, jj) * e1e2f(ji, jj) + zds(ji - 1, jj) * zds(ji - 1, jj) * e1e2f(ji - 1, jj) + zds(ji, jj - 1) * zds(ji, jj - 1) * e1e2f(ji, jj - 1) + zds(ji - 1, jj - 1) * zds(ji - 1, jj - 1) * e1e2f(ji - 1, jj - 1)) * 0.25_wp * r1_e1e2t(ji, jj)
