@@ -180,7 +180,7 @@ MODULE icedyn_rhg_evp
     zsshdyn(:, :) = ice_var_sshdyn(ssh_m, snwice_mass, snwice_mass_b)
     CALL profile_psy_data3 % PostEnd
     !$ACC KERNELS
-    !$ACC loop independent collapse(2)
+    !$ACC loop independent collapse(2) private(zmassU, zmassV)
     DO jj = 2, jpjm1
       DO ji = 2, jpim1
         zaU(ji, jj) = 0.5_wp * (at_i(ji, jj) * e1e2t(ji, jj) + at_i(ji + 1, jj) * e1e2t(ji + 1, jj)) * r1_e1e2u(ji, jj) * umask(ji, jj, 1)
@@ -301,7 +301,7 @@ MODULE icedyn_rhg_evp
       CALL lbc_lnk('icedyn_rhg_evp', zp_delt, 'T', 1.)
       CALL profile_psy_data8 % PostEnd
       !$ACC KERNELS
-      !$ACC loop independent collapse(2)
+      !$ACC loop independent collapse(2) private(zalph2)
       DO jj = 1, jpjm1
         DO ji = 1, jpim1
           IF (ln_aEVP) THEN
