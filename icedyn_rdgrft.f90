@@ -77,9 +77,9 @@ MODULE icedyn_rdgrft
       IF (lwp) WRITE(numout, *) 'ice_dyn_rdgrft: ice ridging and rafting'
       IF (lwp) WRITE(numout, *) '~~~~~~~~~~~~~~'
     END IF
-    at_i(:, :) = SUM(a_i, dim = 3)
     CALL profile_psy_data0 % PostEnd
     !$ACC KERNELS
+    at_i(:, :) = SUM(a_i, dim = 3)
     npti = 0
     nptidx(:) = 0
     ipti = 0
@@ -313,10 +313,11 @@ MODULE icedyn_rdgrft
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data2
-    CALL profile_psy_data0 % PreStart('rdgrft_shift', 'r0', 0, 0)
+    !CALL profile_psy_data0 % PreStart('rdgrft_shift', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe added now that SUM with dim arg works inside a kernels region
     zvti(1 : npti) = SUM(v_i_2d(1 : npti, :), dim = 2)
-    CALL profile_psy_data0 % PostEnd
-    !$ACC KERNELS
+    !CALL profile_psy_data0 % PostEnd
+    ! !$ACC KERNELS
     DO ji = 1, npti
       ato_i_1d(ji) = MAX(0._wp, ato_i_1d(ji) + (opning(ji) - apartf(ji, 0) * closing_gross(ji)) * rdt_ice)
     END DO

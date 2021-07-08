@@ -19,8 +19,9 @@ MODULE icethd_ent
     REAL(KIND = wp), DIMENSION(jpij, 0 : nlay_i + 2) :: zeh_cum0, zh_cum0
     REAL(KIND = wp), DIMENSION(jpij, 0 : nlay_i) :: zeh_cum1, zh_cum1
     REAL(KIND = wp), DIMENSION(jpij) :: zhnew
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('ice_thd_ent', 'r0', 0, 0)
+!    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+!    CALL profile_psy_data0 % PreStart('ice_thd_ent', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe added
     zeh_cum0(1 : npti, 0) = 0._wp
     zh_cum0(1 : npti, 0) = 0._wp
     DO jk0 = 1, nlay_i + 2
@@ -58,6 +59,7 @@ MODULE icethd_ent
     DO ji = 1, npti
       hfx_err_rem_1d(ji) = hfx_err_rem_1d(ji) + a_i_1d(ji) * r1_rdtice * (SUM(qnew(ji, 1 : nlay_i)) * zhnew(ji) - SUM(eh_i_old(ji, 0 : nlay_i + 1)))
     END DO
-    CALL profile_psy_data0 % PostEnd
+!    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
   END SUBROUTINE ice_thd_ent
 END MODULE icethd_ent

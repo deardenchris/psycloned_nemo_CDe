@@ -80,8 +80,9 @@ MODULE icethd_zdf_BL99
       zh_i(ji) = h_i_1d(ji) * r1_nlay_i
       zh_s(ji) = h_s_1d(ji) * r1_nlay_s
     END DO
-    !$ACC END KERNELS
-    CALL profile_psy_data0 % PreStart('ice_thd_zdf_bl99', 'r0', 0, 0)
+!    !$ACC END KERNELS
+    ! CDe continue kernels region here rather than split it up
+!    CALL profile_psy_data0 % PreStart('ice_thd_zdf_bl99', 'r0', 0, 0)
     WHERE (zh_i(1 : npti) >= epsi10)
       z1_h_i(1 : npti) = 1._wp / zh_i(1 : npti)
     ELSEWHERE
@@ -93,8 +94,8 @@ MODULE icethd_zdf_BL99
     ELSEWHERE
       z1_h_s(1 : npti) = 0._wp
     END WHERE
-    CALL profile_psy_data0 % PostEnd
-    !$ACC KERNELS
+!    CALL profile_psy_data0 % PostEnd
+!    !$ACC KERNELS
     IF (k_cnd == np_cnd_OFF .OR. k_cnd == np_cnd_EMU) THEN
       ztsub(1 : npti) = t_su_1d(1 : npti)
       ztsuold(1 : npti) = t_su_1d(1 : npti)
@@ -123,6 +124,7 @@ MODULE icethd_zdf_BL99
     l_T_converged(:) = .FALSE.
     !$ACC END KERNELS
     CALL profile_psy_data1 % PreStart('ice_thd_zdf_bl99', 'r1', 0, 0)
+    ! CDe - the DO WHILE breaks verification if placed inside KERNELS region...
     DO WHILE ((.NOT. ALL(l_T_converged(1 : npti))) .AND. iconv < iconv_max)
       iconv = iconv + 1
       ztib(1 : npti, :) = t_i_1d(1 : npti, :)
@@ -443,6 +445,8 @@ MODULE icethd_zdf_BL99
         END DO
       END IF
     END DO
+    ! !$ACC END KERNELS
+    !CALL profile_psy_data1 % PreStart('ice_thd_zdf_bl99', 'r1', 0, 0)
     IF (ln_icectl .AND. lwp) THEN
       WRITE(numout, *) ' zdti_max : ', zdti_max
       WRITE(numout, *) ' iconv    : ', iconv
@@ -463,9 +467,10 @@ MODULE icethd_zdf_BL99
       END DO
     END IF
     !$ACC END KERNELS
-    CALL profile_psy_data2 % PreStart('ice_thd_zdf_bl99', 'r2', 0, 0)
+    !CALL profile_psy_data2 % PreStart('ice_thd_zdf_bl99', 'r2', 0, 0)
     IF (k_cnd == np_cnd_OFF .OR. k_cnd == np_cnd_ON) THEN
       CALL ice_var_enthalpy
+      !$ACC KERNELS ! CDe
       DO ji = 1, npti
         zdq = - zq_ini(ji) + (SUM(e_i_1d(ji, 1 : nlay_i)) * h_i_1d(ji) * r1_nlay_i + SUM(e_s_1d(ji, 1 : nlay_s)) * h_s_1d(ji) * r1_nlay_s)
         IF (k_cnd == np_cnd_OFF) THEN
@@ -480,7 +485,9 @@ MODULE icethd_zdf_BL99
         hfx_err_dif_1d(ji) = hfx_err_dif_1d(ji) + zhfx_err
         hfx_dif_1d(ji) = hfx_dif_1d(ji) - zdq * r1_rdtice * a_i_1d(ji)
       END DO
+      !$ACC END KERNELS
     END IF
+    !$ACC KERNELS ! CDe
     DO ji = 1, npti
       IF (h_s_1d(ji) > 0.1_wp) THEN
         cnd_ice_1d(ji) = 2._wp * zkappa_s(ji, 0)
@@ -493,15 +500,15 @@ MODULE icethd_zdf_BL99
       END IF
       t1_ice_1d(ji) = isnow(ji) * t_s_1d(ji, 1) + (1._wp - isnow(ji)) * t_i_1d(ji, 1)
     END DO
-    CALL profile_psy_data2 % PostEnd
+    !$ACC END KERNELS 
+    !CALL profile_psy_data2 % PostEnd
     !$ACC KERNELS
     IF (k_cnd == np_cnd_EMU) THEN
       t_s_1d(1 : npti, :) = ztsold(1 : npti, :)
       t_i_1d(1 : npti, :) = ztiold(1 : npti, :)
       qcn_ice_1d(1 : npti) = qcn_ice_top_1d(1 : npti)
     END IF
-    !$ACC END KERNELS
-    CALL profile_psy_data3 % PreStart('ice_thd_zdf_bl99', 'r3', 0, 0)
+    !CALL profile_psy_data3 % PreStart('ice_thd_zdf_bl99', 'r3', 0, 0)
     DO ji = 1, npti
       zfac = rn_cnd_s * zh_i(ji) + ztcond_i(ji, 1) * zh_s(ji)
       IF (h_s_1d(ji) >= zhs_min) THEN
@@ -510,6 +517,7 @@ MODULE icethd_zdf_BL99
         t_si_1d(ji) = t_su_1d(ji)
       END IF
     END DO
-    CALL profile_psy_data3 % PostEnd
+    !$ACC END KERNELS
+    !CALL profile_psy_data3 % PostEnd
   END SUBROUTINE ice_thd_zdf_BL99
 END MODULE icethd_zdf_BL99

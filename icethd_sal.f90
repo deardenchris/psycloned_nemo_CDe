@@ -27,6 +27,7 @@ MODULE icethd_sal
     CALL profile_psy_data0 % PreStart('ice_thd_sal', 'r0', 0, 0)
     SELECT CASE (nn_icesal)
     CASE (2)
+      !$ACC KERNELS ! CDe      
       z1_time_gd = 1._wp / rn_time_gd * rdt_ice
       z1_time_fl = 1._wp / rn_time_fl * rdt_ice
       DO ji = 1, npti
@@ -45,6 +46,7 @@ MODULE icethd_sal
           sfx_bri_1d(ji) = sfx_bri_1d(ji) - rhoi * a_i_1d(ji) * h_i_1d(ji) * (zs_i_fl + zs_i_gd) * r1_rdtice
         END IF
       END DO
+      !$ACC END KERNELS
       CALL ice_var_salprof1d
     CASE (3)
       CALL ice_var_salprof1d

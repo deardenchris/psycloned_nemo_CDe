@@ -28,9 +28,10 @@ MODULE icevar
     INTEGER, INTENT(IN) :: kn
     INTEGER :: ji, jj, jk, jl
     REAL(KIND = wp), ALLOCATABLE, DIMENSION(:, :) :: z1_at_i, z1_vt_i, z1_vt_s
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
-    CALL profile_psy_data0 % PreStart('ice_var_agg', 'r0', 0, 0)
+!    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+!    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data1
+!    CALL profile_psy_data0 % PreStart('ice_var_agg', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe added
     vt_i(:, :) = SUM(v_i(:, :, :), dim = 3)
     vt_s(:, :) = SUM(v_s(:, :, :), dim = 3)
     at_i(:, :) = SUM(a_i(:, :, :), dim = 3)
@@ -38,8 +39,8 @@ MODULE icevar
     et_i(:, :) = SUM(SUM(e_i(:, :, :, :), dim = 4), dim = 3)
     at_ip(:, :) = SUM(a_ip(:, :, :), dim = 3)
     vt_ip(:, :) = SUM(v_ip(:, :, :), dim = 3)
-    CALL profile_psy_data0 % PostEnd
-    !$ACC KERNELS
+    !CALL profile_psy_data0 % PostEnd
+    ! !$ACC KERNELS
     ato_i(:, :) = 1._wp - at_i(:, :)
     !$ACC END KERNELS
     IF (kn > 1) THEN
@@ -62,14 +63,14 @@ MODULE icevar
       END WHERE
       hm_i(:, :) = vt_i(:, :) * z1_at_i(:, :)
       hm_s(:, :) = vt_s(:, :) * z1_at_i(:, :)
-      !$ACC END KERNELS
-      CALL profile_psy_data1 % PreStart('ice_var_agg', 'r1', 0, 0)
+      ! !$ACC END KERNELS
+      !CALL profile_psy_data1 % PreStart('ice_var_agg', 'r1', 0, 0)
       tm_su(:, :) = SUM(t_su(:, :, :) * a_i(:, :, :), dim = 3) * z1_at_i(:, :)
       tm_si(:, :) = SUM(t_si(:, :, :) * a_i(:, :, :), dim = 3) * z1_at_i(:, :)
       om_i(:, :) = SUM(oa_i(:, :, :), dim = 3) * z1_at_i(:, :)
       sm_i(:, :) = SUM(sv_i(:, :, :), dim = 3) * z1_vt_i(:, :)
-      CALL profile_psy_data1 % PostEnd
-      !$ACC KERNELS
+      !CALL profile_psy_data1 % PostEnd
+      ! !$ACC KERNELS
       tm_i(:, :) = 0._wp
       tm_s(:, :) = 0._wp
       !$ACC END KERNELS
@@ -270,8 +271,9 @@ MODULE icevar
       sz_i_1d(1 : npti, :) = rn_icesal
       !$ACC END KERNELS
     CASE (2)
-      CALL profile_psy_data0 % PreStart('ice_var_salprof1d', 'r0', 0, 0)
+      !CALL profile_psy_data0 % PreStart('ice_var_salprof1d', 'r0', 0, 0)
       ALLOCATE(z_slope_s(jpij), zalpha(jpij))
+      !$ACC KERNELS ! CDe
       WHERE (h_i_1d(1 : npti) > epsi20)
         z_slope_s(1 : npti) = 2._wp * s_i_1d(1 : npti) / h_i_1d(1 : npti)
       ELSEWHERE
@@ -282,8 +284,8 @@ MODULE icevar
         zalpha(ji) = MAX(0._wp, MIN((zsi1 - s_i_1d(ji)) * z1_dS, 1._wp))
         IF (2._wp * s_i_1d(ji) >= sss_1d(ji)) zalpha(ji) = 0._wp
       END DO
-      CALL profile_psy_data0 % PostEnd
-      !$ACC KERNELS
+      !CALL profile_psy_data0 % PostEnd
+      ! !$ACC KERNELS
       DO jk = 1, nlay_i
         DO ji = 1, npti
           zs0 = z_slope_s(ji) * (REAL(jk, wp) - 0.5_wp) * h_i_1d(ji) * r1_nlay_i
@@ -447,8 +449,9 @@ MODULE icevar
     REAL(KIND = wp), DIMENSION(:, :), INTENT(INOUT) :: pv_ip
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(INOUT) :: pe_s
     REAL(KIND = wp), DIMENSION(:, :, :), INTENT(INOUT) :: pe_i
-    TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('ice_var_roundoff', 'r0', 0, 0)
+    !TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
+    !CALL profile_psy_data0 % PreStart('ice_var_roundoff', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe added
     WHERE (pa_i(1 : npti, :) < 0._wp .AND. pa_i(1 : npti, :) > - epsi10) pa_i(1 : npti, :) = 0._wp
     WHERE (pv_i(1 : npti, :) < 0._wp .AND. pv_i(1 : npti, :) > - epsi10) pv_i(1 : npti, :) = 0._wp
     WHERE (pv_s(1 : npti, :) < 0._wp .AND. pv_s(1 : npti, :) > - epsi10) pv_s(1 : npti, :) = 0._wp
@@ -460,7 +463,8 @@ MODULE icevar
       WHERE (pa_ip(1 : npti, :) < 0._wp .AND. pa_ip(1 : npti, :) > - epsi10) pa_ip(1 : npti, :) = 0._wp
       WHERE (pv_ip(1 : npti, :) < 0._wp .AND. pv_ip(1 : npti, :) > - epsi10) pv_ip(1 : npti, :) = 0._wp
     END IF
-    CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
+    !CALL profile_psy_data0 % PostEnd
   END SUBROUTINE ice_var_roundoff
   SUBROUTINE ice_var_itd(zhti, zhts, zati, zh_i, zh_s, za_i)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
