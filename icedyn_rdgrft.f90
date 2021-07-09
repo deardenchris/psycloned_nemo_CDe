@@ -327,6 +327,7 @@ MODULE icedyn_rdgrft
       CALL tab_2d_1d(npti, nptidx(1 : npti), s_i_1d(1 : npti), s_i(:, :, jl1))
       CALL profile_psy_data1 % PostEnd
       !$ACC KERNELS
+      !$ACC LOOP PRIVATE (aprdg1, aprft1) ! CDe
       DO ji = 1, npti
         IF (apartf(ji, jl1) > 0._wp .AND. closing_gross(ji) > 0._wp) THEN
           IF (a_i_2d(ji, jl1) > epsi20) THEN
