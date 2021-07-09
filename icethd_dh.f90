@@ -50,7 +50,8 @@ MODULE icethd_dh
     REAL(KIND = wp) :: zswitch_sal
     INTEGER :: num_iter_max
     TYPE(profile_PSyDataType), TARGET, SAVE :: profile_psy_data0
-    CALL profile_psy_data0 % PreStart('ice_thd_dh', 'r0', 0, 0)
+    !CALL profile_psy_data0 % PreStart('ice_thd_dh', 'r0', 0, 0)
+    !$ACC KERNELS ! CDe added
     SELECT CASE (nn_icesal)
     CASE (1, 3)
       zswitch_sal = 0._wp
@@ -103,7 +104,9 @@ MODULE icethd_dh
         END IF
       END DO
     END DO
+    !$ACC END KERNELS
     CALL ice_thd_snwblow(1. - at_i_1d(1 : npti), zsnw(1 : npti))
+    !$ACC KERNELS ! CDe
     zdeltah(1 : npti, :) = 0._wp
     DO ji = 1, npti
       IF (sprecip_1d(ji) > 0._wp) THEN
@@ -174,6 +177,8 @@ MODULE icethd_dh
       END DO
     END DO
     zdeltah(1 : npti, :) = 0._wp
+    !CDe - add indepedent and private clauses to enable parallelism
+    !$ACC LOOP INDEPENDENT PRIVATE(ztmelts, zEi, zdE, zfmdt, zEw, zQm, zdum, rswitch)
     DO jk = 1, nlay_i
       DO ji = 1, npti
         ztmelts = - rTmlt * sz_i_1d(ji, jk)
@@ -225,8 +230,12 @@ MODULE icethd_dh
     END DO
     num_iter_max = 1
     IF (nn_icesal == 2) num_iter_max = 5
+    ! CDe
+    !$ACC LOOP INDEPENDENT PRIVATE(zEi, zdE, zEw)
     DO ji = 1, npti
       IF (zf_tt(ji) < 0._wp) THEN
+        ! CDe - use loop seq on iteration loop
+        !$ACC LOOP SEQ
         DO iter = 1, num_iter_max
           zgrr = MIN(1.0E-3, MAX(dh_i_bog(ji) * r1_rdtice, epsi10))
           zswi2 = MAX(0._wp, SIGN(1._wp, zgrr - 3.6E-7))
@@ -304,7 +313,8 @@ MODULE icethd_dh
       wfx_snw_sum_1d(ji) = wfx_snw_sum_1d(ji) - rhos * a_i_1d(ji) * zdeltah(ji, 1) * r1_rdtice
       dh_s_mlt(ji) = dh_s_mlt(ji) + zdeltah(ji, 1)
       qt_oce_ai_1d(ji) = qt_oce_ai_1d(ji) + (zq_rema(ji) * a_i_1d(ji)) * r1_rdtice
-      IF (ln_icectl .AND. zq_rema(ji) < 0. .AND. lwp) WRITE(numout, *) 'ALERTE zq_rema <0 = ', zq_rema(ji)
+      ! CDe comment out the write statement for warning below to enable acceleration for GPU
+!      IF (ln_icectl .AND. zq_rema(ji) < 0. .AND. lwp) WRITE(numout, *) 'ALERTE zq_rema <0 = ', zq_rema(ji)
     END DO
     z1_rho = 1._wp / (rhos + rau0 - rhoi)
     DO ji = 1, npti
@@ -341,7 +351,8 @@ MODULE icethd_dh
       a_i_1d(1 : npti) = 0._wp
       h_s_1d(1 : npti) = 0._wp
     END WHERE
-    CALL profile_psy_data0 % PostEnd
+    !CALL profile_psy_data0 % PostEnd
+    !$ACC END KERNELS
   END SUBROUTINE ice_thd_dh
   SUBROUTINE ice_thd_snwblow_2d(pin, pout)
     USE profile_psy_data_mod, ONLY: profile_PSyDataType
