@@ -123,8 +123,8 @@ MODULE icethd_zdf_BL99
     iconv = 0
     l_T_converged(:) = .FALSE.
     !$ACC END KERNELS
-    CALL profile_psy_data1 % PreStart('ice_thd_zdf_bl99', 'r1', 0, 0)
-    ! CDe - the DO WHILE breaks verification if placed inside KERNELS region...
+    ! CALL profile_psy_data1 % PreStart('ice_thd_zdf_bl99', 'r1', 0, 0)
+    ! !$ACC KERNELS 
     DO WHILE ((.NOT. ALL(l_T_converged(1 : npti))) .AND. iconv < iconv_max)
       iconv = iconv + 1
       ztib(1 : npti, :) = t_i_1d(1 : npti, :)
@@ -446,7 +446,7 @@ MODULE icethd_zdf_BL99
       END IF
     END DO
     ! !$ACC END KERNELS
-    !CALL profile_psy_data1 % PreStart('ice_thd_zdf_bl99', 'r1', 0, 0)
+    CALL profile_psy_data1 % PreStart('ice_thd_zdf_bl99', 'r1', 0, 0)
     IF (ln_icectl .AND. lwp) THEN
       WRITE(numout, *) ' zdti_max : ', zdti_max
       WRITE(numout, *) ' iconv    : ', iconv
@@ -471,6 +471,7 @@ MODULE icethd_zdf_BL99
     IF (k_cnd == np_cnd_OFF .OR. k_cnd == np_cnd_ON) THEN
       CALL ice_var_enthalpy
       !$ACC KERNELS ! CDe
+      !$ACC loop private(zhfx_err) ! CDe
       DO ji = 1, npti
         zdq = - zq_ini(ji) + (SUM(e_i_1d(ji, 1 : nlay_i)) * h_i_1d(ji) * r1_nlay_i + SUM(e_s_1d(ji, 1 : nlay_s)) * h_s_1d(ji) * r1_nlay_s)
         IF (k_cnd == np_cnd_OFF) THEN
