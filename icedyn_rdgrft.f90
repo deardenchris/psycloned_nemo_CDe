@@ -101,6 +101,8 @@ MODULE icedyn_rdgrft
       CALL tab_3d_2d(npti, nptidx(1 : npti), a_i_2d(1 : npti, 1 : jpl), a_i)
       CALL tab_3d_2d(npti, nptidx(1 : npti), v_i_2d(1 : npti, 1 : jpl), v_i)
       CALL tab_2d_1d(npti, nptidx(1 : npti), ato_i_1d(1 : npti), ato_i)
+      CALL profile_psy_data1 % PostEnd
+      !$ACC KERNELS ! CDe
       DO ji = 1, npti
         closing_net(ji) = rn_csrdg * 0.5_wp * (zdelt(ji) - ABS(zdivu(ji))) - MIN(zdivu(ji), 0._wp)
         IF (ln_adv_Pra) THEN
@@ -111,8 +113,8 @@ MODULE icedyn_rdgrft
         IF (zdivu_adv(ji) < 0._wp) closing_net(ji) = MAX(closing_net(ji), - zdivu_adv(ji))
         opning(ji) = closing_net(ji) + zdivu_adv(ji)
       END DO
+      !$ACC END KERNELS
       CALL rdgrft_prep(a_i_2d, v_i_2d, ato_i_1d, closing_net)
-      CALL profile_psy_data1 % PostEnd
       !$ACC KERNELS
       DO ji = 1, npti
         IF (SUM(apartf(ji, 1 : jpl)) > 0._wp .AND. closing_gross(ji) > 0._wp) THEN
@@ -135,12 +137,17 @@ MODULE icedyn_rdgrft
     CALL profile_psy_data2 % PreStart('ice_dyn_rdgrft', 'r2', 0, 0)
     IF (npti > 0) THEN
       CALL ice_dyn_1d2d(1)
+      !$ACC KERNELS ! CDe
       iter = 1
       iterate_ridging = 1
+      !$ACC END KERNELS
       DO WHILE (iterate_ridging > 0 .AND. iter < jp_itermax)
         CALL rdgrft_prep(a_i_2d, v_i_2d, ato_i_1d, closing_net)
         CALL rdgrft_shift
+        !$ACC KERNELS ! CDe
         iterate_ridging = 0
+        !$ACC LOOP PRIVATE(zfac,iterate_ridging)
+        ! CDe without PRIVATE clause, compiler serialises the DO loop below ('Scalar last value needed after loop for iterate_ridging')
         DO ji = 1, npti
           zfac = 1._wp - (ato_i_1d(ji) + SUM(a_i_2d(ji, :)))
           IF (ABS(zfac) < epsi10) THEN
@@ -154,6 +161,7 @@ MODULE icedyn_rdgrft
             opning(ji) = MAX(0._wp, zdivu_adv(ji))
           END IF
         END DO
+        !$ACC END KERNELS ! CDe
         iter = iter + 1
         IF (iter > jp_itermax) CALL ctl_stop('STOP', 'icedyn_rdgrft: non-converging ridging scheme')
       END DO
