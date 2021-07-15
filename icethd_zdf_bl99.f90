@@ -124,6 +124,7 @@ MODULE icethd_zdf_BL99
     l_T_converged(:) = .FALSE.
     !$ACC END KERNELS
     ! CALL profile_psy_data1 % PreStart('ice_thd_zdf_bl99', 'r1', 0, 0)
+    ! CDe - kernels region here seems to change answers...PRIVATE clause might be needed...
     ! !$ACC KERNELS 
     DO WHILE ((.NOT. ALL(l_T_converged(1 : npti))) .AND. iconv < iconv_max)
       iconv = iconv + 1

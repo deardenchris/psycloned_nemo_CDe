@@ -115,7 +115,8 @@ MODULE icethd
       !$ACC KERNELS
       npti = 0
       nptidx(:) = 0
-      !$ACC loop independent collapse(2)
+      !$ACC loop collapse(2)
+      ! CDe - can't parallelise this loop without refactoring...
       DO jj = 1, jpj
         DO ji = 1, jpi
           IF (a_i(ji, jj, jl) > epsi10) THEN
